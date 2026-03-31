@@ -45,9 +45,9 @@
           </template>
         </container-page>
       </main>
-      <footer class="umo-footer">
+      <!-- <footer class="umo-footer">
         <statusbar />
-      </footer>
+      </footer> -->
     </div>
   </t-config-provider>
 </template>

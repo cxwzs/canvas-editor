@@ -10,17 +10,17 @@
     @node-change="nodeChange"
   >
     <div class="umo-block-menu-hander">
-      <menus-block-node
+      <menus-block-nodeV2
         :node="selectedNode"
         :pos="selectedNodePos"
         @dropdown-visible="dropdownVisible"
       />
-      <menus-block-common
+      <!-- <menus-block-common
         v-if="!editor?.isEmpty"
         :node="selectedNode"
         :pos="selectedNodePos"
         @dropdown-visible="dropdownVisible"
-      />
+      /> -->
     </div>
   </drag-handle>
 </template>

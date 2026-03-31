@@ -1,7 +1,7 @@
 <template>
-  <div v-if="$toolbar.show" class="umo-toolbar-container">
+  <div class="umo-toolbar-container">
     <toolbar-ribbon
-      v-if="$toolbar.mode === 'ribbon'"
+      v-if="options.toolbar.defaultMode === 'ribbon'"
       :menus="toolbarMenus"
       :current-menu="currentMenu"
       @menu-change="menuChange"
@@ -15,7 +15,7 @@
       </template>
     </toolbar-ribbon>
     <toolbar-classic
-      v-if="$toolbar.mode === 'classic'"
+      v-if="options.toolbar.defaultMode === 'classic'"
       :menus="toolbarMenus"
       :current-menu="currentMenu"
       @menu-change="menuChange"
@@ -28,7 +28,7 @@
         <slot :name="`toolbar_${item}`" v-bind="props" />
       </template>
     </toolbar-classic>
-    <div
+    <!-- <div
       class="umo-toolbar-actions"
       :class="`umo-toolbar-actions-${$toolbar.mode}`"
     >
@@ -126,13 +126,13 @@
           </t-dropdown-menu>
         </template>
       </t-dropdown>
-    </div>
+    </div> -->
   </div>
-  <tooltip v-else :content="t('toolbar.show')" placement="bottom-right">
+  <!-- <tooltip v-else :content="t('toolbar.show')" placement="bottom-right">
     <div class="umo-show-toolbar" @click="$toolbar.show = true">
       <icon name="arrow-down" />
     </div>
-  </tooltip>
+  </tooltip> -->
 </template>
 
 <script setup>

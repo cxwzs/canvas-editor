@@ -68,6 +68,7 @@ import Toc from './toc'
 import TypeWriter from './type-writer'
 import Video from './video'
 import WordWrap from './word-wrap'
+import CusParagraph from './paragraph'
 
 const nodeTypes = [
   'paragraph',
@@ -107,6 +108,7 @@ const nodeTypes = [
   'mention',
   'blockMath',
   'inlineMath',
+  'cusParagraph',
 ]
 
 export const getDefaultExtensions = ({ container, options, uploadFileMap }) => {
@@ -151,6 +153,7 @@ export const getDefaultExtensions = ({ container, options, uploadFileMap }) => {
     toc: Toc,
     'text-box': TextBox,
     'web-page': Iframe,
+    cusParagraph: CusParagraph,
   }
 
   const buildInExtensions = [
@@ -168,6 +171,7 @@ export const getDefaultExtensions = ({ container, options, uploadFileMap }) => {
       orderedList: false,
       trailingNode: true,
       listKeymap: true,
+      paragraph: false,
     }),
     Document.extend({
       content: disableExtensions.includes('footnote')

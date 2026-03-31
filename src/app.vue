@@ -3,14 +3,28 @@
     <div class="box">
       <umo-editor ref="editorRef" v-bind="options"></umo-editor>
     </div>
+    <!-- 底部 操作 菜单 -->
+    <div class="footer-actions">
+      <div class="footer-actions-item" @click="onClickOutlineTree">大纲</div>
+      <div class="footer-actions-item" @click="onChangeShowPlugin">AI助手</div>
+    </div>
     <!-- <div class="box">
       <umo-editor editor-key="testaaa" :toolbar="{ defaultMode: 'classic' }" />
     </div> -->
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { shortId } from '@/utils/short-id'
+import {
+  sendMessageToMain,
+  MessageEnum,
+  type SendMessageToMainParamsType,
+  MessageSourceEnum,
+} from '@/qiankun'
+import { UploadApi } from '@/services/upload'
+import { onMounted, onUnmounted, watch } from 'vue'
+import { ReplaceNextNode } from '@/extensions/replaceParagraph'
 
 const editorRef = $ref(null)
 const templates = [
@@ -31,12 +45,14 @@ const options = $ref({
   // theme: 'auto',
   // skin: 'modern',
   toolbar: {
-    // defaultMode: 'classic',
-    // menus: ['base'],
+    defaultMode: 'classic',
+    menus: ['base', 'insert', 'table', 'tools', 'page'],
   },
   document: {
-    title: '测试文档',
-    content: localStorage.getItem('document.content') || '<p>测试文档</p>',
+    title: '',
+    content: '',
+    enableBubbleMenu: false,
+    enableBlockMenu: false,
     // structure: 'heading block*',
   },
   page: {
@@ -44,7 +60,7 @@ const options = $ref({
     showBookmark: true,
   },
   templates,
-  cdnUrl: 'https://cdn.umodoc.com',
+  cdnUrl: `${location.origin}/umo-editor/editor-external`,
   shareUrl: 'https://www.umodoc.com',
   file: {
     // allowedMimeTypes: [
@@ -54,51 +70,91 @@ const options = $ref({
     //   'audio/*',
     // ],
   },
-  user: {
-    id: 'umoeditor',
-    label: 'Umo Editor',
-    avatar: 'https://tdesign.gtimg.com/site/avatar.jpg',
-  },
-  users: [
-    { id: 'umodoc', label: 'Umo Team' },
-    { id: 'Cassielxd', label: 'Cassielxd' },
-    { id: 'Goldziher', label: "Na'aman Hirschfeld" },
-    { id: 'SerRashin', label: 'SerRashin' },
-    { id: 'ChenErik', label: 'ChenErik' },
-    { id: 'china-wangxu', label: 'china-wangxu' },
-    { id: 'Sherman Xu', label: 'xuzhenjun130' },
-    { id: 'testuser', label: '测试用户' },
-  ],
   // https://dev.umodoc.com/cn/docs/options/extensions#disableextensions
   disableExtensions: [],
-  async onSave(content, page, document) {
-    // 将文档和评论线程保存到 localStorage
-    localStorage.setItem('document.content', content.html)
-    // 模拟保存等待过程
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        console.log('onSave', { content, page, document })
-        resolve('文档保存成功')
-      }, 2000)
-    })
-  },
-  async onFileUpload(file) {
-    if (!file) {
-      throw new Error('没有找到要上传的文件')
-    }
-    console.log('onUpload', file)
-    await new Promise((resolve) => setTimeout(resolve, 3000))
-    return {
-      id: shortId(),
-      url: file.url || URL.createObjectURL(file),
-      name: file.name,
-      type: file.type,
-      size: file.size,
+  async onFileUpload(file: File) {
+    const res: any = await UploadApi(file, () => {})
+    const { success, message: msg, result } = res
+    if (success) {
+      return {
+        id: result.id,
+        url: result.url,
+      }
+    } else {
     }
   },
-  onFileDelete(id, url, type) {
+  onFileDelete(id: number, url: string, type: string) {
     console.log(id, url, type)
   },
+  extensions: [ReplaceNextNode],
+})
+
+/**
+ * @description 接收 主应用的 消息
+ */
+const onReceiveMainAppMessage = (e: any) => {
+  if (e.detail.source === MessageSourceEnum.MainApp) {
+    const { msgType, msgContent } = e.detail
+      .content as SendMessageToMainParamsType
+    switch (msgType) {
+      case MessageEnum.ReplaceText:
+        editorRef.useMessage('warning', { content: '替换' })
+        break
+      case MessageEnum.InsertText:
+        editorRef.useMessage('warning', { content: '插入' })
+        break
+      case MessageEnum.SaveBid:
+        sendMessageToMain({
+          msgType: MessageEnum.BidContent,
+          msgContent: editorRef.getHTML(),
+        })
+        break
+      case MessageEnum.ReplaceMaterial:
+        console.log('替换素材', msgContent)
+        break
+      case MessageEnum.ReplaceTemplate:
+        console.log('替换模板', msgContent)
+        editorRef.useEditor().commands.replaceNextNode(msgContent)
+        break
+      default:
+        editorRef.useMessage('warning', { content: '未知操作' })
+        break
+    }
+  }
+}
+
+// 改变 大纲模块 显示状态
+const onClickOutlineTree = () => {
+  sendMessageToMain({
+    msgType: MessageEnum.IsShowOutlineTree,
+  })
+}
+
+// 改变 插件模块 显示状态
+const onChangeShowPlugin = () => {
+  sendMessageToMain({
+    msgType: MessageEnum.IsShowPuglins,
+  })
+}
+
+watch(
+  () => editorRef,
+  () => {
+    // 编辑器加载完成
+    sendMessageToMain({
+      msgType: MessageEnum.initEditorSuccess,
+      msgContent: '编辑器初始化成功',
+    })
+  },
+)
+
+onMounted(() => {
+  // 监听 来自主应用的 micro-message 事件
+  window.addEventListener('micro-message', onReceiveMainAppMessage)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('micro-message', onReceiveMainAppMessage)
 })
 </script>
 
@@ -107,23 +163,43 @@ html,
 body {
   padding: 0;
   margin: 0;
+  height: 100%;
+  overflow: hidden;
+}
+#app {
+  width: 100%;
+  height: 100%;
 }
 .examples {
-  margin: 20px;
+  width: 100%;
+  height: 100%;
   display: flex;
-  height: calc(100vh - 40px);
+  flex-direction: column;
 }
 .box {
   border: solid 1px #ddd;
   box-sizing: border-box;
   position: relative;
   width: 100%;
-  height: 100%;
+  flex: 1;
+  overflow-y: auto;
 }
+.footer-actions {
+  width: 100%;
+  padding: 10px;
+  background-color: #fff;
+  display: flex;
+  align-items: center;
+  column-gap: 10px;
+  border-top: 1px solid var(--umo-border-color);
 
-html,
-body {
-  height: 100vh;
-  overflow: hidden;
+  .footer-actions-item {
+    color: #333;
+    cursor: pointer;
+  }
+
+  .footer-actions-item:hover {
+    color: #409eff;
+  }
 }
 </style>

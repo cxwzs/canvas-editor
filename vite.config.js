@@ -9,6 +9,11 @@ import { createSvgIconsPlugin } from 'vite-plugin-svg-icons'
 
 import pkg from './package.json'
 import copyright from './src/utils/copyright'
+import qiankun from 'vite-plugin-qiankun'
+
+const useQiankun = qiankun('umo-editor', {
+  useDevMode: true, // 开启开发模式，允许热更新
+})
 
 // Plugin configurations
 const vuePlugins = {
@@ -70,6 +75,8 @@ const buildConfig = {
       warn(warning)
     },
   },
+  cssCodeSplit: false,
+  modulePreload: false,
 }
 
 const cssConfig = {
@@ -95,7 +102,7 @@ const cssConfig = {
 
 export default defineConfig({
   base: '/umo-editor',
-  plugins: [ReactivityTransform(), ...Object.values(vuePlugins)],
+  plugins: [ReactivityTransform(), ...Object.values(vuePlugins), useQiankun],
   css: cssConfig,
   build: buildConfig,
   esbuild: {
@@ -105,5 +112,24 @@ export default defineConfig({
     alias: {
       '@': `${process.cwd()}/src`,
     },
+  },
+  server: {
+    port: 8080,
+    host: true,
+    open: true,
+    cors: true, // 必须开启跨域
+    headers: {
+      'Access-Control-Allow-Origin': '*', // 允许主应用跨域访问
+    },
+    proxy: {
+      // https://cn.vitejs.dev/config/#server-proxy
+      '/api': {
+        target: 'http://58.33.114.130:9402',
+        changeOrigin: true,
+      },
+    },
+    // hmr: {
+    //   overlay: false,
+    // }
   },
 })
