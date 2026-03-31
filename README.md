@@ -1,93 +1,171 @@
-# 编辑器
+<p style="text-align: center; margin: 2rem 0;">
+<a href="https://www.umodoc.com/en" target="_blank"><img src="https://unpkg.com/@umoteam/editor-external@latest/static/logo.svg" alt="umodoc.com" width="280" /></a>
+</p>
 
+<p style="text-align: center;">
+<a href="https://github.com/umodoc/editor/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/npm/l/@umoteam/editor" /></a>
+<a href="https://www.npmjs.com/package/@umoteam/editor" target="_blank"><img src="https://img.shields.io/npm/v/@umoteam/editor" /></a>
+<a href="https://www.npmjs.com/package/@umoteam/editor" target="_blank"><img src="https://img.shields.io/npm/dm/@umoteam/editor" /></a>
+<a href="https://www.npmjs.com/package/@umoteam/editor" target="_blank"><img src="https://img.shields.io/npm/unpacked-size/@umoteam/editor" /></a>
+<a href="https://github.com/umodoc/editor/commits" target="_blank"><img src="https://img.shields.io/github/commit-activity/m/umodoc/editor" /></a>
+</p>
 
+<p style="text-align: center;">English Documentation | <a href="https://dev.umodoc.com/cn/docs/editor">[中文文档]</a></p>
 
-## Getting started
+## 中文介绍
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+Umo Editor 是一个基于 Vue3 和 Tiptap3 的本土化开源文档编辑器，提供类似于 Microsoft Word 的在线编辑功能和浏览体验，专为国人用户设计。它提供了强大的文档编辑能力和 AI 创作功能，支持分页模式和普通 Web 模式、Markdown 语法、富文本编辑、多种格式的节点插入、页面样式设置、文档导出与打印等功能。
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+此外，Umo Editor 还支持自定义扩展、多语言设置和暗色主题。同时我们提供了单独的文本预览组件 [Umo Viewer](https://github.com/umodoc/viewer)，用户可以在项目中使用该组件来预览文档。
 
-## Add your files
+Umo Editor 最大的特点是代码完全开源且自主可控，支持私有部署，您可以内网环境中使用，而无需担心数据安全问题。同时 Umo Editor 基于 Vue3 和 Tiptap3，两者都有丰富的生态系统和社区支持，在遇到问题时可以迅速得到解决。
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+## Introduction
 
-```
-cd existing_repo
-git remote add origin http://192.168.1.101:8011/ai/editor.git
-git branch -M main
-git push -uf origin main
-```
+Umo Editor is an open-source document editor based on Vue3 and Tiptap3, providing an online editing experience similar to Microsoft Word. It provides powerful document editing capabilities and AI-assisted creation features. Umo Editor supports pagination and normal web layout, Markdown syntax, rich text editing, insertion of various node types, page style settings, document export, and printing. Additionally, it supports custom extensions, multi-language settings, and a dark theme. Umo Editor also supports web layout, and you can use it as a regular rich text editor.
 
-## Integrate with your tools
+Additionally, Umo Editor supports custom extensions, multi-language settings, and dark theme. We also provide a standalone text preview component, [Umo Viewer](https://github.com/umodoc/viewer), which users can integrate into their projects to preview documents.
 
-- [ ] [Set up project integrations](http://192.168.1.101:8011/ai/editor/-/settings/integrations)
+Umo Editor's largest feature is that its code is completely open source and controllable. It supports private deployment, allowing you to use it in an intranet environment without worrying about data security issues. At the same time, Umo Editor is based on Vue3 and Tiptap3, both of which have rich ecosystems and communities, making it easy to solve problems when needed.
 
-## Collaborate with your team
+As an independent Vue3 plugin, Umo Editor can be easily integrated into various Vue3 projects with zero configuration. For non-Vue3 projects, you can embed Umo Editor into your project via an iframe. see [Use in Non-Vue3 Projects](https://dev.umodoc.com/en/docs/editor/getting-started#use-in-non-vue3-projects).
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+[Website](https://www.umodoc.com/en) | [Documentation](https://dev.umodoc.com/en/docs/editor) | [Playground](https://www.umodoc.com/en/demo) | [GitHub](https://github.com/umodoc/editor) | [NPM](https://www.npmjs.com/package/@umoteam/editor)
 
-## Test and Deploy
+## Screenshots
 
-Use the built-in continuous integration in GitLab.
+![umo editor](https://s2.umodoc.com/images/umo-editor1-en@2x.png)
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+![umo editor](https://s2.umodoc.com/images/umo-editor2-en@2x.png)
 
-***
+![umo editor](https://s2.umodoc.com/images/umo-editor3-en@2x.png)
 
-# Editing this README
+## Online Experience
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+Visit [Playground](https://www.umodoc.com/en/demo?pane=hide) to try Umo Editor.
 
-## Suggestions for a good README
+## Example Project
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+To help you get started quickly, we provide a demo project: https://github.com/umodoc/demo. You can view and run Umo Editor sample code in this project.
 
-## Name
-Choose a self-explaining name for your project.
+You can also preview and run it online with StackBlitz, CodeSandbox, or Github Pages:
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+- View and run on [StackBlitz](https://stackblitz.com/~/github.com/umodoc/demo?file=src/app.vue)
+- View and run on [CodeSandbox](https://codesandbox.io/p/github/umodoc/demo/main?import=true)
+- View and run on [Github Pages](https://umodoc.github.io/demo/)
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+## Documentation
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+Please visit [Documentation](https://dev.umodoc.com/en/docs/editor) for detailed instructions.
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+## Design Philosophy
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+Umo Editor aims to simplify document editing in web applications by providing Microsoft Word-like powerful editing capabilities and pagination mode while maintaining the convenience of web applications. Whether for government and enterprise information management systems, academic research writing, team document collaboration, knowledge base management, or personal note organization, Umo Editor is your reliable assistant.
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+## Open Source Advantages
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+- **Free to Use**: Umo Editor is free for all developers under the [MIT License](https://github.com/umo-editor/umo-editor/blob/main/LICENSE), with no copyright concerns.
+- **Continuous Updates**: Umo Editor is continuously iterated to optimize features and enhance user experience.
+- **Custom Development**: Open source allows developers to customize Umo Editor to meet project-specific needs.
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+## Key Features
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+- Support for Intranet Deployment
+- Zero configuration, ready to use
+- Pagination mode similar to Microsoft Word
+- Lightweight
+- Full WYSIWYG editing
+- Rich text editing
+- Markdown syntax support
+- Integrated practical tools
+- Presentation mode
+- Document export and sharing
+- Page settings
+- Print and print preview support
+- Custom extensions support
+- Shortcut key support
+- Theme customization
+- Multilingual settings
+- Dark mode
+- Support for Web layout
+- Standalone document preview component [Umo Viewer](https://github.com/umodoc/viewer)
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+For more details, see [Features](https://dev.umodoc.com/en/docs/editor/features).
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+## Browser Support
 
-## License
-For open source projects, say how it is licensed.
+| Browser                | Version | Support |
+| ---------------------- | ------- | :-----: |
+| Google Chrome          | Latest  |   ✅    |
+| Firefox                | Latest  |   ✅    |
+| Safari                 | Latest  |   ✅    |
+| Microsoft Edge         | Latest  |   ✅    |
+| Internet Explorer (IE) | All     |   ❌    |
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+## Environment Support
+
+- **Node.js** (>=v18.x)
+- **Vue** (>=v3.x)
+- **Tiptap** (>=v3.x)
+
+## Join the Community
+
+We encourage users to join the Umo Editor open-source community and participate in the development and improvement of the product. Whether it's submitting bug reports, feature requests, or code contributions, your involvement is invaluable to our community.
+
+Submit issues or suggestions via [GitHub Discussions](https://github.com/umodoc/editor/discussions).
+
+Report bugs via [GitHub Issues](https://github.com/umodoc/editor/issues).
+
+## Contribute Code
+
+The development of Umo Editor relies on community support. Below is a list of contributors who have contributed code to Umo Editor. We thank them for their efforts:
+
+- [Umo Team](https://github.com/umodoc): 👨‍💻 Core developers
+- [china-wangxu](https://github.com/china-wangxu): 💪🏻 Added many important features
+- [Cassielxd](https://github.com/Cassielxd): 💪🏻 Added many important features
+- [Na'aman Hirschfeld](https://github.com/Goldziher): 🛠️ Contributed code
+- [SevenDreamYang](https://github.com/SevenDreamYang):🛠️ Contributed code
+- [ChenErik](https://github.com/ChenErik): 🛠️ Contributed code
+- [SerRashin](https://github.com/SerRashin): 🛠️ Added Russian language support
+- [Sunny Wisozk](https://github.com/SunnyWisozk): 🛠️ Contributed code
+- [Sherman Xu](https://github.com/xuzhenjun130): 🛠️ Contributed code
+- [vace](https://github.com/vace)：🛠️ Contributed code
+- [Mikasa33](https://github.com/Mikasa33)：🛠️ Contributed code
+
+We welcome all forms of contributions, including but not limited to submitting bug reports, feature requests, and code contributions.
+
+## Contact Us
+
+If you have any questions or suggestions, please contact us through the following channels. Before doing so, we recommend reading this documentation thoroughly to understand how to use Umo Editor.
+
+- Feedback: [GitHub Issues](https://github.com/umodoc/editor/issues)
+- Community: [GitHub Discussions](https://github.com/umodoc/editor/discussions)
+- Email: [contact@umodoc.com](mailto:contact@umodoc.com)
+
+## Technical Exchange
+
+- Discord：[Umo Editor](https://discord.gg/k8GjuBBhXD)
+
+## Support Us
+
+If you find Umo Editor useful, please consider supporting us in the following ways:
+
+- ⭐ Star the [Umo Editor repository](https://github.com/umodoc/editor) to show your support.
+- 🔗 If you use Umo Editor in your project, add a link to https://github.com/umodoc/editor.
+
+## Products from Umo Team
+
+- [Umo Editor](https://dev.umodoc.com/en/docs/editor): A localized open-source document editor based on Vue3 and Tiptap3.
+- [Umo Viewer](https://dev.umodoc.com/en/docs/viewer): An open-source, lightweight document viewer for Umo Editor.
+- [Umo Editor Next](https://dev.umodoc.com/en/docs/next): An enhanced version of Umo Editor that includes all features of the latest Umo Editor while adding or improving support for multi-user real-time collaborative editing, document annotations (comments), document version history, AI-assisted creation, document import/export, tables, and more. It also enhances customization of toolbars and sidebars.
+- [Umo Editor Server](https://dev.umodoc.com/en/docs/server): A companion server-side software developed to extend Umo Editor capabilities such as multi-user collaborative editing, document annotations, and document import/export.
+- [Umo Office Viewer](https://dev.umodoc.com/en/docs/office-viewer): An Office document viewer that supports previewing over 40 mainstream office document in web pages.
+- [Umo Office Convert](https://dev.umodoc.com/en/docs/office-convert): Converts over 40 office formats into web-viewable formats, ready to pair with Umo Office Viewer for seamless online document preview.
+
+## Open Source License
+
+Umo Editor is licensed under the [MIT License](https://github.com/umodoc/editor/raw/main/LICENSE). You are free to use, modify, and distribute this software, but this does **not** mean you are allowed to remove the copyright information at will. Please retain the Umo Editor copyright notice and the link displayed in the interface. Removal of these will be considered an infringement. We encourage you to support open-source projects.
+
+If you do not wish to retain the copyright information, please contact us or consider purchasing the commercial version: [Umo Editor Next](https://dev.umodoc.com/en/docs/next).
+
+This documentation is published under the [CC BY-NC-SA 4.0 DEED License](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en).
