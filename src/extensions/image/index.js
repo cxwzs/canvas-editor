@@ -5,6 +5,7 @@ import { VueNodeViewRenderer } from '@tiptap/vue-3'
 import NodeView from './node-view.vue'
 
 const customImage = Image.extend({
+  group: 'blockContent',
   atom: true,
   selectable: true,
   addAttributes() {

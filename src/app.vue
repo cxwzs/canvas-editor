@@ -60,7 +60,8 @@ const options = $ref({
     showBookmark: true,
   },
   templates,
-  cdnUrl: `${location.origin}/umo-editor/editor-external`,
+  // cdnUrl: `${location.origin}/umo-editor/editor-external`,
+  cdnUrl: 'https://cdn.umodoc.com',
   shareUrl: 'https://www.umodoc.com',
   file: {
     // allowedMimeTypes: [
@@ -93,34 +94,34 @@ const options = $ref({
  * @description 接收 主应用的 消息
  */
 const onReceiveMainAppMessage = (e: any) => {
-  if (e.detail.source === MessageSourceEnum.MainApp) {
-    const { msgType, msgContent } = e.detail
-      .content as SendMessageToMainParamsType
-    switch (msgType) {
-      case MessageEnum.ReplaceText:
-        editorRef.useMessage('warning', { content: '替换' })
-        break
-      case MessageEnum.InsertText:
-        editorRef.useMessage('warning', { content: '插入' })
-        break
-      case MessageEnum.SaveBid:
-        sendMessageToMain({
-          msgType: MessageEnum.BidContent,
-          msgContent: editorRef.getHTML(),
-        })
-        break
-      case MessageEnum.ReplaceMaterial:
-        console.log('替换素材', msgContent)
-        break
-      case MessageEnum.ReplaceTemplate:
-        console.log('替换模板', msgContent)
-        editorRef.useEditor().commands.replaceNextNode(msgContent)
-        break
-      default:
-        editorRef.useMessage('warning', { content: '未知操作' })
-        break
-    }
-  }
+  // if (e.detail.source === MessageSourceEnum.MainApp) {
+  //   const { msgType, msgContent } = e.detail
+  //     .content as SendMessageToMainParamsType
+  //   switch (msgType) {
+  //     case MessageEnum.ReplaceText:
+  //       editorRef.useMessage('warning', { content: '替换' })
+  //       break
+  //     case MessageEnum.InsertText:
+  //       editorRef.useMessage('warning', { content: '插入' })
+  //       break
+  //     case MessageEnum.SaveBid:
+  //       sendMessageToMain({
+  //         msgType: MessageEnum.BidContent,
+  //         msgContent: editorRef.getHTML(),
+  //       })
+  //       break
+  //     case MessageEnum.ReplaceMaterial:
+  //       console.log('替换素材', msgContent)
+  //       break
+  //     case MessageEnum.ReplaceTemplate:
+  //       console.log('替换模板', msgContent)
+  //       editorRef.useEditor().commands.replaceNextNode(msgContent)
+  //       break
+  //     default:
+  //       editorRef.useMessage('warning', { content: '未知操作' })
+  //       break
+  //   }
+  // }
 }
 
 // 改变 大纲模块 显示状态

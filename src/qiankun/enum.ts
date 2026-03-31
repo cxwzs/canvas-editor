@@ -11,6 +11,7 @@ export enum MessageEnum {
   BidContent = 'bidContent', // 标书内容
   ReplaceMaterial = 'replaceMaterial', // 替换素材
   ReplaceTemplate = 'replaceTemplate', // 替换模板
+  Regenerate = 'regenerate', // 重新生成
 }
 
 /**

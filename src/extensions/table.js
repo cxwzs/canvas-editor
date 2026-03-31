@@ -5,6 +5,8 @@ import { TableRow } from '@tiptap/extension-table/row'
 
 // 扩展表格能力
 const CustomTable = Table.extend({
+  group: 'blockContent',
+  
   addOptions() {
     return {
       ...this.parent?.(),

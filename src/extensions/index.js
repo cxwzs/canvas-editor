@@ -69,6 +69,8 @@ import TypeWriter from './type-writer'
 import Video from './video'
 import WordWrap from './word-wrap'
 import CusParagraph from './paragraph'
+import { BlockNode } from './BlockNode'
+import Paragraph from '@tiptap/extension-paragraph'
 
 const nodeTypes = [
   'paragraph',
@@ -108,7 +110,8 @@ const nodeTypes = [
   'mention',
   'blockMath',
   'inlineMath',
-  'cusParagraph',
+  // 'cusParagraph',
+  'blockNode'
 ]
 
 export const getDefaultExtensions = ({ container, options, uploadFileMap }) => {
@@ -153,7 +156,8 @@ export const getDefaultExtensions = ({ container, options, uploadFileMap }) => {
     toc: Toc,
     'text-box': TextBox,
     'web-page': Iframe,
-    cusParagraph: CusParagraph,
+    // cusParagraph: CusParagraph,
+    blockNode: BlockNode
   }
 
   const buildInExtensions = [
@@ -174,9 +178,10 @@ export const getDefaultExtensions = ({ container, options, uploadFileMap }) => {
       paragraph: false,
     }),
     Document.extend({
-      content: disableExtensions.includes('footnote')
-        ? doc.structure
-        : `${doc.structure} footnotes?`,
+      content: 'block+',
+    }),
+    Paragraph.extend({
+      group: 'blockContent'
     }),
     TextStyleKit.configure({
       lineHeight: false,

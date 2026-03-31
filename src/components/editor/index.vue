@@ -42,6 +42,7 @@ import { getDefaultExtensions, inputAndPasteRules } from '@/extensions'
 import { contentTransform } from '@/utils/content-transform'
 import { addHistory } from '@/utils/history-record'
 import { loadResource } from '@/utils/load-resource'
+import { blockIdPlugin } from '@/extensions/BlockNode'
 
 const destroyed = inject('destroyed')
 const page = inject('page')
@@ -82,6 +83,7 @@ const editorInstance = new Editor({
   parseOptions: options.value.document?.parseOptions,
   extensions: [...extensions, ...options.value.extensions],
   onCreate({ editor }) {
+    editor.registerPlugin(blockIdPlugin)
     if (options.value.disableExtensions.includes('math')) {
       migrateMathStrings(editor)
     }
