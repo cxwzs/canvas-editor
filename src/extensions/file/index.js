@@ -183,10 +183,18 @@ export default Node.create({
               }
             }
           }
-          return commands.insertContentAt(position, {
-            type: autoType ? previewType : 'file',
-            attrs: nodeData,
-          })
+          return commands.insertContentAt(position, [
+            {
+              type: autoType ? previewType : 'file',
+              attrs: nodeData,
+            },
+            {
+              type: 'paragraph',
+              attrs: {
+                placeholder: '请输入...',
+              },
+            },
+          ])
         },
       selectFiles:
         (type, container = 'body', uploadFileMap, autoType = true) =>

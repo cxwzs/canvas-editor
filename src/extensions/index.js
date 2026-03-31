@@ -68,7 +68,6 @@ import Toc from './toc'
 import TypeWriter from './type-writer'
 import Video from './video'
 import WordWrap from './word-wrap'
-import CusParagraph from './paragraph'
 import { BlockNode } from './BlockNode'
 import Paragraph from '@tiptap/extension-paragraph'
 
@@ -110,8 +109,7 @@ const nodeTypes = [
   'mention',
   'blockMath',
   'inlineMath',
-  // 'cusParagraph',
-  'blockNode'
+  'blockNode',
 ]
 
 export const getDefaultExtensions = ({ container, options, uploadFileMap }) => {
@@ -156,8 +154,7 @@ export const getDefaultExtensions = ({ container, options, uploadFileMap }) => {
     toc: Toc,
     'text-box': TextBox,
     'web-page': Iframe,
-    // cusParagraph: CusParagraph,
-    blockNode: BlockNode
+    blockNode: BlockNode,
   }
 
   const buildInExtensions = [
@@ -181,7 +178,7 @@ export const getDefaultExtensions = ({ container, options, uploadFileMap }) => {
       content: 'block+',
     }),
     Paragraph.extend({
-      group: 'blockContent'
+      group: 'blockContent',
     }),
     TextStyleKit.configure({
       lineHeight: false,

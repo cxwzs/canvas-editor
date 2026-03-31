@@ -105,11 +105,11 @@ const onReceiveMainAppMessage = (e: any) => {
       switch (msgType) {
         case MessageEnum.ReplaceMaterial:
           console.log('替换素材', msgContent)
-          replaceBlock(msgContent.content || '')
+          replaceBlock(`${msgContent.content}<p></p>`)
           break
         case MessageEnum.ReplaceTemplate:
           console.log('替换模板', msgContent)
-          replaceBlock(msgContent.content || '')
+          replaceBlock(`${msgContent.content}<p></p>`)
           break
         default:
           break
