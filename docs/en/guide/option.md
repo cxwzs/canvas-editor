@@ -29,6 +29,7 @@ interface IEditorOption {
   height?: number // Paper height. default: 1123
   scale?: number // scaling. default: 1
   pageGap?: number // Paper spacing. default: 20
+  pageVirtualScroll?: boolean // Virtual scroll in paging mode (at most 3 pages mounted). default: true
   underlineColor?: string // Underline color. default: #000000
   strikeoutColor?: string // Strikeout color. default: #FF0000
   rangeColor?: string // Range color. default: #AECBFA
