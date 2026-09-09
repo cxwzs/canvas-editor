@@ -665,6 +665,19 @@ export function formatElementList(
     if (el.type === ElementType.IMAGE || el.type === ElementType.BLOCK) {
       el.id = el.id || getUUID()
     }
+    if (el.type === ElementType.IMAGE) {
+      // 无尺寸时占位，避免首次排版高度为 0 / NaN 导致页数不准
+      if (!el.width || !el.height) {
+        const innerWidth =
+          editorOptions.width -
+          editorOptions.margins[1] -
+          editorOptions.margins[3]
+        el.imgMaxWidth = el.imgMaxWidth || innerWidth
+        el.width = el.width || el.imgMaxWidth
+        el.height = el.height || el.imgMaxHeight || 400
+        el.imgSizePending = true
+      }
+    }
     if (el.type === ElementType.LATEX) {
       const { svg, width, height } = LaTexParticle.convertLaTextToSVG(el.value)
       el.width = el.width || width
@@ -1616,6 +1629,99 @@ export function convertTextNodeToElement(
   return element
 }
 
+/** 按 max-width / max-height 等比约束图片尺寸 */
+export function applyImageMaxSize(
+  width: number,
+  height: number,
+  maxWidth?: number,
+  maxHeight?: number
+): { width: number; height: number } {
+  let nextWidth = width
+  let nextHeight = height
+  if (maxHeight && nextHeight > maxHeight) {
+    nextWidth = (nextWidth * maxHeight) / nextHeight
+    nextHeight = maxHeight
+  }
+  if (maxWidth && nextWidth > maxWidth) {
+    nextHeight = (nextHeight * maxWidth) / nextWidth
+    nextWidth = maxWidth
+  }
+  return {
+    width: Math.max(1, Math.round(nextWidth)),
+    height: Math.max(1, Math.round(nextHeight))
+  }
+}
+
+/**
+ * 从 HTMLImageElement 构建图片元素。
+ * 无宽高时先占位并标记 imgSizePending，待加载后按自然尺寸+max 约束重算分页。
+ */
+export function createImageElementFromHTMLImage(
+  imgNode: HTMLImageElement,
+  innerWidth: number
+): IElement | null {
+  const src =
+    imgNode.getAttribute('src') || imgNode.getAttribute('data-src') || ''
+  if (!src) return null
+
+  const maxHeight = parseFloat(imgNode.style.maxHeight) || undefined
+  const maxWidth = parseFloat(imgNode.style.maxWidth) || undefined
+  const attrWidth = parseFloat(imgNode.getAttribute('width') || '') || undefined
+  const attrHeight =
+    parseFloat(imgNode.getAttribute('height') || '') || undefined
+  const styleWidth = parseFloat(imgNode.style.width) || undefined
+  const styleHeight = parseFloat(imgNode.style.height) || undefined
+
+  let width = attrWidth || styleWidth
+  let height = attrHeight || styleHeight
+  // 缓存命中时可同步拿到自然尺寸
+  if (
+    (!width || !height) &&
+    imgNode.complete &&
+    imgNode.naturalWidth > 0 &&
+    imgNode.naturalHeight > 0
+  ) {
+    width = width || imgNode.naturalWidth
+    height = height || imgNode.naturalHeight
+  }
+
+  const imageElement: IElement = {
+    type: ElementType.IMAGE,
+    // 保留原始 src；相对路径用完整 URL，避免画布加载失败
+    value: src.startsWith('http') || src.startsWith('data:') || src.startsWith('blob:')
+      ? src
+      : imgNode.src || src
+  }
+  if (maxWidth) {
+    imageElement.imgMaxWidth = maxWidth
+  }
+  if (maxHeight) {
+    imageElement.imgMaxHeight = maxHeight
+  }
+
+  if (width && height) {
+    const sized = applyImageMaxSize(
+      width,
+      height,
+      maxWidth || innerWidth,
+      maxHeight
+    )
+    imageElement.width = sized.width
+    imageElement.height = sized.height
+  } else {
+    // 异步资源：先占位保证分页有高度，加载后再纠正
+    const placeholderHeight = maxHeight || 400
+    const placeholderWidth = Math.min(maxWidth || innerWidth, innerWidth)
+    imageElement.width = placeholderWidth
+    imageElement.height = placeholderHeight
+    imageElement.imgSizePending = true
+    if (!imageElement.imgMaxWidth) {
+      imageElement.imgMaxWidth = innerWidth
+    }
+  }
+  return imageElement
+}
+
 export interface IGetElementListByHTMLOption {
   innerWidth: number
 }
@@ -1749,15 +1855,16 @@ export function getElementListByHTML(
             type: ElementType.SEPARATOR
           })
         } else if (node.nodeName === 'IMG') {
-          const { src, width, height } = node as HTMLImageElement
-          if (src && width && height) {
-            elementList.push({
-              width,
-              height,
-              value: src,
-              type: ElementType.IMAGE,
-              rowFlex: convertTextAlignToRowFlex(node.parentElement!)
-            })
+          const imgNode = node as HTMLImageElement
+          const imageElement = createImageElementFromHTMLImage(
+            imgNode,
+            options.innerWidth
+          )
+          if (imageElement) {
+            imageElement.rowFlex = convertTextAlignToRowFlex(
+              node.parentElement!
+            )
+            elementList.push(imageElement)
           }
         } else if (node.nodeName === 'VIDEO') {
           const { src, width, height } = node as HTMLVideoElement

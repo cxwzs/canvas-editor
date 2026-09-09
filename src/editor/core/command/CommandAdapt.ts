@@ -314,12 +314,14 @@ export class CommandAdapt {
   public undo() {
     const isReadonly = this.draw.isReadonly()
     if (isReadonly) return
+    this.draw.flushHistory()
     this.historyManager.undo()
   }
 
   public redo() {
     const isReadonly = this.draw.isReadonly()
     if (isReadonly) return
+    this.draw.flushHistory()
     this.historyManager.redo()
   }
 

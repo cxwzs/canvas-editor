@@ -44,7 +44,9 @@ export function input(data: string, host: CanvasEvent) {
     }
     if (
       isDesignMode ||
-      (!copyElement.title?.disabled && !copyElement.control?.disabled)
+      (!copyElement.disabled &&
+        !copyElement.title?.disabled &&
+        !copyElement.control?.disabled)
     ) {
       const nextElement = elementList[endIndex + 1]
       // 文本、超链接、日期、上下标：复制所有信息（元素类型、样式、特殊属性）

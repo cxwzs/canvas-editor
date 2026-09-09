@@ -112,7 +112,8 @@ export class BlockParticle {
       const iframe = cacheBlock.getIFrameBlock()?.getIframe()
       if (!iframe) return
       const { pageNo, x, y } = positionInfo
-      const ctx = pageList[pageNo]?.getContext('2d')
+      const page = pageList.find(p => Number(p.dataset.index) === pageNo)
+      const ctx = page?.getContext('2d')
       if (!ctx) return
       const { width, height } = cacheBlock.getBlockElement().metrics
       tasks.push(

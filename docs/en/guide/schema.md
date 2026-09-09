@@ -26,6 +26,7 @@ interface IElement {
   extension?: unknown;
   externalId?: string;
   hide?: boolean;
+  disabled?: boolean; // Not editable (can be edited in design mode)
   hint?: string; // Hover hint text (requires the hint option to be enabled)
   // style
   font?: string;

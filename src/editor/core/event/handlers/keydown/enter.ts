@@ -48,7 +48,7 @@ function inheritListLevel(
 
 export function enter(evt: KeyboardEvent, host: CanvasEvent) {
   const draw = host.getDraw()
-  if (draw.isReadonly()) return
+  if (draw.isReadonly() || draw.isDisabled()) return
   const rangeManager = draw.getRange()
   if (!rangeManager.getIsCanInput()) return
   const { startIndex, endIndex } = rangeManager.getRange()

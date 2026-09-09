@@ -92,6 +92,7 @@ export class Search {
         )
       }
     }
+    this._syncNavigatePage()
     return this.searchNavigateIndex
   }
 
@@ -119,7 +120,26 @@ export class Search {
         this.searchNavigateIndex = 0
       }
     }
+    this._syncNavigatePage()
     return this.searchNavigateIndex
+  }
+
+  private _syncNavigatePage() {
+    if (this.searchNavigateIndex === null) return
+    const match = this.searchMatchList[this.searchNavigateIndex]
+    if (!match) return
+    let pageNo = 0
+    if (match.type === EditorContext.TABLE) {
+      const { tableIndex, trIndex, tdIndex, index } = match
+      pageNo =
+        this.draw.getOriginalElementList()[tableIndex!]?.trList![trIndex!]
+          .tdList[tdIndex!]?.positionList![index]?.pageNo ?? 0
+    } else {
+      pageNo =
+        this.position.getOriginalPositionList()[match.index]?.pageNo ?? 0
+    }
+    this.draw.setPageNo(pageNo)
+    this.draw.setIntersectionPageNo(pageNo)
   }
 
   public searchNavigateScrollIntoView(position: IElementPosition) {
@@ -127,6 +147,10 @@ export class Search {
       coordinate: { leftTop, leftBottom, rightTop },
       pageNo
     } = position
+    // 虚拟滚动先挂载目标页，再滚动定位
+    if (this.draw.getIsVirtualPageMode()) {
+      this.draw.syncVirtualPages(pageNo, { isDraw: true })
+    }
     const { x: pageLeft, y: preY } = this.draw.getPageOffset(pageNo)
     // 创建定位锚点
     const anchor = document.createElement('div')
@@ -443,10 +467,11 @@ export class Search {
         // 表格内元素
         const curIndex = index + tableDiffCount
         const tableElement = tableElementList[curIndex]
-        // 非设计模式下设置元素不可删除 || 控件结构元素 => 禁止替换
+        // 非设计模式下设置元素不可删除/不可编辑 || 控件结构元素 => 禁止替换
         if (
           !isDesignMode &&
-          (tableElement?.control?.deletable === false ||
+          (tableElement?.disabled ||
+            tableElement?.control?.deletable === false ||
             tableElement?.title?.deletable === false)
         ) {
           continue
@@ -484,10 +509,11 @@ export class Search {
       } else {
         const curIndex = match.index + pageDiffCount
         const element = elementList[curIndex]
-        // 非设计模式下设置元素不可删除 || 控件结构元素 => 禁止替换
+        // 非设计模式下设置元素不可删除/不可编辑 || 控件结构元素 => 禁止替换
         if (
           (!isDesignMode &&
-            (element?.control?.deletable === false ||
+            (element?.disabled ||
+              element?.control?.deletable === false ||
               element?.title?.deletable === false)) ||
           (element.type === ElementType.CONTROL &&
             element.controlComponent !== ControlComponent.VALUE)

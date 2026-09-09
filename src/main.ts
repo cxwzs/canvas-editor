@@ -26,8 +26,12 @@ import { Dialog } from './components/dialog/Dialog'
 import { formatPrismToken } from './utils/prism'
 import { Signature } from './components/signature/Signature'
 import { debounce, nextTick, scrollIntoView } from './utils'
+import mockHtml from './mockHtml.json'
+
+const mockHtmlStr = mockHtml.reduce((acc, cur) => `${acc}<section id="${cur.paraId}">${cur.content}</section>`, '')
 
 window.onload = function () {
+  console.log('data', data)
   const isApple =
     typeof navigator !== 'undefined' && /Mac OS X/.test(navigator.userAgent)
 
@@ -47,6 +51,10 @@ window.onload = function () {
   Reflect.set(window, 'editor', instance)
   // canvas-editor-devtools使用
   Reflect.set(window, '__CANVAS_EDITOR_INSTANCE__', instance)
+
+  instance.command.executeSetHTML({
+    main: mockHtmlStr
+  })
 
   // 菜单弹窗销毁
   window.addEventListener(

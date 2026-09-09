@@ -67,7 +67,7 @@ function deleteHideElement(host: CanvasEvent) {
 
 export function del(evt: KeyboardEvent, host: CanvasEvent) {
   const draw = host.getDraw()
-  if (draw.isReadonly()) return
+  if (draw.isReadonly() || draw.isDisabled()) return
   // 可输入性验证
   const rangeManager = draw.getRange()
   if (!rangeManager.getIsCanInput()) return
@@ -136,6 +136,11 @@ export function del(evt: KeyboardEvent, host: CanvasEvent) {
       } else {
         const nextElement = elementList[index + 1]
         if (!nextElement) return
+        // 禁止删除不可编辑元素
+        if (nextElement.disabled && !draw.isDesignMode()) {
+          evt.preventDefault()
+          return
+        }
         if (nextElement.value === ZERO && !nextElement.listWrap) {
           const { rowFlex, rowMargin } = elementList[index]
           for (let i = index + 1; i < elementList.length; i++) {
