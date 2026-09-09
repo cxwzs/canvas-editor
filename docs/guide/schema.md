@@ -26,6 +26,7 @@ interface IElement {
   extension?: unknown;
   externalId?: string;
   hide?: boolean;
+  disabled?: boolean; // 禁止编辑（设计模式下可改）
   hint?: string; // 悬浮提示文案：（需在配置中开启 hint 总开关）
   // 样式
   font?: string;

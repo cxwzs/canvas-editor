@@ -221,6 +221,16 @@ export class Draw {
   private controlMinWidthPlaceholderElementListSet: WeakSet<IElement[]>
   private columnManager: ColumnManager
   private ruler: Ruler
+  // 虚拟滚动：分页模式仅挂载窗口内页面（默认 3 页），滚动时复用 canvas
+  private static readonly VIRTUAL_PAGE_WINDOW = 3
+  private static readonly HISTORY_SUBMIT_DELAY = 300
+  private forceFullPageRender = false
+  private virtualPageRange: [number, number] | null = null
+  private measureCtx: CanvasRenderingContext2D | null = null
+  private historySubmitTimer: number | null = null
+  private pendingHistoryCurIndex: number | undefined = undefined
+  private contentChangeTimer: number | null = null
+  private rulerRenderTimer: number | null = null
 
   constructor(
     rootContainer: HTMLElement,
@@ -329,6 +339,13 @@ export class Draw {
     this.lazyRenderIntersectionObserver = null
     this.printModeData = null
     this.controlMinWidthPlaceholderElementListSet = new WeakSet()
+    this.forceFullPageRender = false
+    this.virtualPageRange = null
+    this.measureCtx = null
+    this.historySubmitTimer = null
+    this.pendingHistoryCurIndex = undefined
+    this.contentChangeTimer = null
+    this.rulerRenderTimer = null
 
     // 打印模式优先设置打印数据
     if (this.mode === EditorMode.PRINT) {
@@ -339,6 +356,8 @@ export class Draw {
       isSetCursor: false,
       isFirstRender: true
     })
+    // 初始数据中可能含待加载图片
+    this.imageParticle.preloadPendingImages()
     // 级联规则初始化全量执行
     this.cascadeManager.executeAll()
   }
@@ -430,6 +449,7 @@ export class Draw {
       const startElement = elementList[startIndex]
       const nextElement = elementList[startIndex + 1]
       return !!(
+        (startElement?.disabled && nextElement?.disabled) ||
         (startElement?.title?.disabled &&
           nextElement?.title?.disabled &&
           startElement.titleId === nextElement.titleId) ||
@@ -440,7 +460,10 @@ export class Draw {
     }
     const selectionElementList = elementList.slice(startIndex + 1, endIndex + 1)
     return selectionElementList.some(
-      element => element.title?.disabled || element.control?.disabled
+      element =>
+        element.disabled ||
+        element.title?.disabled ||
+        element.control?.disabled
     )
   }
 
@@ -737,7 +760,11 @@ export class Draw {
   }
 
   public getPage(pageNo = -1): HTMLCanvasElement {
-    return this.pageList[~pageNo ? pageNo : this.pageNo]
+    const targetPageNo = ~pageNo ? pageNo : this.pageNo
+    return (
+      this.pageList.find(p => Number(p.dataset.index) === targetPageNo) ||
+      this.pageList[0]
+    )
   }
 
   public getPageList(): HTMLCanvasElement[] {
@@ -745,7 +772,189 @@ export class Draw {
   }
 
   public getPageCount(): number {
-    return this.pageList.length
+    return this.pageRowList.length || this.pageList.length
+  }
+
+  public getIsVirtualPageMode(): boolean {
+    return this.getIsPagingMode() && !this.forceFullPageRender
+  }
+
+  private _getPageListIndex(pageNo: number): number {
+    return this.pageList.findIndex(p => Number(p.dataset.index) === pageNo)
+  }
+
+  private _getVirtualPageRange(centerPageNo: number): [number, number] {
+    const pageCount = this.pageRowList.length
+    if (pageCount <= 0) return [0, 0]
+    if (
+      this.forceFullPageRender ||
+      !this.getIsPagingMode() ||
+      pageCount <= Draw.VIRTUAL_PAGE_WINDOW
+    ) {
+      return [0, pageCount - 1]
+    }
+    const half = Math.floor(Draw.VIRTUAL_PAGE_WINDOW / 2)
+    let start = Math.max(0, centerPageNo - half)
+    let end = start + Draw.VIRTUAL_PAGE_WINDOW - 1
+    if (end > pageCount - 1) {
+      end = pageCount - 1
+      start = Math.max(0, end - Draw.VIRTUAL_PAGE_WINDOW + 1)
+    }
+    return [start, end]
+  }
+
+  private _getContentHeight(): number {
+    const pageCount = this.pageRowList.length
+    if (!pageCount) return this.getHeight()
+    const pageGap = this.getPageGap()
+    let height = 0
+    for (let i = 0; i < pageCount; i++) {
+      height += this.getHeight(this.getPageDirection(i)) + pageGap
+    }
+    return height
+  }
+
+  private _updatePageContainerHeight() {
+    if (this.getIsPagingMode()) {
+      this.pageContainer.style.position = 'relative'
+      this.pageContainer.style.height = `${this._getContentHeight()}px`
+    } else {
+      this.pageContainer.style.position = ''
+      this.pageContainer.style.height = ''
+    }
+  }
+
+  private _applyPagePosition(canvas: HTMLCanvasElement, pageNo: number) {
+    const { width, height } = this.getPageSize(pageNo)
+    canvas.style.width = `${width}px`
+    canvas.style.height = `${height}px`
+    canvas.setAttribute('data-index', String(pageNo))
+    if (this.getIsPagingMode()) {
+      const { x, y } = this.getPageOffset(pageNo)
+      canvas.style.position = 'absolute'
+      canvas.style.top = `${y}px`
+      canvas.style.left = `${x}px`
+      canvas.style.marginLeft = '0'
+      canvas.style.marginRight = '0'
+      canvas.style.marginBottom = '0'
+    } else {
+      canvas.style.position = ''
+      canvas.style.top = ''
+      canvas.style.left = ''
+      canvas.style.marginLeft = 'auto'
+      canvas.style.marginRight = 'auto'
+      canvas.style.marginBottom = `${this.getPageGap()}px`
+    }
+  }
+
+  private _ensurePageCanvasSize(
+    canvas: HTMLCanvasElement,
+    ctx: CanvasRenderingContext2D,
+    pageNo: number
+  ) {
+    const dpr = this.getPagePixelRatio()
+    const { width, height } = this.getPageSize(pageNo)
+    const pixelWidth = Math.floor(width * dpr)
+    const pixelHeight = Math.floor(height * dpr)
+    if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+      canvas.width = pixelWidth
+      canvas.height = pixelHeight
+      this._initPageContext(ctx)
+    }
+  }
+
+  /**
+   * 同步虚拟页窗口：仅保留中心页附近若干 canvas，滚动时复用并重绘
+   */
+  public syncVirtualPages(
+    centerPageNo = this.intersectionPageNo,
+    options: { force?: boolean; isDraw?: boolean } = {}
+  ) {
+    if (!this.getIsPagingMode() || !this.pageRowList.length) return
+    const { force = false, isDraw = true } = options
+    const pageCount = this.pageRowList.length
+    const safeCenter = Math.max(0, Math.min(centerPageNo, pageCount - 1))
+    const [start, end] = this._getVirtualPageRange(safeCenter)
+    const rangeUnchanged =
+      this.virtualPageRange?.[0] === start &&
+      this.virtualPageRange?.[1] === end &&
+      this.pageList.length === end - start + 1
+    if (rangeUnchanged && !force) {
+      // 仅校正占位高度与页位置（缩放/混排后）
+      this.pageList.forEach(canvas => {
+        this._applyPagePosition(canvas, Number(canvas.dataset.index))
+      })
+      this._updatePageContainerHeight()
+      return
+    }
+    const neededPageNos: number[] = []
+    for (let i = start; i <= end; i++) {
+      neededPageNos.push(i)
+    }
+    const reusable = new Map<
+      number,
+      { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D }
+    >()
+    this.pageList.forEach((canvas, index) => {
+      reusable.set(Number(canvas.dataset.index), {
+        canvas,
+        ctx: this.ctxList[index]
+      })
+    })
+    const nextPageList: HTMLCanvasElement[] = []
+    const nextCtxList: CanvasRenderingContext2D[] = []
+    const pagesToDraw: number[] = []
+    for (const pageNo of neededPageNos) {
+      const hit = reusable.get(pageNo)
+      if (hit) {
+        reusable.delete(pageNo)
+        this._applyPagePosition(hit.canvas, pageNo)
+        this._ensurePageCanvasSize(hit.canvas, hit.ctx, pageNo)
+        nextPageList.push(hit.canvas)
+        nextCtxList.push(hit.ctx)
+        if (force) {
+          pagesToDraw.push(pageNo)
+        }
+        continue
+      }
+      const leftover = reusable.entries().next()
+      if (!leftover.done) {
+        const [oldPageNo, slot] = leftover.value
+        reusable.delete(oldPageNo)
+        this._applyPagePosition(slot.canvas, pageNo)
+        this._ensurePageCanvasSize(slot.canvas, slot.ctx, pageNo)
+        nextPageList.push(slot.canvas)
+        nextCtxList.push(slot.ctx)
+        pagesToDraw.push(pageNo)
+        continue
+      }
+      const { canvas, ctx } = this._createPageCanvas(pageNo)
+      this.pageContainer.append(canvas)
+      nextPageList.push(canvas)
+      nextCtxList.push(ctx)
+      pagesToDraw.push(pageNo)
+    }
+    reusable.forEach(({ canvas }) => canvas.remove())
+    // 原地更新数组，保持外部持有的 pageList 引用有效
+    this.pageList.length = 0
+    this.ctxList.length = 0
+    this.pageList.push(...nextPageList)
+    this.ctxList.push(...nextCtxList)
+    this.virtualPageRange = [start, end]
+    this._updatePageContainerHeight()
+    if (isDraw && pagesToDraw.length) {
+      const positionList = this.position.getOriginalMainPositionList()
+      const elementList = this.getOriginalMainElementList()
+      for (const pageNo of pagesToDraw) {
+        if (!this.pageRowList[pageNo]) continue
+        this._drawPage({
+          elementList,
+          positionList,
+          rowList: this.pageRowList[pageNo],
+          pageNo
+        })
+      }
+    }
   }
 
   public getTableRowList(sourceElementList: IElement[]): IRow[] {
@@ -779,7 +988,8 @@ export class Draw {
   }
 
   public getCtx(): CanvasRenderingContext2D {
-    return this.ctxList[this.pageNo]
+    const listIndex = this._getPageListIndex(this.pageNo)
+    return this.ctxList[~listIndex ? listIndex : 0]
   }
 
   public getOptions(): DeepRequired<IEditorOption> {
@@ -1045,6 +1255,7 @@ export class Draw {
             deleteElement?.control?.hide ||
             deleteElement?.area?.hide ||
             (tdDeletable !== false &&
+              deleteElement?.disabled !== true &&
               deleteElement?.control?.deletable !== false &&
               (!deleteElement.controlId ||
                 this.mode !== EditorMode.FORM ||
@@ -1218,24 +1429,43 @@ export class Draw {
     if (isSwitchMode) {
       this.setMode(mode)
     }
-    this.render({
-      isLazy: false,
-      isCompute: false,
-      isSetCursor: false,
-      isSubmitHistory: false
-    })
-    await this.imageObserver.allSettled()
-    // 叠加iframe图片
-    if (snapDomFunction) {
-      await this.blockParticle.drawIframeToPage(this.pageList, snapDomFunction)
-    }
-    const dataUrlList = this.pageList.map(c => c.toDataURL())
-    // 还原
-    if (pixelRatio) {
-      this.setPagePixelRatio(null)
-    }
-    if (isSwitchMode) {
-      this.setMode(currentMode)
+    // 导出时临时挂载全部页面
+    this.forceFullPageRender = true
+    let dataUrlList: string[] = []
+    try {
+      // 先全量计算并预加载待定尺寸图片
+      this.render({
+        isLazy: false,
+        isCompute: true,
+        isSetCursor: false,
+        isSubmitHistory: false
+      })
+      await this.imageObserver.allSettled()
+      // 图片尺寸纠正后的延迟重排立即执行，保证导出页数正确
+      this.imageParticle.flushImageRelayout()
+      await this.imageObserver.allSettled()
+      // 叠加iframe图片
+      if (snapDomFunction) {
+        await this.blockParticle.drawIframeToPage(this.pageList, snapDomFunction)
+      }
+      dataUrlList = [...this.pageList]
+        .sort((a, b) => Number(a.dataset.index) - Number(b.dataset.index))
+        .map(c => c.toDataURL())
+    } finally {
+      this.forceFullPageRender = false
+      if (pixelRatio) {
+        this.setPagePixelRatio(null)
+      }
+      if (isSwitchMode) {
+        this.setMode(currentMode)
+      }
+      // 还原虚拟页窗口
+      if (this.getIsPagingMode()) {
+        this.syncVirtualPages(this.intersectionPageNo, {
+          force: true,
+          isDraw: true
+        })
+      }
     }
     return dataUrlList
   }
@@ -1277,21 +1507,34 @@ export class Draw {
   public setPageMode(payload: PageMode) {
     if (!payload || this.options.pageMode === payload) return
     this.options.pageMode = payload
+    this.virtualPageRange = null
     // 纸张大小重置
     if (payload === PageMode.PAGING) {
       const { height } = this.options
       const dpr = this.getPagePixelRatio()
       const canvas = this.pageList[0]
-      canvas.style.height = `${height}px`
-      canvas.height = height * dpr
-      // canvas尺寸发生变化，上下文被重置
-      this._initPageContext(this.ctxList[0])
+      if (canvas) {
+        canvas.style.height = `${height}px`
+        canvas.height = height * dpr
+        // canvas尺寸发生变化，上下文被重置
+        this._initPageContext(this.ctxList[0])
+      }
     } else {
-      // 连页模式：移除懒加载监听&清空页眉页脚计算数据
+      // 连页模式：移除懒加载监听&清空页眉页脚计算数据，并还原页面定位样式
       this._disconnectLazyRender()
       this.header.recovery()
       this.footer.recovery()
       this.zone.setZone(EditorZone.MAIN)
+      this.pageContainer.style.position = ''
+      this.pageContainer.style.height = ''
+      // 连页仅保留一页
+      if (this.pageList.length > 1) {
+        this.pageList.splice(1).forEach(page => page.remove())
+        this.ctxList.splice(1)
+      }
+      if (this.pageList[0]) {
+        this._applyPagePosition(this.pageList[0], 0)
+      }
     }
     const { startIndex } = this.range.getRange()
     const isCollapsed = this.range.getIsCollapsed()
@@ -1319,6 +1562,8 @@ export class Draw {
 
   public setPageScale(payload: number) {
     this.options.scale = payload
+    this.header.recovery()
+    this.footer.recovery()
     this._updatePageSizes()
     const cursorPosition = this.position.getCursorPosition()
     this.render({
@@ -1408,6 +1653,8 @@ export class Draw {
 
   public setPaperMargin(payload: IMargin) {
     this.options.margins = payload
+    this.header.recovery()
+    this.footer.recovery()
     this.render({
       isSubmitHistory: false,
       isSetCursor: false
@@ -1494,6 +1741,8 @@ export class Draw {
       isSetCursor,
       isFirstRender: true
     })
+    // 异步图片尺寸纠正（含未挂载虚拟页上的图片）
+    this.imageParticle.preloadPendingImages()
     // 数据替换后级联规则全量重算
     this.cascadeManager.executeAll()
   }
@@ -1531,28 +1780,29 @@ export class Draw {
     return pageContainer
   }
 
-  private _createPage(pageNo: number) {
+  private _createPageCanvas(pageNo: number): {
+    canvas: HTMLCanvasElement
+    ctx: CanvasRenderingContext2D
+  } {
     const { width, height } = this.getPageSize(pageNo)
     const canvas = document.createElement('canvas')
-    canvas.style.width = `${width}px`
-    canvas.style.height = `${height}px`
     canvas.style.display = 'block'
     canvas.style.backgroundColor = '#ffffff'
-    // 混排横竖版时各页宽度可能不同，页 canvas 水平居中
-    canvas.style.marginLeft = 'auto'
-    canvas.style.marginRight = 'auto'
-    canvas.style.marginBottom = `${this.getPageGap()}px`
-    canvas.setAttribute('data-index', String(pageNo))
-    this.pageContainer.append(canvas)
+    canvas.style.cursor = 'text'
+    this._applyPagePosition(canvas, pageNo)
     // 调整分辨率
     const dpr = this.getPagePixelRatio()
     canvas.width = width * dpr
     canvas.height = height * dpr
-    canvas.style.cursor = 'text'
     const ctx = canvas.getContext('2d')!
     // 初始化上下文配置
     this._initPageContext(ctx)
-    // 缓存上下文
+    return { canvas, ctx }
+  }
+
+  private _createPage(pageNo: number) {
+    const { canvas, ctx } = this._createPageCanvas(pageNo)
+    this.pageContainer.append(canvas)
     this.pageList.push(canvas)
     this.ctxList.push(ctx)
   }
@@ -1563,9 +1813,16 @@ export class Draw {
     const isPagingMode = this.getIsPagingMode()
     this.container.style.width = `${this._getPageMaxWidth()}px`
     this.pageList.forEach((p, i) => {
-      const { width, height } = this.getPageSize(i)
-      p.style.width = `${width}px`
-      p.style.marginBottom = `${this.getPageGap()}px`
+      const pageNo = Number(p.dataset.index)
+      const { width, height } = this.getPageSize(
+        Number.isNaN(pageNo) ? i : pageNo
+      )
+      if (isPagingMode) {
+        this._applyPagePosition(p, Number.isNaN(pageNo) ? i : pageNo)
+      } else {
+        p.style.width = `${width}px`
+        p.style.marginBottom = `${this.getPageGap()}px`
+      }
       // 连续页模式高度由内容撑开（_computePageList 已按需调整），仅校正宽度
       if (isPagingMode) {
         p.style.height = `${height}px`
@@ -1582,6 +1839,9 @@ export class Draw {
         this._initPageContext(this.ctxList[i])
       }
     })
+    if (isPagingMode) {
+      this._updatePageContainerHeight()
+    }
   }
 
   private _initPageContext(ctx: CanvasRenderingContext2D) {
@@ -1591,6 +1851,14 @@ export class Draw {
     ctx.letterSpacing = '0px'
     ctx.wordSpacing = '0px'
     ctx.direction = 'ltr'
+  }
+
+  private _getMeasureCtx(): CanvasRenderingContext2D {
+    if (!this.measureCtx) {
+      const canvas = document.createElement('canvas')
+      this.measureCtx = canvas.getContext('2d')!
+    }
+    return this.measureCtx
   }
 
   public getElementFont(el: IElement, scale = 1): string {
@@ -1648,8 +1916,7 @@ export class Draw {
       defaultTabWidth
     } = this.options
     const defaultBasicRowMarginHeight = this.getDefaultBasicRowMarginHeight()
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
+    const ctx = this._getMeasureCtx()
     // 还原最小宽度控件占位
     if (this.controlMinWidthPlaceholderElementListSet.has(elementList)) {
       for (let i = elementList.length - 1; i >= 0; i--) {
@@ -1752,10 +2019,10 @@ export class Draw {
           metrics.height = 0
           metrics.boundingBoxDescent = 0
         } else {
-          const elementWidth = element.width! * scale
-          const elementHeight = element.height! * scale
+          const elementWidth = (element.width || 0) * scale
+          const elementHeight = (element.height || 0) * scale
           // 图片超出尺寸后自适应（图片大小大于可用宽度时）
-          if (elementWidth > availableWidth) {
+          if (elementWidth > availableWidth && elementWidth > 0) {
             const adaptiveHeight =
               (elementHeight * availableWidth) / elementWidth
             element.width = availableWidth / scale
@@ -2935,8 +3202,10 @@ export class Draw {
   }
 
   private _clearPage(pageNo: number) {
-    const ctx = this.ctxList[pageNo]
-    const pageDom = this.pageList[pageNo]
+    const listIndex = this._getPageListIndex(pageNo)
+    if (!~listIndex) return
+    const ctx = this.ctxList[listIndex]
+    const pageDom = this.pageList[listIndex]
     ctx.clearRect(
       0,
       0,
@@ -2948,6 +3217,8 @@ export class Draw {
 
   private _drawPage(payload: IDrawPagePayload) {
     const { elementList, positionList, rowList, pageNo } = payload
+    const listIndex = this._getPageListIndex(pageNo)
+    if (!~listIndex) return
     const {
       inactiveAlpha,
       pageMode,
@@ -2960,7 +3231,7 @@ export class Draw {
     const isPrintMode = this.mode === EditorMode.PRINT
     const isContinuityMode = pageMode === PageMode.CONTINUITY
     const { innerWidth } = this.getPageSize(pageNo)
-    const ctx = this.ctxList[pageNo]
+    const ctx = this.ctxList[listIndex]
     // 判断当前激活区域-非正文区域时元素透明度降低
     ctx.globalAlpha = !this.zone.isMainActive() ? inactiveAlpha : 1
     this._clearPage(pageNo)
@@ -3062,41 +3333,38 @@ export class Draw {
 
   private _disconnectLazyRender() {
     this.lazyRenderIntersectionObserver?.disconnect()
+    this.lazyRenderIntersectionObserver = null
   }
 
-  private _lazyRender() {
+  private _immediateRender(fromPageNo = 0) {
     const positionList = this.position.getOriginalMainPositionList()
     const elementList = this.getOriginalMainElementList()
-    this._disconnectLazyRender()
-    this.lazyRenderIntersectionObserver = new IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const index = Number((<HTMLCanvasElement>entry.target).dataset.index)
-          this._drawPage({
-            elementList,
-            positionList,
-            rowList: this.pageRowList[index],
-            pageNo: index
-          })
-        }
-      })
-    })
-    this.pageList.forEach(el => {
-      this.lazyRenderIntersectionObserver!.observe(el)
-    })
-  }
-
-  private _immediateRender() {
-    const positionList = this.position.getOriginalMainPositionList()
-    const elementList = this.getOriginalMainElementList()
-    for (let i = 0; i < this.pageRowList.length; i++) {
+    // 仅绘制当前已挂载且位于脏页及之后的页面
+    for (let i = 0; i < this.pageList.length; i++) {
+      const pageNo = Number(this.pageList[i].dataset.index)
+      if (pageNo < fromPageNo || !this.pageRowList[pageNo]) continue
       this._drawPage({
         elementList,
         positionList,
-        rowList: this.pageRowList[i],
-        pageNo: i
+        rowList: this.pageRowList[pageNo],
+        pageNo
       })
     }
+  }
+
+  public getPageNoByElementIndex(index: number): number {
+    const pageRowList = this.pageRowList
+    if (!pageRowList.length) return 0
+    for (let i = 0; i < pageRowList.length; i++) {
+      const rowList = pageRowList[i]
+      if (!rowList?.length) continue
+      const start = rowList[0].startIndex
+      const lastRow = rowList[rowList.length - 1]
+      const end = lastRow.startIndex + lastRow.elementList.length - 1
+      if (index < start) return Math.max(0, i - 1)
+      if (index <= end) return i
+    }
+    return pageRowList.length - 1
   }
 
   public render(payload?: IDrawOption) {
@@ -3106,30 +3374,30 @@ export class Draw {
       isSubmitHistory = true,
       isSetCursor = true,
       isCompute = true,
-      isLazy = true,
       isInit = false,
       isSourceHistory = false,
       isFirstRender = false
     } = payload || {}
+    // isLazy：虚拟窗口下挂载页很少，统一立即绘制；导出全量时同样走立即绘制
     let { curIndex } = payload || {}
     const innerWidth = this.getInnerWidth()
     const isPagingMode = this.getIsPagingMode()
     // 缓存当前页数信息
     const oldPageSize = this.pageRowList.length
     const oldPageDirectionList = this.pageDirectionList
+    // 脏页：输入时仅从光标页起增量计算位置并重绘，降低大文档卡顿
+    let dirtyPageNo = 0
     // 计算文档信息
     if (isCompute) {
-      // 清空浮动元素位置信息
-      this.position.setFloatPositionList([])
       if (isPagingMode) {
         // 分栏信息
         this.columnManager.compute()
-        // 页眉信息
-        if (!header.disabled) {
+        // 正文输入时复用页眉页脚缓存，避免每次按键重算
+        const isMainZone = this.zone.isMainActive()
+        if (!header.disabled && (!isMainZone || isInit || isFirstRender)) {
           this.header.compute()
         }
-        // 页脚信息
-        if (!footer.disabled) {
+        if (!footer.disabled && (!isMainZone || isInit || isFirstRender)) {
           this.footer.compute()
         }
       }
@@ -3155,8 +3423,29 @@ export class Draw {
       }
       // 页面信息
       this.pageRowList = this._computePageList()
-      // 位置信息
-      this.position.computePositionList()
+      // 计算脏页（历史回放/初始化/全量导出仍全量）
+      const canIncremental =
+        !isInit &&
+        !isFirstRender &&
+        !isSourceHistory &&
+        !this.forceFullPageRender &&
+        curIndex !== undefined &&
+        isPagingMode
+      dirtyPageNo = canIncremental
+        ? this.getPageNoByElementIndex(curIndex!)
+        : 0
+      // 浮动元素：仅清理脏页及之后，保留前面页缓存
+      if (dirtyPageNo <= 0) {
+        this.position.setFloatPositionList([])
+      } else {
+        this.position.setFloatPositionList(
+          this.position
+            .getFloatPositionList()
+            .filter(item => item.pageNo < dirtyPageNo)
+        )
+      }
+      // 位置信息（从脏页增量计算）
+      this.position.computePositionList(dirtyPageNo)
       // 区域信息
       this.area.compute()
       if (!this.isPrintMode()) {
@@ -3173,40 +3462,50 @@ export class Draw {
         this.graffiti.compute()
       }
     }
-    // 清除光标等副作用
+    // 清除光标等副作用（须在预加载前清空，避免清掉尺寸纠正的 Promise）
     this.imageObserver.clearAll()
     this.cursor.recoveryCursor()
-    // 创建纸张
-    for (let i = 0; i < this.pageRowList.length; i++) {
-      if (!this.pageList[i]) {
-        this._createPage(i)
-      }
+    // 预加载尺寸待定图片（页眉/正文/页脚，不依赖虚拟页是否挂载）
+    if (isCompute) {
+      this.imageParticle.preloadPendingImages()
     }
-    // 移除多余页
-    const curPageCount = this.pageRowList.length
-    const prePageCount = this.pageList.length
-    if (prePageCount > curPageCount) {
-      const deleteCount = prePageCount - curPageCount
-      this.ctxList.splice(curPageCount, deleteCount)
-      this.pageList
-        .splice(curPageCount, deleteCount)
-        .forEach(page => page.remove())
-    }
-    const isPageDirectionChanged =
-      oldPageDirectionList.length !== this.pageDirectionList.length ||
-      oldPageDirectionList.some(
-        (direction, index) => direction !== this.pageDirectionList[index]
+    // 创建/同步纸张（分页虚拟滚动仅挂载窗口内页面）
+    if (isPagingMode) {
+      const centerPageNo = Math.min(
+        Math.max(this.pageNo, 0),
+        Math.max(this.pageRowList.length - 1, 0)
       )
-    if (isPageDirectionChanged) {
-      this._updatePageSizes()
+      const isPageDirectionChanged =
+        oldPageDirectionList.length !== this.pageDirectionList.length ||
+        oldPageDirectionList.some(
+          (direction, index) => direction !== this.pageDirectionList[index]
+        )
+      const isPageCountChanged = oldPageSize !== this.pageRowList.length
+      // 页数/方向变化才强制重建窗口，输入时走轻量同步
+      this.syncVirtualPages(centerPageNo, {
+        force: isPageCountChanged || isPageDirectionChanged,
+        isDraw: false
+      })
+      if (isPageDirectionChanged) {
+        this._updatePageSizes()
+      }
+    } else {
+      // 连页模式保持单页
+      if (!this.pageList[0]) {
+        this._createPage(0)
+      }
+      if (this.pageList.length > 1) {
+        this.pageList.splice(1).forEach(page => page.remove())
+        this.ctxList.splice(1)
+      }
+      this._applyPagePosition(this.pageList[0], 0)
+      this.pageContainer.style.position = ''
+      this.pageContainer.style.height = ''
+      this.virtualPageRange = null
     }
     // 绘制元素
-    // 连续页因为有高度的变化会导致canvas渲染空白，需立即渲染，否则会出现闪动
-    if (isLazy && isPagingMode) {
-      this._lazyRender()
-    } else {
-      this._immediateRender()
-    }
+    // 分页虚拟窗口最多 3 页；输入时仅重绘脏页及之后的已挂载页
+    this._immediateRender(dirtyPageNo)
     // 光标重绘
     if (isSetCursor) {
       curIndex = this.setCursor(curIndex)
@@ -3219,7 +3518,8 @@ export class Draw {
       (isSubmitHistory && !isFirstRender) ||
       (curIndex !== undefined && this.historyManager.isStackEmpty())
     ) {
-      this.submitHistory(curIndex)
+      // 连续输入合并为一次历史，降低大文档逐字深拷贝开销
+      this.scheduleSubmitHistory(curIndex)
     }
     // 信息变动回调
     nextTick(() => {
@@ -3241,9 +3541,9 @@ export class Draw {
       if (isCompute && !this.zone.isMainActive()) {
         this.zone.drawZoneIndicator()
       }
-      // 标尺重新渲染
+      // 标尺：输入高频场景降频重绘
       if (isCompute) {
-        this.ruler.render()
+        this._scheduleRulerRender()
       }
       // 页数改变
       if (oldPageSize !== this.pageRowList.length) {
@@ -3254,14 +3554,9 @@ export class Draw {
           this.eventBus.emit('pageSizeChange', this.pageRowList.length)
         }
       }
-      // 文档内容改变
+      // 文档内容改变（与历史入栈解耦，短防抖避免宿主侧卡顿）
       if ((isSubmitHistory || isSourceHistory) && !isInit) {
-        if (this.listener.contentChange) {
-          this.listener.contentChange()
-        }
-        if (this.eventBus.isSubscribe('contentChange')) {
-          this.eventBus.emit('contentChange')
-        }
+        this._scheduleContentChange()
       }
     })
   }
@@ -3313,6 +3608,53 @@ export class Draw {
     return curIndex
   }
 
+  public scheduleSubmitHistory(curIndex: number | undefined) {
+    this.pendingHistoryCurIndex = curIndex
+    if (this.historySubmitTimer !== null) {
+      window.clearTimeout(this.historySubmitTimer)
+    }
+    this.historySubmitTimer = window.setTimeout(() => {
+      this.historySubmitTimer = null
+      const index = this.pendingHistoryCurIndex
+      this.pendingHistoryCurIndex = undefined
+      this.submitHistory(index)
+    }, Draw.HISTORY_SUBMIT_DELAY)
+  }
+
+  public flushHistory() {
+    if (this.historySubmitTimer === null) return
+    window.clearTimeout(this.historySubmitTimer)
+    this.historySubmitTimer = null
+    const index = this.pendingHistoryCurIndex
+    this.pendingHistoryCurIndex = undefined
+    this.submitHistory(index)
+  }
+
+  private _scheduleContentChange() {
+    if (this.contentChangeTimer !== null) {
+      window.clearTimeout(this.contentChangeTimer)
+    }
+    this.contentChangeTimer = window.setTimeout(() => {
+      this.contentChangeTimer = null
+      if (this.listener.contentChange) {
+        this.listener.contentChange()
+      }
+      if (this.eventBus.isSubscribe('contentChange')) {
+        this.eventBus.emit('contentChange')
+      }
+    }, 100)
+  }
+
+  private _scheduleRulerRender() {
+    if (this.rulerRenderTimer !== null) {
+      window.clearTimeout(this.rulerRenderTimer)
+    }
+    this.rulerRenderTimer = window.setTimeout(() => {
+      this.rulerRenderTimer = null
+      this.ruler.render()
+    }, 100)
+  }
+
   public submitHistory(curIndex: number | undefined) {
     const positionContext = this.position.getPositionContext()
     const oldElementList = getSlimCloneElementList(this.elementList)
@@ -3343,6 +3685,18 @@ export class Draw {
   }
 
   public destroy() {
+    if (this.historySubmitTimer !== null) {
+      window.clearTimeout(this.historySubmitTimer)
+      this.historySubmitTimer = null
+    }
+    if (this.contentChangeTimer !== null) {
+      window.clearTimeout(this.contentChangeTimer)
+      this.contentChangeTimer = null
+    }
+    if (this.rulerRenderTimer !== null) {
+      window.clearTimeout(this.rulerRenderTimer)
+      this.rulerRenderTimer = null
+    }
     this.container.remove()
     this.globalEvent.removeEvent()
     this.scrollObserver.removeEvent()

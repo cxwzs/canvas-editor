@@ -72,7 +72,8 @@ while (index < textList.length) {
       valueList: [
         {
           value: title,
-          size: 18
+          size: 18,
+          disabled: true,
         }
       ]
     })
@@ -649,6 +650,15 @@ elementList.push(
 // 模拟结尾文本
 elementList.push(
   ...[
+    {
+      value: '\n'
+    },
+    {
+      value: '以下为禁止编辑的示例文字，普通模式下不可修改。',
+      disabled: true,
+      size: 16,
+      color: '#999999'
+    },
     {
       value: '\n'
     },

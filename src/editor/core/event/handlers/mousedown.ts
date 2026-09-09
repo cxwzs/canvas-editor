@@ -12,6 +12,7 @@ import { RadioControl } from '../../draw/control/radio/RadioControl'
 import { CanvasEvent } from '../CanvasEvent'
 import { IElement } from '../../../interface/Element'
 import { Draw } from '../../draw/Draw'
+import { isElementFocusDisabled } from './disabledHit'
 
 export function setRangeCache(host: CanvasEvent) {
   const draw = host.getDraw()
@@ -125,6 +126,16 @@ export function mousedown(evt: MouseEvent, host: CanvasEvent) {
   const positionList = position.getPositionList()
   const curIndex = isTable ? tdValueIndex! : index
   const curElement = elementList[curIndex]
+  // 禁用元素不可获取焦点
+  if (isElementFocusDisabled(curElement, draw)) {
+    host.isAllowSelection = false
+    position.setPositionContext(oldPositionContext)
+    const pageTarget = evt.target as HTMLElement
+    if (pageTarget?.style) {
+      pageTarget.style.cursor = 'not-allowed'
+    }
+    return
+  }
   // 绘制
   const isDirectHitImage = !!(isDirectHit && isImage)
   const isDirectHitCheckbox = !!(isDirectHit && isCheckbox)

@@ -2,6 +2,7 @@ import { ImageDisplay } from '../../../dataset/enum/Common'
 import { ControlComponent } from '../../../dataset/enum/Control'
 import { ElementType } from '../../../dataset/enum/Element'
 import { CanvasEvent } from '../CanvasEvent'
+import { updateDisabledHoverCursor } from './disabledHit'
 
 export function mousemove(evt: MouseEvent, host: CanvasEvent) {
   const draw = host.getDraw()
@@ -9,6 +10,10 @@ export function mousemove(evt: MouseEvent, host: CanvasEvent) {
   draw.getTraceParticle().handleMouseMove(evt)
   // 悬浮提示：hover 到配置了 hint 的元素时显示提示浮窗
   draw.getHintParticle().handleMouseMove(evt)
+  // 悬停禁用元素：显示禁用光标（非拖拽/框选时）
+  if (!host.isAllowDrag && !host.isAllowSelection) {
+    updateDisabledHoverCursor(draw, evt)
+  }
   // 是否是拖拽文字
   if (host.isAllowDrag) {
     // 是否允许拖拽到选区

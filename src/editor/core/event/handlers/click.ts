@@ -4,6 +4,10 @@ import { NUMBER_LIKE_REG } from '../../../dataset/constant/Regular'
 import { ElementType } from '../../../dataset/enum/Element'
 import { IRange } from '../../../interface/Range'
 import { CanvasEvent } from '../CanvasEvent'
+import {
+  getHitElementByEvent,
+  isElementFocusDisabled
+} from './disabledHit'
 
 // 通过分词器获取单词所在选区
 export function getWordRangeBySegmenter(host: CanvasEvent): IRange | null {
@@ -106,6 +110,8 @@ export function getWordRangeByCursor(host: CanvasEvent): IRange | null {
 
 function dblclick(host: CanvasEvent, evt: MouseEvent) {
   const draw = host.getDraw()
+  // 禁用元素不可扩选/获取焦点
+  if (isElementFocusDisabled(getHitElementByEvent(draw, evt), draw)) return
   const position = draw.getPosition()
   const positionContext = position.getPositionByXY({
     x: evt.offsetX,

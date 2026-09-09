@@ -46,7 +46,8 @@ export const EDITOR_ELEMENT_COPY_ATTR: Array<keyof IElement> = [
   'dateFormat',
   'groupIds',
   'rowMargin',
-  'textDecoration'
+  'textDecoration',
+  'disabled'
 ]
 
 export const EDITOR_ELEMENT_ZIP_ATTR: Array<keyof IElement> = [
@@ -91,12 +92,15 @@ export const EDITOR_ELEMENT_ZIP_ATTR: Array<keyof IElement> = [
   'imgPreviewDisabled',
   'imgCrop',
   'imgCaption',
+  'imgMaxWidth',
+  'imgMaxHeight',
   'textDecoration',
   'extension',
   'externalId',
   'areaId',
   'area',
   'hide',
+  'disabled',
   'label',
   'labelId',
   'lineWidth',

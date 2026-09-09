@@ -49,6 +49,8 @@ export interface IElementStyle {
 
 export interface IElementRule {
   hide?: boolean
+  /** 禁止编辑（设计模式下可改） */
+  disabled?: boolean
 }
 
 export interface IElementGroup {
@@ -183,6 +185,12 @@ export interface IImageBasic {
   }
   imgCrop?: IImageCrop
   imgCaption?: IImageCaption
+  /** HTML 样式 max-width，异步加载后按此约束重算尺寸 */
+  imgMaxWidth?: number
+  /** HTML 样式 max-height，异步加载后按此约束重算尺寸 */
+  imgMaxHeight?: number
+  /** 尺寸待图片加载后修正（不序列化） */
+  imgSizePending?: boolean
 }
 
 export type IImageElement = IImageBasic & IImageRule

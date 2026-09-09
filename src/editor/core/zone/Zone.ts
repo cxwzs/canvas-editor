@@ -127,21 +127,29 @@ export class Zone {
     const header = this.draw.getHeader()
     const footer = this.draw.getFooter()
     for (let p = 0; p < pageList.length; p++) {
+      const pageNo = Number(pageList[p].dataset.index)
+      const logicalPageNo = Number.isNaN(pageNo) ? p : pageNo
       // 禁用页不绘制指示器
-      if (isHeaderActive ? header.isDisabled(p) : footer.isDisabled(p)) continue
+      if (
+        isHeaderActive
+          ? header.isDisabled(logicalPageNo)
+          : footer.isDisabled(logicalPageNo)
+      ) {
+        continue
+      }
       // 混排横竖版：各页尺寸/边距/水平偏移按页计算
       const {
         margins,
         innerWidth,
         height: pageHeight
-      } = this.draw.getPageSize(p)
-      const { x: pageLeft, y: pageTop } = this.draw.getPageOffset(p)
+      } = this.draw.getPageSize(logicalPageNo)
+      const { x: pageLeft, y: pageTop } = this.draw.getPageOffset(logicalPageNo)
       const indicatorHeight = isHeaderActive
-        ? header.getHeight(p)
-        : footer.getHeight(p)
+        ? header.getHeight(logicalPageNo)
+        : footer.getHeight(logicalPageNo)
       const indicatorTop = isHeaderActive
-        ? header.getHeaderTop(p)
-        : pageHeight - footer.getFooterBottom(p) - indicatorHeight
+        ? header.getHeaderTop(logicalPageNo)
+        : pageHeight - footer.getFooterBottom(logicalPageNo) - indicatorHeight
       const startY = pageTop + indicatorTop
       const indicatorLeftX = pageLeft + margins[3] - this.INDICATOR_PADDING
       const indicatorRightX =

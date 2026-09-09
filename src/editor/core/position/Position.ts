@@ -670,17 +670,47 @@ export class Position {
     }
   }
 
-  public computePositionList() {
-    // 置空原位置信息
-    this.positionList = []
-    this.tablePagingPositionList = []
-    this.tablePagingPositionMap.clear()
-    // 按每页行计算（混排横竖版时每页宽度/边距可能不同，按页取值）
+  public computePositionList(fromPageNo = 0) {
     const pageRowList = this.draw.getPageRowList()
-    // 起始位置受页眉影响
     const header = this.draw.getHeader()
+    let startPageNo = Math.max(0, fromPageNo)
+    // 跨页表格续排依赖前页累积的 td.positionList，遇续排则回退全量计算
+    if (startPageNo > 0 && this._hasTableContinuationFrom(startPageNo)) {
+      startPageNo = 0
+    }
+    if (startPageNo <= 0) {
+      this.positionList = []
+      this.tablePagingPositionList = []
+      this.tablePagingPositionMap.clear()
+      startPageNo = 0
+    } else {
+      const startRow = pageRowList[startPageNo]?.[0]
+      if (!startRow) {
+        this.positionList = []
+        this.tablePagingPositionList = []
+        this.tablePagingPositionMap.clear()
+        startPageNo = 0
+      } else {
+        const cutStartIndex = startRow.startIndex
+        if (this.positionList.length > cutStartIndex) {
+          this.positionList.length = cutStartIndex
+        }
+        this.tablePagingPositionList = this.tablePagingPositionList.filter(
+          position => position.pageNo < startPageNo
+        )
+        for (const pageNo of [...this.tablePagingPositionMap.keys()]) {
+          if (pageNo >= startPageNo) {
+            this.tablePagingPositionMap.delete(pageNo)
+          }
+        }
+      }
+    }
+    // 起始行号：前面各页行数之和
     let startRowIndex = 0
-    for (let i = 0; i < pageRowList.length; i++) {
+    for (let i = 0; i < startPageNo; i++) {
+      startRowIndex += pageRowList[i]?.length || 0
+    }
+    for (let i = startPageNo; i < pageRowList.length; i++) {
       const rowList = pageRowList[i]
       if (!rowList?.length) continue
       const startIndex = rowList[0].startIndex
@@ -700,6 +730,24 @@ export class Position {
       })
       startRowIndex += rowList.length
     }
+  }
+
+  private _hasTableContinuationFrom(pageNo: number): boolean {
+    const pageRowList = this.draw.getPageRowList()
+    // 检查脏页及之后是否存在表格续排片段（续排依赖前页计算）
+    for (let i = pageNo; i < Math.min(pageNo + 3, pageRowList.length); i++) {
+      const rowList = pageRowList[i]
+      for (let r = 0; r < (rowList?.length || 0); r++) {
+        const fragment = rowList[r].tableFragment
+        if (
+          fragment &&
+          (fragment.startTrIndex > 0 || !!fragment.startSplitTrOffset)
+        ) {
+          return true
+        }
+      }
+    }
+    return false
   }
 
   public computeRowPosition(

@@ -68,7 +68,8 @@ export default defineConfig(({ mode }) => {
     base: `/${name}/`,
     server: {
       host: '0.0.0.0',
-      port: 3000
+      port: 3000,
+      open: true
     }
   }
 })

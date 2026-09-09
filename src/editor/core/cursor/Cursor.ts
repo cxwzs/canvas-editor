@@ -110,6 +110,11 @@ export class Cursor {
   public drawCursor(payload?: IDrawCursorOption) {
     let cursorPosition = this.position.getCursorPosition()
     if (!cursorPosition) return
+    // 光标落在禁用内容上时不展示、不聚焦
+    if (this.draw.isDisabled()) {
+      this.recoveryCursor()
+      return
+    }
     const { scale, cursor } = this.options
     const {
       color,
@@ -204,6 +209,10 @@ export class Cursor {
     const pageNo = zoneManager.isMainActive()
       ? cursorPosition.pageNo
       : this.draw.getPageNo()
+    // 虚拟滚动：光标跨页时先挂载目标页
+    if (this.draw.getIsVirtualPageMode()) {
+      this.draw.syncVirtualPages(pageNo, { isDraw: true })
+    }
     const {
       coordinate: { leftTop, leftBottom }
     } = cursorPosition

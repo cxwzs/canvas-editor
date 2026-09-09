@@ -67,7 +67,7 @@ function backspaceHideElement(host: CanvasEvent) {
 
 export function backspace(evt: KeyboardEvent, host: CanvasEvent) {
   const draw = host.getDraw()
-  if (draw.isReadonly()) return
+  if (draw.isReadonly() || draw.isDisabled()) return
   // 可输入性验证
   const rangeManager = draw.getRange()
   if (!rangeManager.getIsCanInput()) return
@@ -168,6 +168,11 @@ export function backspace(evt: KeyboardEvent, host: CanvasEvent) {
     if (!isCollapsed) {
       draw.deleteElementList(elementList, startIndex + 1, endIndex - startIndex)
     } else {
+      // 禁止删除不可编辑元素
+      if (elementList[index]?.disabled && !draw.isDesignMode()) {
+        evt.preventDefault()
+        return
+      }
       draw.deleteElementList(elementList, index, 1)
     }
     curIndex = isCollapsed ? index - 1 : startIndex

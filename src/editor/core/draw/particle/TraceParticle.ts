@@ -330,6 +330,7 @@ export class TraceParticle {
           element.control?.hide ||
           element.area?.hide ||
           (tdDeletable !== false &&
+            element.disabled !== true &&
             element.control?.deletable !== false &&
             (!element.controlId ||
               mode !== EditorMode.FORM ||
