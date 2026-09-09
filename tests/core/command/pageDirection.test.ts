@@ -8,8 +8,12 @@ function getPageCanvasList(container: HTMLElement): HTMLCanvasElement[] {
   return Array.from(container.querySelectorAll('canvas[data-index]'))
 }
 
+/** 本文件断言全量页 canvas 尺寸，关闭虚拟滚动 */
+const FULL_PAGE_OPTIONS = { pageVirtualScroll: false }
+
 function createPageBreakEditor(paperDirection?: PaperDirection) {
   return createTestEditor({
+    options: FULL_PAGE_OPTIONS,
     data: {
       header: [],
       main: [
@@ -86,6 +90,7 @@ describe('指定页面横向（混排横竖版）', () => {
 
   it('executePageDirection 只影响当前节', () => {
     ctx = createTestEditor({
+      options: FULL_PAGE_OPTIONS,
       data: {
         header: [],
         main: [
@@ -111,7 +116,7 @@ describe('指定页面横向（混排横竖版）', () => {
   })
 
   it('executePageDirection 在首节修改全局方向', () => {
-    ctx = createTestEditor()
+    ctx = createTestEditor({ options: FULL_PAGE_OPTIONS })
     setRange(ctx.editor, 0, 0)
     ctx.editor.command.executePageDirection(PaperDirection.HORIZONTAL)
     expect(ctx.editor.command.getOptions().paperDirection).toBe(
@@ -125,6 +130,7 @@ describe('指定页面横向（混排横竖版）', () => {
   it('分页符不在行首且携带方向时后续内容仍分到新页', () => {
     // 分页符紧跟文本（中间无换行），后续内容无尾随换行
     ctx = createTestEditor({
+      options: FULL_PAGE_OPTIONS,
       data: {
         header: [],
         main: [
@@ -153,6 +159,7 @@ describe('指定页面横向（混排横竖版）', () => {
       { value: '\n' }
     ]).flat()
     ctx = createTestEditor({
+      options: FULL_PAGE_OPTIONS,
       data: {
         header: [],
         main: [
@@ -181,6 +188,7 @@ describe('指定页面横向（混排横竖版）', () => {
 
   it('中间横向节溢出时复用页面同步调整尺寸', () => {
     ctx = createTestEditor({
+      options: FULL_PAGE_OPTIONS,
       data: {
         header: [],
         main: [

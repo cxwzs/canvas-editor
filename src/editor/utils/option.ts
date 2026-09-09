@@ -229,6 +229,7 @@ export function mergeOption(
     height: 1123,
     scale: 1,
     pageGap: 20,
+    pageVirtualScroll: true,
     underlineColor: '#000000',
     strikeoutColor: '#FF0000',
     rangeAlpha: 0.6,

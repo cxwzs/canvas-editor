@@ -126,7 +126,9 @@ export class Zone {
     // 指示器位置
     const header = this.draw.getHeader()
     const footer = this.draw.getFooter()
-    for (let p = 0; p < pageList.length; p++) {
+    for (let i = 0; i < pageList.length; i++) {
+      const p = Number(pageList[i].dataset.index)
+      if (!Number.isFinite(p)) continue
       // 禁用页不绘制指示器
       if (isHeaderActive ? header.isDisabled(p) : footer.isDisabled(p)) continue
       // 混排横竖版：各页尺寸/边距/水平偏移按页计算
