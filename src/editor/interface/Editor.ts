@@ -63,7 +63,6 @@ export interface IEditorOption {
   height?: number
   scale?: number
   pageGap?: number
-  pageVirtualScroll?: boolean
   underlineColor?: string
   strikeoutColor?: string
   rangeColor?: string

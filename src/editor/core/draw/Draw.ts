@@ -133,7 +133,6 @@ import { Badge } from './frame/Badge'
 import { Graffiti } from './graffiti/Graffiti'
 import { Magnifier } from './interactive/Magnifier'
 import { Accessibility } from '../accessibility/Accessibility'
-import { PageVirtualScroll } from './PageVirtualScroll'
 
 export class Draw {
   private container: HTMLDivElement
@@ -222,7 +221,6 @@ export class Draw {
   private controlMinWidthPlaceholderElementListSet: WeakSet<IElement[]>
   private columnManager: ColumnManager
   private ruler: Ruler
-  private pageVirtualScroll: PageVirtualScroll
 
   constructor(
     rootContainer: HTMLElement,
@@ -249,7 +247,6 @@ export class Draw {
     this._formatContainer()
     this.pageContainer = this._createPageContainer()
     this._createPage(0)
-    this.pageVirtualScroll = new PageVirtualScroll(this)
 
     this.i18n = new I18n(options.locale)
     this.historyManager = new HistoryManager(this)
@@ -740,43 +737,15 @@ export class Draw {
   }
 
   public getPage(pageNo = -1): HTMLCanvasElement {
-    const logicalPageNo = ~pageNo ? pageNo : this.pageNo
-    if (this.pageVirtualScroll.isEnabled()) {
-      const page = this.pageList.find(
-        item => Number(item.dataset.index) === logicalPageNo
-      )
-      if (page) return page
-      return this.pageList[0]
-    }
-    return this.pageList[logicalPageNo] || this.pageList[0]
+    return this.pageList[~pageNo ? pageNo : this.pageNo]
   }
 
   public getPageList(): HTMLCanvasElement[] {
     return this.pageList
   }
 
-  public getCtxList(): CanvasRenderingContext2D[] {
-    return this.ctxList
-  }
-
   public getPageCount(): number {
-    return this.pageRowList.length || this.pageList.length
-  }
-
-  public getPageVirtualScroll(): PageVirtualScroll {
-    return this.pageVirtualScroll
-  }
-
-  public getScrollObserver(): ScrollObserver {
-    return this.scrollObserver
-  }
-
-  public getPageSlotIndex(pageNo: number): number {
-    if (this.pageVirtualScroll.isEnabled()) {
-      const slotIndex = this.pageVirtualScroll.getSlotIndexByPageNo(pageNo)
-      return slotIndex >= 0 ? slotIndex : 0
-    }
-    return pageNo
+    return this.pageList.length
   }
 
   public getTableRowList(sourceElementList: IElement[]): IRow[] {
@@ -810,7 +779,7 @@ export class Draw {
   }
 
   public getCtx(): CanvasRenderingContext2D {
-    return this.ctxList[this.getPageSlotIndex(this.pageNo)]
+    return this.ctxList[this.pageNo]
   }
 
   public getOptions(): DeepRequired<IEditorOption> {
@@ -1318,9 +1287,8 @@ export class Draw {
       // canvas尺寸发生变化，上下文被重置
       this._initPageContext(this.ctxList[0])
     } else {
-      // 连页模式：移除懒加载监听&虚拟滚动结构&清空页眉页脚计算数据
+      // 连页模式：移除懒加载监听&清空页眉页脚计算数据
       this._disconnectLazyRender()
-      this.pageVirtualScroll.disableStructure()
       this.header.recovery()
       this.footer.recovery()
       this.zone.setZone(EditorZone.MAIN)
@@ -1563,26 +1531,6 @@ export class Draw {
     return pageContainer
   }
 
-  public createPage(pageNo: number) {
-    this._createPage(pageNo)
-  }
-
-  public initPageContext(ctx: CanvasRenderingContext2D) {
-    this._initPageContext(ctx)
-  }
-
-  public drawLogicalPage(pageNo: number) {
-    if (!this.pageRowList[pageNo]) return
-    const positionList = this.position.getOriginalMainPositionList()
-    const elementList = this.getOriginalMainElementList()
-    this._drawPage({
-      elementList,
-      positionList,
-      rowList: this.pageRowList[pageNo],
-      pageNo
-    })
-  }
-
   private _createPage(pageNo: number) {
     const { width, height } = this.getPageSize(pageNo)
     const canvas = document.createElement('canvas')
@@ -1615,25 +1563,9 @@ export class Draw {
     const isPagingMode = this.getIsPagingMode()
     this.container.style.width = `${this._getPageMaxWidth()}px`
     this.pageList.forEach((p, i) => {
-      const pageNo =
-        this.pageVirtualScroll.isEnabled() ||
-        this.pageVirtualScroll.isStructureActive()
-          ? Number(p.dataset.index)
-          : i
-      const logicalPageNo = Number.isFinite(pageNo) ? pageNo : i
-      const { width, height } = this.getPageSize(logicalPageNo)
+      const { width, height } = this.getPageSize(i)
       p.style.width = `${width}px`
-      if (
-        this.pageVirtualScroll.isEnabled() ||
-        this.pageVirtualScroll.isStructureActive()
-      ) {
-        const { x, y } = this.getPageOffset(logicalPageNo)
-        p.style.top = `${y}px`
-        p.style.left = `${x}px`
-        p.style.marginBottom = '0'
-      } else {
-        p.style.marginBottom = `${this.getPageGap()}px`
-      }
+      p.style.marginBottom = `${this.getPageGap()}px`
       // 连续页模式高度由内容撑开（_computePageList 已按需调整），仅校正宽度
       if (isPagingMode) {
         p.style.height = `${height}px`
@@ -1650,7 +1582,6 @@ export class Draw {
         this._initPageContext(this.ctxList[i])
       }
     })
-    this.pageVirtualScroll.updateContainerHeight()
   }
 
   private _initPageContext(ctx: CanvasRenderingContext2D) {
@@ -3004,9 +2935,8 @@ export class Draw {
   }
 
   private _clearPage(pageNo: number) {
-    const slotIndex = this.getPageSlotIndex(pageNo)
-    const ctx = this.ctxList[slotIndex]
-    const pageDom = this.pageList[slotIndex]
+    const ctx = this.ctxList[pageNo]
+    const pageDom = this.pageList[pageNo]
     ctx.clearRect(
       0,
       0,
@@ -3030,7 +2960,7 @@ export class Draw {
     const isPrintMode = this.mode === EditorMode.PRINT
     const isContinuityMode = pageMode === PageMode.CONTINUITY
     const { innerWidth } = this.getPageSize(pageNo)
-    const ctx = this.ctxList[this.getPageSlotIndex(pageNo)]
+    const ctx = this.ctxList[pageNo]
     // 判断当前激活区域-非正文区域时元素透明度降低
     ctx.globalAlpha = !this.zone.isMainActive() ? inactiveAlpha : 1
     this._clearPage(pageNo)
@@ -3246,27 +3176,21 @@ export class Draw {
     // 清除光标等副作用
     this.imageObserver.clearAll()
     this.cursor.recoveryCursor()
-    const useVirtualScroll = this.pageVirtualScroll.isEnabled()
     // 创建纸张
-    if (useVirtualScroll) {
-      this.pageVirtualScroll.syncStructure()
-    } else {
-      this.pageVirtualScroll.disableStructure()
-      for (let i = 0; i < this.pageRowList.length; i++) {
-        if (!this.pageList[i]) {
-          this._createPage(i)
-        }
+    for (let i = 0; i < this.pageRowList.length; i++) {
+      if (!this.pageList[i]) {
+        this._createPage(i)
       }
-      // 移除多余页
-      const curPageCount = this.pageRowList.length
-      const prePageCount = this.pageList.length
-      if (prePageCount > curPageCount) {
-        const deleteCount = prePageCount - curPageCount
-        this.ctxList.splice(curPageCount, deleteCount)
-        this.pageList
-          .splice(curPageCount, deleteCount)
-          .forEach(page => page.remove())
-      }
+    }
+    // 移除多余页
+    const curPageCount = this.pageRowList.length
+    const prePageCount = this.pageList.length
+    if (prePageCount > curPageCount) {
+      const deleteCount = prePageCount - curPageCount
+      this.ctxList.splice(curPageCount, deleteCount)
+      this.pageList
+        .splice(curPageCount, deleteCount)
+        .forEach(page => page.remove())
     }
     const isPageDirectionChanged =
       oldPageDirectionList.length !== this.pageDirectionList.length ||
@@ -3279,24 +3203,9 @@ export class Draw {
     // 绘制元素
     // 连续页因为有高度的变化会导致canvas渲染空白，需立即渲染，否则会出现闪动
     if (isLazy && isPagingMode) {
-      if (useVirtualScroll) {
-        this._disconnectLazyRender()
-        this.pageVirtualScroll.applyWindow(this.intersectionPageNo, true)
-      } else {
-        this._lazyRender()
-      }
+      this._lazyRender()
     } else {
-      const shouldMaterialize =
-        isPagingMode &&
-        this.options.pageVirtualScroll &&
-        useVirtualScroll
-      if (shouldMaterialize) {
-        this.pageVirtualScroll.materializeAll()
-      }
       this._immediateRender()
-      if (shouldMaterialize) {
-        this.pageVirtualScroll.releaseMaterialize(this.intersectionPageNo)
-      }
     }
     // 光标重绘
     if (isSetCursor) {
