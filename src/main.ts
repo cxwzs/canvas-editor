@@ -1,4 +1,4 @@
-import { commentList, options } from './mock'
+import { commentList, data, options } from './mock'
 import './style.css'
 import prism from 'prismjs'
 import Editor, {
@@ -26,11 +26,6 @@ import { Dialog } from './components/dialog/Dialog'
 import { formatPrismToken } from './utils/prism'
 import { Signature } from './components/signature/Signature'
 import { debounce, nextTick, scrollIntoView } from './utils'
-import mockHtmlArray from './mockHtml.json'
-
-const mockHtmlStr = mockHtmlArray.reduce((acc: string, cur: any) => {
-  return acc + cur.content
-}, '')
 
 window.onload = function () {
   const isApple =
@@ -52,12 +47,6 @@ window.onload = function () {
   Reflect.set(window, 'editor', instance)
   // canvas-editor-devtools使用
   Reflect.set(window, '__CANVAS_EDITOR_INSTANCE__', instance)
-
-  instance.command.executeSetHTML({
-    header: '',
-    main: mockHtmlStr,
-    footer: ''
-  })
 
   // 菜单弹窗销毁
   window.addEventListener(
