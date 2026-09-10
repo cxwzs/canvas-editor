@@ -1,4 +1,4 @@
-import { commentList, data, options } from './mock'
+import { commentList, options } from './mock'
 import './style.css'
 import prism from 'prismjs'
 import Editor, {
@@ -20,17 +20,30 @@ import Editor, {
   RowFlex,
   TextDecorationStyle,
   TitleLevel,
-  splitText
+  splitText,
+  getElementListByHTML
 } from './editor'
 import { Dialog } from './components/dialog/Dialog'
 import { formatPrismToken } from './utils/prism'
 import { Signature } from './components/signature/Signature'
 import { debounce, nextTick, scrollIntoView } from './utils'
 import mockHtml from './mockHtml.json'
+import shortMock from './shortMock.json'
 
-const mockHtmlStr = mockHtml.reduce((acc, cur) => `${acc}${cur.content}`, '')
+const mockHtmlStr = mockHtml.reduce(
+  (acc, cur) =>
+    `${acc}<div paraId="${cur.paraId}">${cur.content}</div>`,
+  ''
+)
+
+// const mockHtmlStr = shortMock.reduce(
+//   (acc, cur) =>
+//     `${acc}<div paraId="${cur.paraId}">${cur.content}</div>`,
+//   ''
+// )
 
 window.onload = function () {
+  const elList = getElementListByHTML(mockHtmlStr, { innerWidth: 554 })
   const isApple =
     typeof navigator !== 'undefined' && /Mac OS X/.test(navigator.userAgent)
 
@@ -40,7 +53,8 @@ window.onload = function () {
     container,
     {
       header: [],
-      main: <IElement[]>[],
+      // main: <IElement[]>data,
+      main: <IElement[]>elList,
       footer: []
     },
     options
@@ -51,9 +65,15 @@ window.onload = function () {
   // canvas-editor-devtools使用
   Reflect.set(window, '__CANVAS_EDITOR_INSTANCE__', instance)
 
-  instance.command.executeSetHTML({
-    main: mockHtmlStr
-  })
+  // 按 paraId（= areaId）动态切换整块只读示例：
+  // instance.command.executeSetAreaProperties({
+  //   id: shortMock[0].paraId,
+  //   properties: { mode: 'readonly' } // AreaMode.READONLY
+  // })
+
+  // instance.command.executeSetHTML({
+  //   main: mockHtmlStr
+  // })
 
   // 菜单弹窗销毁
   window.addEventListener(

@@ -38,6 +38,7 @@ import {
   titleOrderNumberMapping,
   titleSizeMapping
 } from '../dataset/constant/Title'
+import { AreaMode } from '../dataset/enum/Area'
 import { BlockType } from '../dataset/enum/Block'
 import { ImageDisplay, LocationPosition } from '../dataset/enum/Common'
 import { ControlComponent, ControlType } from '../dataset/enum/Control'
@@ -1726,6 +1727,31 @@ export interface IGetElementListByHTMLOption {
   innerWidth: number
 }
 
+/** 从 HTML 节点读取分块 id（paraId / data-area-id / areaId） */
+export function getAreaIdFromHTMLElement(el: HTMLElement): string | null {
+  const id =
+    el.getAttribute('paraId') ||
+    el.getAttribute('paraid') ||
+    el.getAttribute('data-area-id') ||
+    el.getAttribute('areaId') ||
+    el.getAttribute('areaid')
+  const trimmed = id?.trim()
+  return trimmed || null
+}
+
+/** 判断 HTML 节点是否标记为禁用（data-disabled / data-editable） */
+export function isHTMLElementDisabled(el: HTMLElement): boolean {
+  const disabled = el.getAttribute('data-disabled')
+  if (disabled !== null) {
+    return disabled === '' || disabled === 'true' || disabled === '1'
+  }
+  const editable = el.getAttribute('data-editable')
+  if (editable !== null) {
+    return editable === 'false' || editable === '0'
+  }
+  return false
+}
+
 export function getElementListByHTML(
   htmlText: string,
   options: IGetElementListByHTMLOption
@@ -1745,6 +1771,24 @@ export function getElementListByHTML(
         if (node.nodeName === 'BR') {
           elementList.push({
             value: '\n'
+          })
+        } else if (
+          node.nodeType === 1 &&
+          getAreaIdFromHTMLElement(node as HTMLElement)
+        ) {
+          const areaNode = node as HTMLElement
+          const areaId = getAreaIdFromHTMLElement(areaNode)!
+          const valueList = getElementListByHTML(areaNode.innerHTML, options)
+          elementList.push({
+            type: ElementType.AREA,
+            value: '',
+            areaId,
+            area: {
+              mode: isHTMLElementDisabled(areaNode)
+                ? AreaMode.READONLY
+                : AreaMode.EDIT
+            },
+            valueList
           })
         } else if (node.nodeName === 'A') {
           const aElement = node as HTMLLinkElement

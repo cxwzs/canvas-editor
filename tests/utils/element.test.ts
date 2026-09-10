@@ -25,6 +25,7 @@ import {
   isElementTraceDeleted
 } from '@/editor/utils/element'
 import { ElementType } from '@/editor/dataset/enum/Element'
+import { AreaMode } from '@/editor/dataset/enum/Area'
 import { TraceType } from '@/editor/dataset/enum/Trace'
 import { RowFlex } from '@/editor/dataset/enum/Row'
 import { ControlType, ControlComponent } from '@/editor/dataset/enum/Control'
@@ -558,6 +559,34 @@ describe('getElementListByHTML', () => {
     const html = '<p>hello world</p>'
     const result = getElementListByHTML(html, { innerWidth: 500 })
     expect(Array.isArray(result)).toBe(true)
+    expect(result.length).toBeGreaterThan(0)
+  })
+
+  it('带 paraId 的外层 div 解析为 AREA', () => {
+    const html =
+      '<div paraId="para-1"><p>section one</p></div><div paraId="para-2"><p>section two</p></div>'
+    const result = getElementListByHTML(html, { innerWidth: 500 })
+    const areas = result.filter(el => el.type === ElementType.AREA)
+    expect(areas.length).toBe(2)
+    expect(areas[0].areaId).toBe('para-1')
+    expect(areas[0].area?.mode).toBe(AreaMode.EDIT)
+    expect(areas[0].valueList?.length).toBeGreaterThan(0)
+    expect(areas[1].areaId).toBe('para-2')
+  })
+
+  it('data-disabled="true" 时 AREA 为 readonly', () => {
+    const html =
+      '<div paraId="locked" data-disabled="true"><p>locked text</p></div>'
+    const result = getElementListByHTML(html, { innerWidth: 500 })
+    const area = result.find(el => el.type === ElementType.AREA)
+    expect(area?.areaId).toBe('locked')
+    expect(area?.area?.mode).toBe(AreaMode.READONLY)
+  })
+
+  it('无 paraId 的普通 div 不产生 AREA', () => {
+    const html = '<div><p>plain</p></div>'
+    const result = getElementListByHTML(html, { innerWidth: 500 })
+    expect(result.some(el => el.type === ElementType.AREA)).toBe(false)
     expect(result.length).toBeGreaterThan(0)
   })
 })
