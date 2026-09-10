@@ -702,6 +702,7 @@ export const commentList: IComment[] = [
 ]
 
 export const options: IEditorOption = {
+  pageVirtualScroll: true,
   margins: [100, 120, 100, 120],
   trace: {
     author: '游客1'
