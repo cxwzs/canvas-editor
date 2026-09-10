@@ -28,10 +28,9 @@ import { Signature } from './components/signature/Signature'
 import { debounce, nextTick, scrollIntoView } from './utils'
 import mockHtml from './mockHtml.json'
 
-const mockHtmlStr = mockHtml.reduce((acc, cur) => `${acc}<section id="${cur.paraId}">${cur.content}</section>`, '')
+const mockHtmlStr = mockHtml.reduce((acc, cur) => `${acc}${cur.content}`, '')
 
 window.onload = function () {
-  console.log('data', data)
   const isApple =
     typeof navigator !== 'undefined' && /Mac OS X/.test(navigator.userAgent)
 
