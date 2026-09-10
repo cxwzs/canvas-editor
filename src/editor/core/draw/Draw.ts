@@ -776,7 +776,11 @@ export class Draw {
   }
 
   public getIsVirtualPageMode(): boolean {
-    return this.getIsPagingMode() && !this.forceFullPageRender
+    return (
+      this.getIsPagingMode() &&
+      !this.forceFullPageRender &&
+      !!this.options.pageVirtualScroll
+    )
   }
 
   private _getPageListIndex(pageNo: number): number {
@@ -787,8 +791,7 @@ export class Draw {
     const pageCount = this.pageRowList.length
     if (pageCount <= 0) return [0, 0]
     if (
-      this.forceFullPageRender ||
-      !this.getIsPagingMode() ||
+      !this.getIsVirtualPageMode() ||
       pageCount <= Draw.VIRTUAL_PAGE_WINDOW
     ) {
       return [0, pageCount - 1]

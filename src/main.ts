@@ -28,7 +28,7 @@ import { formatPrismToken } from './utils/prism'
 import { Signature } from './components/signature/Signature'
 import { debounce, nextTick, scrollIntoView } from './utils'
 import mockHtml from './mockHtml.json'
-import shortMock from './shortMock.json'
+// import shortMock from './shortMock.json'
 
 const mockHtmlStr = mockHtml.reduce(
   (acc, cur) =>
