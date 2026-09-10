@@ -1,3 +1,4 @@
+import { AreaMode } from '../../../dataset/enum/Area'
 import { IElement } from '../../../interface/Element'
 import { Draw } from '../../draw/Draw'
 
@@ -33,7 +34,9 @@ export function isElementFocusDisabled(
   element: IElement | undefined,
   draw: Draw
 ): boolean {
-  return !!(element?.disabled && !draw.isDesignMode())
+  if (!element || draw.isDesignMode()) return false
+  if (element.disabled) return true
+  return element.area?.mode === AreaMode.READONLY
 }
 
 /** 更新画布悬停光标：禁用元素为 not-allowed */
