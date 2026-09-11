@@ -1,4 +1,4 @@
-import { commentList, options } from './mock'
+import { commentList, data, options } from './mock'
 import './style.css'
 import prism from 'prismjs'
 import Editor, {
@@ -29,10 +29,11 @@ import { Signature } from './components/signature/Signature'
 import { debounce, nextTick, scrollIntoView } from './utils'
 import mockHtml from './mockHtml.json'
 // import shortMock from './shortMock.json'
+const areaTitleStyle = "font-family: &quot;Microsoft YaHei&quot;; font-weight: 600; font-size: 26px;"
 
 const mockHtmlStr = mockHtml.reduce(
   (acc, cur) =>
-    `${acc}<div paraId="${cur.paraId}">${cur.content}</div>`,
+    `${acc}<div paraId="${cur.paraId}"><h1><span style="${areaTitleStyle}">${cur.paraName}</span></h1>${cur.content}</div>`,
   ''
 )
 
@@ -44,6 +45,17 @@ const mockHtmlStr = mockHtml.reduce(
 
 window.onload = function () {
   const elList = getElementListByHTML(mockHtmlStr, { innerWidth: 554 })
+  // for (const el of elList) {
+  //   if (el.type !== ElementType.AREA || !el.valueList) continue
+  //   for (const child of el.valueList) {
+  //     if (child.type === ElementType.TITLE) {
+  //       const titleValueList = child.valueList || []
+  //       for ( const titleChild of titleValueList) {
+  //         titleChild.disabled = true
+  //       }
+  //     }
+  //   }
+  // }
   const isApple =
     typeof navigator !== 'undefined' && /Mac OS X/.test(navigator.userAgent)
 
