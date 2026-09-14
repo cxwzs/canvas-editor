@@ -144,6 +144,8 @@ export function formatElementList(
   let i = 0
   while (i < elementList.length) {
     let el = elementList[i]
+    // 兼容外部 JSON 使用小写 partid
+    normalizeElementPartId(el)
     // 优先处理虚拟元素
     if (el.type === ElementType.TITLE) {
       // 移除父节点
@@ -750,11 +752,15 @@ export function pickElementAttr(
     value: payload.value === ZERO ? `\n` : payload.value
   }
   zipAttrs.forEach(attr => {
+    // partId 统一在下方补默认值 null
+    if (attr === 'partId') return
     const value = payload[attr] as never
     if (value !== undefined) {
       element[attr] = value
     }
   })
+  // 获取内容时未设置 partId 则显式为 null，便于业务侧稳定取值
+  element.partId = payload.partId ?? null
   return element
 }
 
@@ -1258,6 +1264,7 @@ export function convertElementToDom(
   if (element.type) {
     dom.setAttribute('data-type', element.type)
   }
+  setPartIdAttribute(dom, element.partId)
   if (element.rowMargin) {
     dom.style.lineHeight = (
       element.rowMargin ?? options.defaultRowMargin
@@ -1360,6 +1367,7 @@ export function createDomFromElementList(
         tableDom.setAttribute('cellSpacing', '0')
         tableDom.setAttribute('cellpadding', '0')
         tableDom.setAttribute('border', '0')
+        setPartIdAttribute(tableDom, element.partId)
         const borderStyle = '1px solid #000000'
         // 表格边框
         if (!element.borderType || element.borderType === TableBorder.ALL) {
@@ -1454,6 +1462,7 @@ export function createDomFromElementList(
           img.width = element.width!
           img.height = element.height!
         }
+        setPartIdAttribute(img, element.partId)
         clipboardDom.append(img)
       } else if (element.type === ElementType.BLOCK) {
         if (element.block?.type === BlockType.VIDEO) {
@@ -1615,6 +1624,11 @@ export function convertTextNodeToElement(
   if (rowFlex !== RowFlex.LEFT) {
     element.rowFlex = rowFlex
   }
+  // 业务片段 id（标签自身或其祖先上的 partid）
+  const partId = getPartIdFromClosestHTMLElement(anchorNode)
+  if (partId) {
+    element.partId = partId
+  }
   // 高亮色
   if (style.backgroundColor !== 'rgba(0, 0, 0, 0)') {
     element.highlight = style.backgroundColor
@@ -1737,6 +1751,49 @@ export function getAreaIdFromHTMLElement(el: HTMLElement): string | null {
     el.getAttribute('areaid')
   const trimmed = id?.trim()
   return trimmed || null
+}
+
+/** 从 HTML 节点读取业务片段 id（partid / partId） */
+export function getPartIdFromHTMLElement(el: HTMLElement): string | null {
+  const id = el.getAttribute('partid') || el.getAttribute('partId')
+  if (id === null) return null
+  const trimmed = id.trim()
+  // 显式 null / 空串均视为无业务 id
+  if (!trimmed || trimmed === 'null') return null
+  return trimmed
+}
+
+/** 将 partId 写入 DOM（含 null → partid="null"） */
+export function setPartIdAttribute(
+  dom: HTMLElement,
+  partId: string | null | undefined
+) {
+  if (partId === undefined) return
+  dom.setAttribute('partid', partId === null ? 'null' : partId)
+}
+
+/** 自当前节点向上查找最近的 partid */
+export function getPartIdFromClosestHTMLElement(
+  el: HTMLElement | null
+): string | null {
+  let current: HTMLElement | null = el
+  while (current) {
+    const partId = getPartIdFromHTMLElement(current)
+    if (partId) return partId
+    current = current.parentElement
+  }
+  return null
+}
+
+/** 兼容 JSON 中的 partid 字段，归一为 partId */
+export function normalizeElementPartId(el: IElement) {
+  const raw = el as IElement & { partid?: string }
+  if (!el.partId && raw.partid) {
+    el.partId = raw.partid
+  }
+  if (raw.partid !== undefined) {
+    delete raw.partid
+  }
 }
 
 /** 判断 HTML 节点是否标记为禁用（data-disabled / data-editable） */
@@ -1908,6 +1965,10 @@ export function getElementListByHTML(
             imageElement.rowFlex = convertTextAlignToRowFlex(
               node.parentElement!
             )
+            const partId = getPartIdFromHTMLElement(imgNode)
+            if (partId) {
+              imageElement.partId = partId
+            }
             elementList.push(imageElement)
           }
         } else if (node.nodeName === 'VIDEO') {
@@ -1950,6 +2011,10 @@ export function getElementListByHTML(
             value: '\n',
             colgroup: [],
             trList: []
+          }
+          const tablePartId = getPartIdFromHTMLElement(tableElement)
+          if (tablePartId) {
+            element.partId = tablePartId
           }
           // colgroup
           const colElements = tableElement.querySelectorAll('colgroup col')
@@ -2022,18 +2087,35 @@ export function getElementListByHTML(
             }
           })
         } else {
+          const htmlEl = node.nodeType === 1 ? (node as HTMLElement) : null
+          const partId = htmlEl ? getPartIdFromHTMLElement(htmlEl) : null
+          const beforeLen = elementList.length
           findTextNode(node)
-          if (node.nodeType === 1 && n !== childNodes.length - 1) {
-            const nodeElement = node as Element
-            const display = window.getComputedStyle(nodeElement).display
+          // 将节点自身的 partid 落到本次解析出的子元素上（子元素已有则保留）
+          if (partId) {
+            for (let i = beforeLen; i < elementList.length; i++) {
+              if (elementList[i].partId === undefined) {
+                elementList[i].partId = partId
+              }
+            }
+          }
+          if (htmlEl && n !== childNodes.length - 1) {
+            const display = window.getComputedStyle(htmlEl).display
             if (
               display === 'block' &&
-              !/(\n|\r\n)$/.test(nodeElement.textContent!)
+              !/(\n|\r\n)$/.test(htmlEl.textContent!)
             ) {
               elementList.push({
-                value: '\n'
+                value: '\n',
+                ...(partId ? { partId } : {})
               })
             }
+          } else if (partId && beforeLen === elementList.length) {
+            // 空块级节点仅有 partid 时也需保留，例如 <p partid="x"></p>
+            elementList.push({
+              value: '\n',
+              partId
+            })
           }
         }
       }
