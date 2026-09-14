@@ -1,4 +1,5 @@
-import { EditorComponent, EDITOR_COMPONENT } from '../../editor'
+import { EditorComponent } from '../../editor/dataset/enum/Editor'
+import { EDITOR_COMPONENT } from '../../editor/dataset/constant/Editor'
 import './signature.css'
 
 export interface ISignatureResult {

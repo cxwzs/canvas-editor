@@ -56,11 +56,12 @@ interface IEditorOption {
   inactiveAlpha?: number // When the body content is out of focus, transparency. default: 0.6
   historyMaxRecordCount?: number // History (undo redo) maximum number of records. default: 100
   printPixelRatio?: number // Print the pixel ratio (larger values are clearer, but larger sizes). default: 3
-  maskMargin?: IMargin // Masking margins above the editor（for example: menu bar, bottom toolbar）。default: [0, 0, 0, 0]
+  maskMargin?: IMargin // Masking margins above the editor（for example: external floating menu/toolbar）. default: [0, 0, 0, 0] (builtin menu uses top-middle-bottom layout and does not overlay the editor)
+  useBuiltinMenu?: boolean // Use the bundled toolbar/footer. true: builtin menu; false: provide a custom menu. default: true
   letterClass?: string[] // Alphabet class supported by typesetting. default: a-zA-Z. Built-in alternative alphabet class: LETTER_CLASS
   contextMenuDisableKeys?: string[] // Disable context menu keys. default: []
   shortcutDisableKeys?: string[] // Disable shortcut keys. default: []
-  scrollContainerSelector?: string // scroll container selector. default: document
+  scrollContainerSelector?: string // scroll container selector. default with builtin menu: .ce-has-builtin-menu; otherwise document
   pageOuterSelectionDisable?: boolean // Disable selection when the mouse moves out of the page. default: false
   wordBreak?: WordBreak // Word and punctuation breaks: No punctuation in the first line of the BREAK_WORD &The word is not split, and the line is folded after BREAK_ALL full according to the width of the character. default: BREAK_WORD
   watermark?: IWatermark // Watermark configuration

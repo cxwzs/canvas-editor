@@ -125,6 +125,7 @@ export interface IEditorOption {
   trace?: ITraceOption
   ruler?: IRulerOption
   hint?: IHintOption
+  useBuiltinMenu?: boolean
 }
 
 export interface IEditorResult {
@@ -152,6 +153,7 @@ export type IUpdateOption = Omit<
   | 'paperDirection'
   | 'historyMaxRecordCount'
   | 'scrollContainerSelector'
+  | 'useBuiltinMenu'
 >
 
 export interface ISetValueOption {

@@ -213,6 +213,8 @@ export function mergeOption(
     }
   }
 
+  const useBuiltinMenu = options.useBuiltinMenu !== false
+
   return {
     mode: EditorMode.EDIT,
     locale: 'zhCN',
@@ -253,11 +255,9 @@ export function mergeOption(
     historyMaxRecordCount: 100,
     wordBreak: WordBreak.BREAK_WORD,
     printPixelRatio: 3,
-    maskMargin: [0, 0, 0, 0],
     letterClass: [LETTER_CLASS.ENGLISH],
     contextMenuDisableKeys: [],
     shortcutDisableKeys: [],
-    scrollContainerSelector: '',
     pageOuterSelectionDisable: false,
     ...options,
     table: tableOptions,
@@ -291,6 +291,11 @@ export function mergeOption(
     column: columnOptions,
     trace: traceOptions,
     ruler: rulerOptions,
-    hint: hintOptions
+    hint: hintOptions,
+    useBuiltinMenu,
+    scrollContainerSelector:
+      options.scrollContainerSelector ??
+      (useBuiltinMenu ? '.ce-has-builtin-menu' : ''),
+    maskMargin: options.maskMargin ?? [0, 0, 0, 0]
   }
 }
