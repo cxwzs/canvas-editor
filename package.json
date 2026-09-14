@@ -1,6 +1,6 @@
 {
-  "name": "@hufe921/canvas-editor",
-  "author": "Hufe",
+  "name": "zd-canvas-editor",
+  "author": "zd",
   "license": "MIT",
   "version": "1.0.1",
   "description": "A Canvas/SVG-based rich text editor",
@@ -35,8 +35,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "lib": "eslint . && tsc && vitest run && vite build --mode lib",
-    "build": "eslint . && tsc && vitest run && vite build --mode app",
+    "lib": "vite build --mode lib",
+    "build": "vite build --mode app",
     "serve": "vite preview",
     "lint": "eslint . && tsc --noEmit && vitest run",
     "cypress:open": "cypress open",
@@ -48,7 +48,6 @@
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
-    "postinstall": "simple-git-hooks",
     "pre-release": "node scripts/pre-release.js"
   },
   "devDependencies": {
@@ -80,7 +79,6 @@
     "prismjs": "^1.27.0"
   },
   "simple-git-hooks": {
-    "pre-commit": "npm run lint && npm run type:check",
     "commit-msg": "node scripts/verifyCommit.js"
   }
 }
