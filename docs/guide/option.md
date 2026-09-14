@@ -56,11 +56,12 @@ interface IEditorOption {
   inactiveAlpha?: number // 正文内容失焦时透明度。默认值：0.6
   historyMaxRecordCount?: number // 历史（撤销重做）最大记录次数。默认：100次
   printPixelRatio?: number // 打印像素比率（值越大越清晰，但尺寸越大）。默认：3
-  maskMargin?: IMargin // 编辑器上的遮盖边距（如悬浮到编辑器上的菜单栏、底部工具栏）。默认：[0, 0, 0, 0]
+  maskMargin?: IMargin // 编辑器上的遮盖边距（如外部悬浮菜单栏、底部工具栏）。默认：[0, 0, 0, 0]（内置菜单为上中下布局，不遮盖编辑区）
+  useBuiltinMenu?: boolean // 是否使用核心库内置菜单（顶部工具栏+底部状态栏）。true：使用内置菜单；false：由外部自定义菜单。默认：true
   letterClass?: string[] // 排版支持的字母类。默认：a-zA-Z。内置可选择的字母表类：LETTER_CLASS
   contextMenuDisableKeys?: string[] // 禁用的右键菜单。默认：[]
   shortcutDisableKeys?: string[] // 禁用的快捷键。默认：[]
-  scrollContainerSelector?: string // 滚动区域选择器。默认：document
+  scrollContainerSelector?: string // 滚动区域选择器。内置菜单开启时默认：.ce-has-builtin-menu，否则默认：document
   pageOuterSelectionDisable?: boolean // 鼠标移出页面时选区禁用。默认：false
   wordBreak?: WordBreak // 单词与标点断行：BREAK_WORD首行不出现标点&单词不拆分、BREAK_ALL按字符宽度撑满后折行。默认：BREAK_WORD
   watermark?: IWatermark // 水印配置

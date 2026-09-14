@@ -52,6 +52,7 @@ import { ListStyle, ListType } from './dataset/enum/List'
 import { ICatalog, ICatalogItem } from './interface/Catalog'
 import { Plugin } from './core/plugin/Plugin'
 import { UsePlugin } from './interface/Plugin'
+import { builtinMenuPlugin } from './core/menu'
 import { MacroManager } from './core/macro/MacroManager'
 import { EventBus } from './core/event/eventbus/EventBus'
 import { EventBusMap } from './interface/EventBus'
@@ -95,6 +96,10 @@ export default class Editor {
   ) {
     // 合并配置
     const editorOptions = mergeOption(options)
+    // 内置菜单布局：提前标记滚动容器，供 ScrollObserver 绑定
+    if (editorOptions.useBuiltinMenu) {
+      container.classList.add('ce-has-builtin-menu')
+    }
     // 数据处理
     data = deepClone(data)
     let headerElementList: IElement[] = []
@@ -166,6 +171,9 @@ export default class Editor {
     // 插件
     const plugin = new Plugin(this)
     this.use = plugin.use.bind(plugin)
+    if (editorOptions.useBuiltinMenu) {
+      this.use(builtinMenuPlugin)
+    }
   }
 }
 
@@ -174,7 +182,8 @@ export {
   splitText,
   createDomFromElementList,
   getElementListByHTML,
-  getTextFromElementList
+  getTextFromElementList,
+  builtinMenuPlugin
 }
 
 // 对外常量
