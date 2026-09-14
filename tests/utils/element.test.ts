@@ -589,6 +589,85 @@ describe('getElementListByHTML', () => {
     expect(result.some(el => el.type === ElementType.AREA)).toBe(false)
     expect(result.length).toBeGreaterThan(0)
   })
+
+  it('HTML 标签 partid 解析为 partId', () => {
+    const html =
+      '<p partid="p-1">hello</p><img partid="img-1" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" width="10" height="10"><table partid="tb-1"><tr><td>a</td></tr></table>'
+    const result = getElementListByHTML(html, { innerWidth: 500 })
+    const text = result.find(el => el.value?.includes('hello'))
+    const image = result.find(el => el.type === ElementType.IMAGE)
+    const table = result.find(el => el.type === ElementType.TABLE)
+    expect(text?.partId).toBe('p-1')
+    expect(image?.partId).toBe('img-1')
+    expect(table?.partId).toBe('tb-1')
+  })
+
+  it('空段落 partid 也能保留', () => {
+    const html = '<p partid="empty-1"></p>'
+    const result = getElementListByHTML(html, { innerWidth: 500 })
+    expect(result.some(el => el.partId === 'empty-1')).toBe(true)
+  })
+})
+
+describe('partId round-trip', () => {
+  it('getValue zip 保留 partId，createDom 还原 partid 属性', () => {
+    const list: IElement[] = [
+      { value: 'hello', partId: 'p-1' },
+      {
+        type: ElementType.IMAGE,
+        value: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+        width: 10,
+        height: 10,
+        partId: 'img-1'
+      }
+    ]
+    const zipped = zipElementList(list)
+    expect(zipped.find(el => el.value === 'hello')?.partId).toBe('p-1')
+    expect(zipped.find(el => el.type === ElementType.IMAGE)?.partId).toBe(
+      'img-1'
+    )
+    const dom = createDomFromElementList(list)
+    expect(dom.querySelector('[partid="p-1"]')).toBeTruthy()
+    expect(dom.querySelector('img[partid="img-1"]')).toBeTruthy()
+  })
+
+  it('未设置 partId 时 zip 输出默认为 null，createDom 写出 partid="null"', () => {
+    const zipped = zipElementList([{ value: 'plain' }])
+    expect(zipped[0].partId).toBeNull()
+    expect(pickElementAttr({ value: 'x' }).partId).toBeNull()
+    const dom = createDomFromElementList([{ value: 'plain', partId: null }])
+    expect(dom.querySelector('[partid="null"]')).toBeTruthy()
+    const imgDom = createDomFromElementList([
+      {
+        type: ElementType.IMAGE,
+        value:
+          'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+        width: 10,
+        height: 10,
+        partId: null
+      }
+    ])
+    expect(imgDom.querySelector('img[partid="null"]')).toBeTruthy()
+  })
+
+  it('HTML partid="null" 解析为 partId null', () => {
+    const result = getElementListByHTML('<p partid="null">hi</p>', {
+      innerWidth: 500
+    })
+    const text = result.find(el => el.value?.includes('hi'))
+    // 解析阶段可不挂 partId，zip 后统一为 null
+    expect(text?.partId == null).toBe(true)
+    const zipped = zipElementList(result.filter(el => el.value?.includes('hi')))
+    expect(zipped[0]?.partId).toBeNull()
+  })
+
+  it('formatElementList 兼容 JSON 小写 partid', () => {
+    const list: any[] = [{ value: 'x', partid: 'legacy-1' }]
+    formatElementList(list, { editorOptions: mockOptions as any })
+    const el = list.find(item => item.value === 'x')
+    expect(el?.partId).toBe('legacy-1')
+    expect(el?.partid).toBeUndefined()
+  })
 })
 
 describe('isSameElementExceptValue', () => {

@@ -25,6 +25,8 @@ export interface IElementBasic {
   value: string
   extension?: unknown
   externalId?: string
+  /** 业务片段 id；HTML 属性 partid / partId 与之互转；缺失时 getValue 输出 null */
+  partId?: string | null
   hint?: string // 悬浮提示文案
 }
 
