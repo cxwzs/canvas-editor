@@ -414,29 +414,46 @@ export class Draw {
     this.range.clearRange()
     this.mode = payload
     this.options.mode = payload
+    this.syncPreviewChrome()
     this.render({
       isSetCursor: false,
       isSubmitHistory: false
     })
   }
 
+  /** 预览模式隐藏内置菜单栏与底部工具栏 */
+  public syncPreviewChrome() {
+    const host = this.container.closest(
+      '.ce-builtin-menu-host'
+    ) as HTMLElement | null
+    if (!host) return
+    host.classList.toggle('ce-preview-mode', this.mode === EditorMode.PREVIEW)
+  }
+
+  public isPreview(): boolean {
+    return this.mode === EditorMode.PREVIEW
+  }
+
   public isReadonly() {
-    if (this.area.getActiveAreaInfo()?.area?.mode) {
-      return this.area.isReadonly()
-    }
+    // 全局只读类模式优先于 Area.EDIT，避免 Area 默认 edit 覆盖 options.mode
     switch (this.mode) {
       case EditorMode.DESIGN:
         return false
       case EditorMode.READONLY:
+      case EditorMode.PREVIEW:
       case EditorMode.PRINT:
       case EditorMode.GRAFFITI:
       case EditorMode.TRACE:
         return true
-      case EditorMode.FORM:
-        return !this.control.getIsRangeWithinControl()
-      default:
-        return false
     }
+    // 可编辑模式下再按 Area 限制（只读 / 表单）
+    if (this.area.getActiveAreaInfo()?.area?.mode) {
+      return this.area.isReadonly()
+    }
+    if (this.mode === EditorMode.FORM) {
+      return !this.control.getIsRangeWithinControl()
+    }
+    return false
   }
 
   public isDisabled() {
