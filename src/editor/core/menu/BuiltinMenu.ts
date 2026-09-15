@@ -1496,65 +1496,65 @@ export class BuiltinMenu {
   }
 
   // 分栏配置
-  const columnConfigDom =
-    q('.column-config')
-  columnConfigDom.onclick = function () {
-    const current = editor.command.getColumns()
-    const count = current?.count ?? 1
-    const gap = current?.gap ?? 20
-    const separator = current?.separator ? 'true' : 'false'
-    new Dialog({
-      title: '分栏',
-      data: [
-        {
-          type: 'select',
-          label: '栏数',
-          name: 'count',
-          required: true,
-          value: `${count}`,
-          options: [
-            { value: '1', label: '1（关闭）' },
-            { value: '2', label: '2' },
-            { value: '3', label: '3' },
-            { value: '4', label: '4' },
-            { value: '5', label: '5' }
-          ]
-        },
-        {
-          type: 'text',
-          label: '栏间距',
-          name: 'gap',
-          required: true,
-          value: `${gap}`,
-          placeholder: '请输入栏间距（像素）'
-        },
-        {
-          type: 'select',
-          label: '分隔线',
-          name: 'separator',
-          required: true,
-          value: separator,
-          options: [
-            { value: 'false', label: '不显示' },
-            { value: 'true', label: '显示' }
-          ]
-        }
-      ],
-      onConfirm: payload => {
-        const countValue = payload.find(p => p.name === 'count')?.value
-        if (!countValue) return
-        const gapValue = payload.find(p => p.name === 'gap')?.value
-        if (!gapValue) return
-        const separatorValue = payload.find(p => p.name === 'separator')?.value
-        if (!separatorValue) return
-        editor.command.executeSetColumns({
-          count: Number(countValue),
-          gap: Number(gapValue),
-          separator: separatorValue === 'true'
-        })
-      }
-    })
-  }
+  // const columnConfigDom =
+  //   q('.column-config')
+  // columnConfigDom.onclick = function () {
+  //   const current = editor.command.getColumns()
+  //   const count = current?.count ?? 1
+  //   const gap = current?.gap ?? 20
+  //   const separator = current?.separator ? 'true' : 'false'
+  //   new Dialog({
+  //     title: '分栏',
+  //     data: [
+  //       {
+  //         type: 'select',
+  //         label: '栏数',
+  //         name: 'count',
+  //         required: true,
+  //         value: `${count}`,
+  //         options: [
+  //           { value: '1', label: '1（关闭）' },
+  //           { value: '2', label: '2' },
+  //           { value: '3', label: '3' },
+  //           { value: '4', label: '4' },
+  //           { value: '5', label: '5' }
+  //         ]
+  //       },
+  //       {
+  //         type: 'text',
+  //         label: '栏间距',
+  //         name: 'gap',
+  //         required: true,
+  //         value: `${gap}`,
+  //         placeholder: '请输入栏间距（像素）'
+  //       },
+  //       {
+  //         type: 'select',
+  //         label: '分隔线',
+  //         name: 'separator',
+  //         required: true,
+  //         value: separator,
+  //         options: [
+  //           { value: 'false', label: '不显示' },
+  //           { value: 'true', label: '显示' }
+  //         ]
+  //       }
+  //     ],
+  //     onConfirm: payload => {
+  //       const countValue = payload.find(p => p.name === 'count')?.value
+  //       if (!countValue) return
+  //       const gapValue = payload.find(p => p.name === 'gap')?.value
+  //       if (!gapValue) return
+  //       const separatorValue = payload.find(p => p.name === 'separator')?.value
+  //       if (!separatorValue) return
+  //       editor.command.executeSetColumns({
+  //         count: Number(countValue),
+  //         gap: Number(gapValue),
+  //         separator: separatorValue === 'true'
+  //       })
+  //     }
+  //   })
+  // }
 
   // 标尺开关
   const rulerToggleDom =
