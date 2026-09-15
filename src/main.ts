@@ -59,6 +59,10 @@ window.onload = function () {
   // canvas-editor-devtools使用
   Reflect.set(window, '__CANVAS_EDITOR_INSTANCE__', instance)
 
+  // 切换为预览模式（无菜单栏/底栏、不可编辑、禁用右键）
+  // instance.command.executeMode(EditorMode.PREVIEW)
+  // instance.command.executeMode(EditorMode.EDIT) // 切回编辑模式
+
   // 按 paraId（= areaId）动态切换整块只读示例：
   // instance.command.executeSetAreaProperties({
   //   id: shortMock[0].paraId,

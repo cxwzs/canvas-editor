@@ -131,6 +131,11 @@ export class BuiltinMenu {
       this.host.append(catalog)
     }
     this.bind()
+    // 初始即为预览模式时，host 刚挂载，需同步隐藏菜单栏/底栏
+    this.host.classList.toggle(
+      'ce-preview-mode',
+      this.editor.command.getOptions().mode === EditorMode.PREVIEW
+    )
   }
 
   private removeBySelectors(selectors: string | string[]) {
@@ -1739,6 +1744,10 @@ export class BuiltinMenu {
       name: '只读模式'
     },
     {
+      mode: EditorMode.PREVIEW,
+      name: '预览模式'
+    },
+    {
       mode: EditorMode.FORM,
       name: '表单模式'
     },
@@ -1767,31 +1776,25 @@ export class BuiltinMenu {
     acc[item.mode] = item.name
     return acc
   }, {})
-  // 初始 active 与 .text 对齐当前模式
-  const currentMode = editor.command.getOptions().mode
-  modeTextElement.innerText =
-    modeTextMap[currentMode] || modeTextMap[EditorMode.EDIT]
-  modeOptionsElement.querySelectorAll<HTMLLIElement>('li').forEach(li => {
-    li.classList.toggle('active', li.dataset.mode === currentMode)
-  })
-
   // 留痕记录开关（仅 "留痕模式" 行可见；留痕查看模式下禁用）
   const traceToggleDom = q('.trace-toggle__input') as HTMLInputElement
   traceToggleDom.checked = !editor.command.getOptions().trace?.disabled
-  traceToggleDom.disabled = currentMode === EditorMode.TRACE
   traceToggleDom.onchange = function () {
     editor.command.executeToggleTrace(traceToggleDom.checked)
   }
 
-  const applyMode = (mode: EditorMode) => {
-    modeTextElement.innerText = modeTextMap[mode]
-    editor.command.executeMode(mode)
-    // 更新 active 高亮
+  const syncModeUI = (mode: EditorMode) => {
+    modeTextElement.innerText = modeTextMap[mode] || modeTextMap[EditorMode.EDIT]
     modeOptionsElement.querySelectorAll<HTMLLIElement>('li').forEach(li => {
       li.classList.toggle('active', li.dataset.mode === mode)
     })
+    // 预览模式隐藏菜单栏与底部工具栏
+    this.host.classList.toggle('ce-preview-mode', mode === EditorMode.PREVIEW)
     // 设置菜单栏权限视觉反馈
-    const isReadonly = mode === EditorMode.READONLY || mode === EditorMode.TRACE
+    const isReadonly =
+      mode === EditorMode.READONLY ||
+      mode === EditorMode.TRACE ||
+      mode === EditorMode.PREVIEW
     const enableMenuList = ['search', 'print']
     qa('.menu-item>div').forEach(dom => {
       const menu = dom.dataset.menu
@@ -1801,6 +1804,15 @@ export class BuiltinMenu {
     })
     // 留痕查看模式禁止切回记录态
     traceToggleDom.disabled = mode === EditorMode.TRACE
+  }
+
+  // 初始 active / 菜单禁用态与 options.mode 对齐
+  const currentMode = editor.command.getOptions().mode
+  syncModeUI(currentMode)
+
+  const applyMode = (mode: EditorMode) => {
+    editor.command.executeMode(mode)
+    syncModeUI(mode)
   }
   modeElement.onclick = function (evt) {
     // 点击 li 时不重复 toggle 弹窗（交由 options 处理）

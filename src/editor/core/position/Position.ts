@@ -19,7 +19,7 @@ import {
   ITablePositionContext
 } from '../../interface/Position'
 import { Draw } from '../draw/Draw'
-import { EditorMode, EditorZone } from '../../dataset/enum/Editor'
+import { EditorZone } from '../../dataset/enum/Editor'
 import { deepClone, isRectIntersect } from '../../utils'
 import { ImageDisplay } from '../../dataset/enum/Common'
 import { DeepRequired } from '../../interface/Common'
@@ -1335,11 +1335,8 @@ export class Position {
   ): ICurrentPosition | null {
     const positionResult = this.getPositionByXY(payload)
     if (!~positionResult.index) return null
-    // 移动控件内光标
-    if (
-      positionResult.isControl &&
-      this.draw.getMode() !== EditorMode.READONLY
-    ) {
+    // 移动控件内光标（只读/预览等模式不进入控件编辑）
+    if (positionResult.isControl && !this.draw.isReadonly()) {
       const { index, isTable, trIndex, tdIndex, tdValueIndex } = positionResult
       const control = this.draw.getControl()
       const { newIndex } = control.moveCursor({

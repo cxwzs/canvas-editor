@@ -1,6 +1,6 @@
 import { NAME_PLACEHOLDER } from '../../dataset/constant/ContextMenu'
 import { EDITOR_COMPONENT, EDITOR_PREFIX } from '../../dataset/constant/Editor'
-import { EditorComponent } from '../../dataset/enum/Editor'
+import { EditorComponent, EditorMode } from '../../dataset/enum/Editor'
 import { DeepRequired } from '../../interface/Common'
 import { IEditorOption } from '../../interface/Editor'
 import { IElement } from '../../interface/Element'
@@ -107,6 +107,12 @@ export class ContextMenu {
   }
 
   private _proxyContextMenuEvent = (evt: MouseEvent) => {
+    // 预览模式禁用右键菜单
+    if (this.draw.getMode() === EditorMode.PREVIEW) {
+      this.dispose()
+      evt.preventDefault()
+      return
+    }
     this.context = this._getContext()
     const renderList = this._filterMenuList(this.contextMenuList)
     const isRegisterContextMenu = renderList.some(menu => !menu.isDivider)
