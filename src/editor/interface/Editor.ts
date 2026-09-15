@@ -126,7 +126,6 @@ export interface IEditorOption {
   ruler?: IRulerOption
   hint?: IHintOption
   useBuiltinMenu?: boolean
-  useCatalog?: boolean
 }
 
 export interface IEditorResult {
@@ -155,7 +154,6 @@ export type IUpdateOption = Omit<
   | 'historyMaxRecordCount'
   | 'scrollContainerSelector'
   | 'useBuiltinMenu'
-  | 'useCatalog'
 >
 
 export interface ISetValueOption {
