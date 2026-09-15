@@ -1359,16 +1359,16 @@ export class BuiltinMenu {
     catalogHeaderCloseDom.onclick = switchCatalog
   }
 
-  const pageModeDom = q('.page-mode')
-  const pageModeOptionsDom =
-    pageModeDom.querySelector<HTMLDivElement>('.options')!
-  pageModeDom.onclick = function () {
-    pageModeOptionsDom.classList.toggle('visible')
-  }
-  pageModeOptionsDom.onclick = function (evt) {
-    const li = evt.target as HTMLLIElement
-    editor.command.executePageMode(<PageMode>li.dataset.pageMode!)
-  }
+  // const pageModeDom = q('.page-mode')
+  // const pageModeOptionsDom =
+  //   pageModeDom.querySelector<HTMLDivElement>('.options')!
+  // pageModeDom.onclick = function () {
+  //   pageModeOptionsDom.classList.toggle('visible')
+  // }
+  // pageModeOptionsDom.onclick = function (evt) {
+  //   const li = evt.target as HTMLLIElement
+  //   editor.command.executePageMode(<PageMode>li.dataset.pageMode!)
+  // }
 
   q('.page-scale-percentage').onclick =
     function () {
@@ -1885,15 +1885,15 @@ export class BuiltinMenu {
     })
   }
 
-  const onPageModeChange = (payload: PageMode) => {
-    const activeMode = pageModeOptionsDom.querySelector<HTMLLIElement>(
-      `[data-page-mode='${payload}']`
-    )!
-    pageModeOptionsDom
-      .querySelectorAll('li')
-      .forEach(li => li.classList.remove('active'))
-    activeMode.classList.add('active')
-  }
+  // const onPageModeChange = (payload: PageMode) => {
+  //   const activeMode = pageModeOptionsDom.querySelector<HTMLLIElement>(
+  //     `[data-page-mode='${payload}']`
+  //   )!
+  //   pageModeOptionsDom
+  //     .querySelectorAll('li')
+  //     .forEach(li => li.classList.remove('active'))
+  //   activeMode.classList.add('active')
+  // }
 
   const handleContentChange = async () => {
     const wordCount = await editor.command.getWordCount()
@@ -1971,7 +1971,7 @@ export class BuiltinMenu {
     )
     editor.eventBus.on('pageScaleChange', onPageScaleChange)
     editor.eventBus.on('controlChange', onControlChange)
-    editor.eventBus.on('pageModeChange', onPageModeChange)
+    // editor.eventBus.on('pageModeChange', onPageModeChange)
     this.disposeList.push(() => {
       editor.eventBus.off('contentChange', onContentChange)
       editor.eventBus.off('rangeStyleChange', onRangeStyleChange)
@@ -1986,7 +1986,7 @@ export class BuiltinMenu {
       )
       editor.eventBus.off('pageScaleChange', onPageScaleChange)
       editor.eventBus.off('controlChange', onControlChange)
-      editor.eventBus.off('pageModeChange', onPageModeChange)
+      // editor.eventBus.off('pageModeChange', onPageModeChange)
     })
   }
 }
