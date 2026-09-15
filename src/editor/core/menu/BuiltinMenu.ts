@@ -1408,31 +1408,31 @@ export class BuiltinMenu {
   // }
 
   // 纸张方向
-  const paperDirectionDom =
-    q('.paper-direction')
-  const paperDirectionDomOptionsDom =
-    paperDirectionDom.querySelector<HTMLDivElement>('.options')!
-  paperDirectionDom.onclick = function () {
-    paperDirectionDomOptionsDom.classList.toggle('visible')
-  }
-  paperDirectionDomOptionsDom.onclick = function (evt) {
-    const li = evt.target as HTMLLIElement
-    if (li.tagName !== 'LI' || li.classList.contains('option-caption')) return
-    const { paperDirection, sectionDirection } = li.dataset
-    if (sectionDirection) {
-      // 指定页面方向（本节）
-      editor.command.executePageDirection(
-        sectionDirection === 'inherit' ? null : <PaperDirection>sectionDirection
-      )
-    } else if (paperDirection) {
-      editor.command.executePaperDirection(<PaperDirection>paperDirection)
-    }
-    // 纸张方向状态回显
-    paperDirectionDomOptionsDom
-      .querySelectorAll('li')
-      .forEach(child => child.classList.remove('active'))
-    li.classList.add('active')
-  }
+  // const paperDirectionDom =
+  //   q('.paper-direction')
+  // const paperDirectionDomOptionsDom =
+  //   paperDirectionDom.querySelector<HTMLDivElement>('.options')!
+  // paperDirectionDom.onclick = function () {
+  //   paperDirectionDomOptionsDom.classList.toggle('visible')
+  // }
+  // paperDirectionDomOptionsDom.onclick = function (evt) {
+  //   const li = evt.target as HTMLLIElement
+  //   if (li.tagName !== 'LI' || li.classList.contains('option-caption')) return
+  //   const { paperDirection, sectionDirection } = li.dataset
+  //   if (sectionDirection) {
+  //     // 指定页面方向（本节）
+  //     editor.command.executePageDirection(
+  //       sectionDirection === 'inherit' ? null : <PaperDirection>sectionDirection
+  //     )
+  //   } else if (paperDirection) {
+  //     editor.command.executePaperDirection(<PaperDirection>paperDirection)
+  //   }
+  //   // 纸张方向状态回显
+  //   paperDirectionDomOptionsDom
+  //     .querySelectorAll('li')
+  //     .forEach(child => child.classList.remove('active'))
+  //   li.classList.add('active')
+  // }
 
   // 页面边距
   const paperMarginDom =
