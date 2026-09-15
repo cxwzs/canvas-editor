@@ -56,7 +56,11 @@ export function deepCloneOmitKeys<T, K>(obj: T, omitKeys: (keyof K)[]): T {
 
 export function deepClone<T>(obj: T): T {
   if (typeof structuredClone === 'function') {
-    return structuredClone(obj)
+    try {
+      return structuredClone(obj)
+    } catch {
+      // 含函数、DOM 节点等不可结构化克隆的值时走兼容路径
+    }
   }
   if (!obj || typeof obj !== 'object') {
     return obj
