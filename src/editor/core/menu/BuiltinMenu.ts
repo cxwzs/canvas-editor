@@ -41,6 +41,11 @@ export class BuiltinMenu {
     this.host = document.createElement('div')
     this.host.className = 'ce-builtin-menu-host'
     this.host.innerHTML = builtinMenuTemplate
+    const useCatalog = editor.command.getOptions().useCatalog !== false
+    if (!useCatalog) {
+      this.host.querySelector('.catalog')?.remove()
+      this.host.querySelector('.catalog-mode')?.remove()
+    }
     const parent = editorRoot.parentElement || document.body
     // 上：菜单 / 中：编辑区 / 下：footer；catalog 相对 host 绝对定位
     parent.insertBefore(this.host, editorRoot)
@@ -1333,23 +1338,26 @@ export class BuiltinMenu {
     }
   }
   let isCatalogShow = true
-  const catalogDom = q('.catalog')
+  const catalogDom = this.host.querySelector<HTMLElement>('.catalog')
   const catalogModeDom =
-    q('.catalog-mode')
-  const catalogHeaderCloseDom = q(
+    this.host.querySelector<HTMLElement>('.catalog-mode')
+  const catalogHeaderCloseDom = this.host.querySelector<HTMLElement>(
     '.catalog__header__close'
   )
-  const switchCatalog = () => {
-    isCatalogShow = !isCatalogShow
-    if (isCatalogShow) {
-      catalogDom.style.display = 'block'
-      updateCatalog()
-    } else {
-      catalogDom.style.display = 'none'
+  const useCatalog = !!(catalogDom && catalogModeDom && catalogHeaderCloseDom)
+  if (useCatalog) {
+    const switchCatalog = () => {
+      isCatalogShow = !isCatalogShow
+      if (isCatalogShow) {
+        catalogDom.style.display = 'block'
+        updateCatalog()
+      } else {
+        catalogDom.style.display = 'none'
+      }
     }
+    catalogModeDom.onclick = switchCatalog
+    catalogHeaderCloseDom.onclick = switchCatalog
   }
-  catalogModeDom.onclick = switchCatalog
-  catalogHeaderCloseDom.onclick = switchCatalog
 
   // const pageModeDom = q('.page-mode')
   // const pageModeOptionsDom =
@@ -1890,7 +1898,7 @@ export class BuiltinMenu {
   const handleContentChange = async () => {
     const wordCount = await editor.command.getWordCount()
     q('.word-count').innerText = `${wordCount || 0}`
-    if (isCatalogShow) {
+    if (useCatalog && isCatalogShow) {
       nextTick(() => {
         updateCatalog()
       })
