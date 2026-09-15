@@ -4,6 +4,10 @@ import { LETTER_CLASS } from '../dataset/constant/Common'
 import { defaultControlOption } from '../dataset/constant/Control'
 import { defaultCursorOption } from '../dataset/constant/Cursor'
 import { defaultFooterOption } from '../dataset/constant/Footer'
+import {
+  defaultFooterBarOption,
+  defaultMenuOption
+} from '../dataset/constant/Menu'
 import { defaultGroupOption } from '../dataset/constant/Group'
 import { defaultHeaderOption } from '../dataset/constant/Header'
 import { defaultLabelOption } from '../dataset/constant/Label'
@@ -40,6 +44,7 @@ import { IFooter } from '../interface/Footer'
 import { IGroup } from '../interface/Group'
 import { IHeader } from '../interface/Header'
 import { ILabelOption } from '../interface/Label'
+import { IFooterBarOption, IMenuOption } from '../interface/Menu'
 import { IImgCaptionOption, IListOption } from '../interface/Element'
 import { ILineBreakOption } from '../interface/LineBreak'
 import { IPageBreak } from '../interface/PageBreak'
@@ -86,6 +91,20 @@ export function mergeOption(
     ...defaultFooterOption,
     ...options.footer
   }
+  const footerBarOptions: false | Required<IFooterBarOption> =
+    options.footerBar === false
+      ? false
+      : {
+          ...defaultFooterBarOption,
+          ...options.footerBar
+        }
+  const menuOptions: false | Required<IMenuOption> =
+    options.menu === false
+      ? false
+      : {
+          ...defaultMenuOption,
+          ...options.menu
+        }
   const pageNumberOptions: Required<IPageNumber> = {
     ...defaultPageNumberOption,
     ...options.pageNumber
@@ -213,9 +232,6 @@ export function mergeOption(
     }
   }
 
-  const useBuiltinMenu = options.useBuiltinMenu !== false
-  const useCatalog = options.useCatalog !== false
-
   return {
     mode: EditorMode.EDIT,
     locale: 'zhCN',
@@ -264,6 +280,8 @@ export function mergeOption(
     table: tableOptions,
     header: headerOptions,
     footer: footerOptions,
+    footerBar: footerBarOptions,
+    menu: menuOptions,
     pageNumber: pageNumberOptions,
     watermark: waterMarkOptions,
     control: controlOptions,
@@ -293,11 +311,8 @@ export function mergeOption(
     trace: traceOptions,
     ruler: rulerOptions,
     hint: hintOptions,
-    useBuiltinMenu,
-    useCatalog,
     scrollContainerSelector:
-      options.scrollContainerSelector ??
-      (useBuiltinMenu ? '.ce-has-builtin-menu' : ''),
+      options.scrollContainerSelector ?? '.ce-has-builtin-menu',
     maskMargin: options.maskMargin ?? [0, 0, 0, 0]
   }
 }
