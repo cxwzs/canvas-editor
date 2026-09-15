@@ -17,8 +17,82 @@ import { TextDecorationStyle } from '../../dataset/enum/Text'
 import { TitleLevel } from '../../dataset/enum/Title'
 import { debounce, nextTick, splitText } from '../../utils'
 import { IRangeStyle } from '../../interface/Listener'
+import type { IFooterBarOption, IMenuOption } from '../../interface/Menu'
 import builtinMenuTemplate from './template.html?raw'
 import './menu.css'
+
+type MenuSelectorMap = Record<
+  keyof IMenuOption,
+  string | string[]
+>
+
+type FooterSelectorMap = Record<
+  keyof IFooterBarOption,
+  string | string[]
+>
+
+const MENU_ITEM_SELECTORS: MenuSelectorMap = {
+  undo: '.menu-item__undo',
+  redo: '.menu-item__redo',
+  painter: '.menu-item__painter',
+  format: '.menu-item__format',
+  font: '.menu-item__font',
+  size: '.menu-item__size',
+  sizeAdd: '.menu-item__size-add',
+  sizeMinus: '.menu-item__size-minus',
+  bold: '.menu-item__bold',
+  italic: '.menu-item__italic',
+  underline: '.menu-item__underline',
+  strikeout: '.menu-item__strikeout',
+  superscript: '.menu-item__superscript',
+  subscript: '.menu-item__subscript',
+  color: '.menu-item__color',
+  highlight: '.menu-item__highlight',
+  title: '.menu-item__title',
+  left: '.menu-item__left',
+  center: '.menu-item__center',
+  right: '.menu-item__right',
+  alignment: '.menu-item__alignment',
+  justify: '.menu-item__justify',
+  rowMargin: '.menu-item__row-margin',
+  list: '.menu-item__list',
+  table: ['.menu-item__table', '.menu-item__table__collapse'],
+  image: '.menu-item__image',
+  hyperlink: '.menu-item__hyperlink',
+  separator: '.menu-item__separator',
+  watermark: '.menu-item__watermark',
+  codeblock: '.menu-item__codeblock',
+  pageBreak: '.menu-item__page-break',
+  control: '.menu-item__control',
+  checkbox: '.menu-item__checkbox',
+  radio: '.menu-item__radio',
+  latex: '.menu-item__latex',
+  date: '.menu-item__date',
+  block: '.menu-item__block',
+  search: ['.menu-item__search', '.menu-item__search__collapse'],
+  print: '.menu-item__print'
+}
+
+const FOOTER_ITEM_SELECTORS: FooterSelectorMap = {
+  catalog: ['.catalog', '.catalog-mode'],
+  pageMode: '.page-mode',
+  pageNoList: '.footer-item__page-no-list',
+  pageNo: '.footer-item__page-no',
+  wordCount: '.footer-item__word-count',
+  rowNo: '.footer-item__row-no',
+  colNo: '.footer-item__col-no',
+  editorMode: '.editor-mode',
+  pageScaleMinus: '.page-scale-minus',
+  pageScalePercentage: '.page-scale-percentage',
+  pageScaleAdd: '.page-scale-add',
+  paperSize: '.paper-size',
+  paperDirection: '.paper-direction',
+  paperMargin: '.paper-margin',
+  column: '.column-config',
+  ruler: '.ruler-toggle',
+  fullscreen: '.fullscreen',
+  editorOption: '.editor-option'
+}
 
 export class BuiltinMenu {
   private editor: Editor
@@ -41,11 +115,7 @@ export class BuiltinMenu {
     this.host = document.createElement('div')
     this.host.className = 'ce-builtin-menu-host'
     this.host.innerHTML = builtinMenuTemplate
-    const useCatalog = editor.command.getOptions().useCatalog !== false
-    if (!useCatalog) {
-      this.host.querySelector('.catalog')?.remove()
-      this.host.querySelector('.catalog-mode')?.remove()
-    }
+    this.applyItemVisibility()
     const parent = editorRoot.parentElement || document.body
     // 上：菜单 / 中：编辑区 / 下：footer；catalog 相对 host 绝对定位
     parent.insertBefore(this.host, editorRoot)
@@ -62,6 +132,66 @@ export class BuiltinMenu {
     this.bind()
   }
 
+  private removeBySelectors(selectors: string | string[]) {
+    const list = Array.isArray(selectors) ? selectors : [selectors]
+    list.forEach(selector => {
+      this.host.querySelectorAll(selector).forEach(el => el.remove())
+    })
+  }
+
+  private applyItemVisibility() {
+    const { menu, footerBar } = this.editor.command.getOptions()
+
+    if (menu === false) {
+      this.host.querySelector('.menu')?.remove()
+    } else {
+      ;(Object.keys(MENU_ITEM_SELECTORS) as Array<keyof IMenuOption>).forEach(
+        key => {
+          if (menu[key] === false) {
+            this.removeBySelectors(MENU_ITEM_SELECTORS[key])
+          }
+        }
+      )
+      // 清理空的菜单分组与相邻分割线
+      this.host.querySelectorAll('.menu-item').forEach(group => {
+        if (group.children.length) return
+        const prev = group.previousElementSibling
+        const next = group.nextElementSibling
+        group.remove()
+        if (next?.classList.contains('menu-divider')) {
+          next.remove()
+        } else if (prev?.classList.contains('menu-divider')) {
+          prev.remove()
+        }
+      })
+      this.host.querySelectorAll('.menu-divider').forEach(divider => {
+        const prev = divider.previousElementSibling
+        const next = divider.nextElementSibling
+        if (
+          !prev ||
+          !next ||
+          prev.classList.contains('menu-divider') ||
+          next.classList.contains('menu-divider')
+        ) {
+          divider.remove()
+        }
+      })
+    }
+
+    if (footerBar === false) {
+      this.host.querySelector('.footer')?.remove()
+      this.host.querySelector('.catalog')?.remove()
+    } else {
+      ;(
+        Object.keys(FOOTER_ITEM_SELECTORS) as Array<keyof IFooterBarOption>
+      ).forEach(key => {
+        if (footerBar[key] === false) {
+          this.removeBySelectors(FOOTER_ITEM_SELECTORS[key])
+        }
+      })
+    }
+  }
+
   public destroy() {
     this.disposeList.forEach(fn => fn())
     this.disposeList = []
@@ -73,12 +203,20 @@ export class BuiltinMenu {
     this.editorRoot.classList.remove('ce-has-builtin-menu')
   }
 
-  private q(selector: string): HTMLElement {
-    const el = this.host.querySelector<HTMLElement>(selector)
-    if (!el) {
-      throw new Error(`builtin menu missing ${selector}`)
-    }
+  private createPlaceholder(): HTMLElement {
+    const el = document.createElement('div')
+    const self = this
+    el.querySelector = (() =>
+      self.createPlaceholder()) as typeof el.querySelector
+    el.querySelectorAll = (() =>
+      [] as unknown as NodeListOf<Element>) as typeof el.querySelectorAll
     return el
+  }
+
+  private q(selector: string): HTMLElement {
+    return (
+      this.host.querySelector<HTMLElement>(selector) || this.createPlaceholder()
+    )
   }
 
   private qa(selector: string): NodeListOf<HTMLElement> {
