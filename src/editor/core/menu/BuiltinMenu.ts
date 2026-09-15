@@ -1564,25 +1564,25 @@ export class BuiltinMenu {
   }
 
   // 全屏
-  const fullscreenDom = q('.fullscreen')
-  fullscreenDom.onclick = toggleFullscreen
-  window.addEventListener('keydown', evt => {
-    if (evt.key === 'F11') {
-      toggleFullscreen()
-      evt.preventDefault()
-    }
-  })
-  document.addEventListener('fullscreenchange', () => {
-    fullscreenDom.classList.toggle('exist')
-  })
-  function toggleFullscreen() {
-    console.log('fullscreen')
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen()
-    } else {
-      document.exitFullscreen()
-    }
-  }
+  // const fullscreenDom = q('.fullscreen')
+  // fullscreenDom.onclick = toggleFullscreen
+  // window.addEventListener('keydown', evt => {
+  //   if (evt.key === 'F11') {
+  //     toggleFullscreen()
+  //     evt.preventDefault()
+  //   }
+  // })
+  // document.addEventListener('fullscreenchange', () => {
+  //   fullscreenDom.classList.toggle('exist')
+  // })
+  // function toggleFullscreen() {
+  //   console.log('fullscreen')
+  //   if (!document.fullscreenElement) {
+  //     document.documentElement.requestFullscreen()
+  //   } else {
+  //     document.exitFullscreen()
+  //   }
+  // }
 
   // 7. 编辑器使用模式
   const modeList = [
