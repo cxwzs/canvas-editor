@@ -93,7 +93,37 @@ interface IEditorOption {
   trace?: ITraceOption // Trace configuration. default: disabled
   ruler?: IRulerOption // Ruler configuration. default: disabled
   hint?: IHintOption // Hover hint configuration. default: disabled
+  onFileUpload?: IFileUpload | null // File upload callback. Selecting images opens a preview/crop list dialog (more images can be added). Without it, confirm inserts base64 (no upload progress); with it, upload (with progress) first, then insert the returned URL
 }
+```
+
+## File Upload Configuration
+
+```typescript
+interface IFileUploadOptions {
+  onProgress: (percent: number) => void // Upload progress, 0–100
+}
+
+type IFileUpload = (
+  file: File,
+  options: IFileUploadOptions
+) => Promise<string> // Returns an accessible image URL
+```
+
+Example:
+
+```typescript
+new Editor(container, data, {
+  onFileUpload: async (file, { onProgress }) => {
+    onProgress(30)
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await fetch('/api/upload', { method: 'POST', body: formData })
+    onProgress(100)
+    const { url } = await res.json()
+    return url
+  }
+})
 ```
 
 ## Table Configuration

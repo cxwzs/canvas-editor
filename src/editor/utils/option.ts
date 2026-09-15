@@ -313,6 +313,7 @@ export function mergeOption(
     hint: hintOptions,
     scrollContainerSelector:
       options.scrollContainerSelector ?? '.ce-has-builtin-menu',
-    maskMargin: options.maskMargin ?? [0, 0, 0, 0]
+    maskMargin: options.maskMargin ?? [0, 0, 0, 0],
+    onFileUpload: options.onFileUpload ?? null
   }
 }

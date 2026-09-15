@@ -707,6 +707,16 @@ export const options: IEditorOption = {
   trace: {
     author: '游客1'
   },
+  // 演示：配置后选择图片会先弹窗裁剪，再模拟上传并插入返回地址
+  onFileUpload: async (file, { onProgress }) => {
+    // 模拟分片上传进度；实际项目替换为真实上传接口
+    for (let i = 1; i <= 10; i++) {
+      await new Promise(resolve => setTimeout(resolve, 80))
+      onProgress(i * 10)
+    }
+    // 演示环境回传本地 object URL（生产环境应返回 CDN/服务端地址）
+    return URL.createObjectURL(file)
+  },
   watermark: undefined,
   pageNumber: {
     format: '第{pageNo}页/共{pageCount}页'
