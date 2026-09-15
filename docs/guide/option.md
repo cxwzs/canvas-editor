@@ -51,18 +51,18 @@ interface IEditorOption {
   table?: ITableOption // 表格配置
   header?: IHeader // 页眉配置
   footer?: IFooter // 页脚配置
+  footerBar?: false | IFooterBarOption // 底部工具栏：false 不渲染；对象则按字段控制按钮，默认全部渲染
+  menu?: false | IMenuOption // 内置菜单栏：false 不渲染；对象则按字段控制按钮，默认全部渲染
   pageNumber?: IPageNumber // 页码配置
   paperDirection?: PaperDirection // 纸张方向：纵向、横向
   inactiveAlpha?: number // 正文内容失焦时透明度。默认值：0.6
   historyMaxRecordCount?: number // 历史（撤销重做）最大记录次数。默认：100次
   printPixelRatio?: number // 打印像素比率（值越大越清晰，但尺寸越大）。默认：3
   maskMargin?: IMargin // 编辑器上的遮盖边距（如外部悬浮菜单栏、底部工具栏）。默认：[0, 0, 0, 0]（内置菜单为上中下布局，不遮盖编辑区）
-  useBuiltinMenu?: boolean // 是否使用核心库内置菜单（顶部工具栏+底部状态栏）。true：使用内置菜单；false：由外部自定义菜单。默认：true
-  useCatalog?: boolean // 是否启用内置目录模块（侧边目录面板+底部目录按钮）。true：启用；false：不渲染。默认：true
   letterClass?: string[] // 排版支持的字母类。默认：a-zA-Z。内置可选择的字母表类：LETTER_CLASS
   contextMenuDisableKeys?: string[] // 禁用的右键菜单。默认：[]
   shortcutDisableKeys?: string[] // 禁用的快捷键。默认：[]
-  scrollContainerSelector?: string // 滚动区域选择器。内置菜单开启时默认：.ce-has-builtin-menu，否则默认：document
+  scrollContainerSelector?: string // 滚动区域选择器。默认：.ce-has-builtin-menu
   pageOuterSelectionDisable?: boolean // 鼠标移出页面时选区禁用。默认：false
   wordBreak?: WordBreak // 单词与标点断行：BREAK_WORD首行不出现标点&单词不拆分、BREAK_ALL按字符宽度撑满后折行。默认：BREAK_WORD
   watermark?: IWatermark // 水印配置
@@ -130,6 +130,83 @@ interface IFooter {
   disabled?: boolean // 是否禁用
   editable?: boolean // 禁止编辑页脚内容
   disabledPages?: number[] // 不显示页脚的页码（从 0 开始）。默认：[]
+}
+```
+
+## 底部工具栏配置
+
+```typescript
+// false：不渲染底部工具栏；对象：按字段控制按钮显示（默认均为 true）
+type FooterBarOption = false | IFooterBarOption
+
+interface IFooterBarOption {
+  catalog?: boolean // 目录（侧边面板+底部按钮）。默认：true
+  pageMode?: boolean // 页面模式。默认：true
+  pageNoList?: boolean // 可见页码。默认：true
+  pageNo?: boolean // 当前页/总页数。默认：true
+  wordCount?: boolean // 字数。默认：true
+  rowNo?: boolean // 行号。默认：true
+  colNo?: boolean // 列号。默认：true
+  editorMode?: boolean // 编辑模式。默认：true
+  pageScaleMinus?: boolean // 缩小。默认：true
+  pageScalePercentage?: boolean // 显示比例。默认：true
+  pageScaleAdd?: boolean // 放大。默认：true
+  paperSize?: boolean // 纸张类型。默认：true
+  paperDirection?: boolean // 纸张方向。默认：true
+  paperMargin?: boolean // 页边距。默认：true
+  column?: boolean // 分栏。默认：true
+  ruler?: boolean // 标尺。默认：true
+  fullscreen?: boolean // 全屏。默认：true
+  editorOption?: boolean // 编辑器设置。默认：true
+}
+```
+
+## 菜单栏配置
+
+```typescript
+// false：不渲染菜单栏；对象：按字段控制按钮显示（默认均为 true）
+type MenuOption = false | IMenuOption
+
+interface IMenuOption {
+  undo?: boolean // 撤销。默认：true
+  redo?: boolean // 重做。默认：true
+  painter?: boolean // 格式刷。默认：true
+  format?: boolean // 清除格式。默认：true
+  font?: boolean // 字体。默认：true
+  size?: boolean // 字号。默认：true
+  sizeAdd?: boolean // 增大字号。默认：true
+  sizeMinus?: boolean // 减小字号。默认：true
+  bold?: boolean // 加粗。默认：true
+  italic?: boolean // 斜体。默认：true
+  underline?: boolean // 下划线。默认：true
+  strikeout?: boolean // 删除线。默认：true
+  superscript?: boolean // 上标。默认：true
+  subscript?: boolean // 下标。默认：true
+  color?: boolean // 字体颜色。默认：true
+  highlight?: boolean // 高亮。默认：true
+  title?: boolean // 标题。默认：true
+  left?: boolean // 左对齐。默认：true
+  center?: boolean // 居中。默认：true
+  right?: boolean // 右对齐。默认：true
+  alignment?: boolean // 两端对齐。默认：true
+  justify?: boolean // 分散对齐。默认：true
+  rowMargin?: boolean // 行间距。默认：true
+  list?: boolean // 列表。默认：true
+  table?: boolean // 表格。默认：true
+  image?: boolean // 图片。默认：true
+  hyperlink?: boolean // 超链接。默认：true
+  separator?: boolean // 分割线。默认：true
+  watermark?: boolean // 水印。默认：true
+  codeblock?: boolean // 代码块。默认：true
+  pageBreak?: boolean // 分页符。默认：true
+  control?: boolean // 控件。默认：true
+  checkbox?: boolean // 复选框。默认：true
+  radio?: boolean // 单选框。默认：true
+  latex?: boolean // LaTeX。默认：true
+  date?: boolean // 日期。默认：true
+  block?: boolean // 内容块。默认：true
+  search?: boolean // 搜索。默认：true
+  print?: boolean // 打印。默认：true
 }
 ```
 

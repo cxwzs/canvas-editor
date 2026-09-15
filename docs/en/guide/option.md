@@ -51,18 +51,18 @@ interface IEditorOption {
   table?: ITableOption // Table configuration
   header?: IHeader // Header configuration
   footer?: IFooter // Footer configuration
+  footerBar?: false | IFooterBarOption // Status bar: false to hide; object controls buttons (all true by default)
+  menu?: false | IMenuOption // Builtin toolbar: false to hide; object controls buttons (all true by default)
   pageNumber?: IPageNumber // Page number configuration
   paperDirection?: PaperDirection // Paper orientation: portrait, landscape
   inactiveAlpha?: number // When the body content is out of focus, transparency. default: 0.6
   historyMaxRecordCount?: number // History (undo redo) maximum number of records. default: 100
   printPixelRatio?: number // Print the pixel ratio (larger values are clearer, but larger sizes). default: 3
   maskMargin?: IMargin // Masking margins above the editor（for example: external floating menu/toolbar）. default: [0, 0, 0, 0] (builtin menu uses top-middle-bottom layout and does not overlay the editor)
-  useBuiltinMenu?: boolean // Use the bundled toolbar/footer. true: builtin menu; false: provide a custom menu. default: true
-  useCatalog?: boolean // Enable the builtin catalog module (side panel + footer button). true: enable; false: do not render. default: true
   letterClass?: string[] // Alphabet class supported by typesetting. default: a-zA-Z. Built-in alternative alphabet class: LETTER_CLASS
   contextMenuDisableKeys?: string[] // Disable context menu keys. default: []
   shortcutDisableKeys?: string[] // Disable shortcut keys. default: []
-  scrollContainerSelector?: string // scroll container selector. default with builtin menu: .ce-has-builtin-menu; otherwise document
+  scrollContainerSelector?: string // scroll container selector. default: .ce-has-builtin-menu
   pageOuterSelectionDisable?: boolean // Disable selection when the mouse moves out of the page. default: false
   wordBreak?: WordBreak // Word and punctuation breaks: No punctuation in the first line of the BREAK_WORD &The word is not split, and the line is folded after BREAK_ALL full according to the width of the character. default: BREAK_WORD
   watermark?: IWatermark // Watermark configuration
@@ -130,6 +130,83 @@ interface IFooter {
   disabled?: boolean // Whether to disable
   editable?: boolean // Disable the footer content from being edited
   disabledPages?: number[] // Page numbers (0-based) on which the footer is not displayed. default: []
+}
+```
+
+## Status Bar Configuration
+
+```typescript
+// false: hide status bar; object: control button visibility (all default true)
+type FooterBarOption = false | IFooterBarOption
+
+interface IFooterBarOption {
+  catalog?: boolean // Catalog side panel + footer button. default: true
+  pageMode?: boolean // Page mode. default: true
+  pageNoList?: boolean // Visible page numbers. default: true
+  pageNo?: boolean // Current page / page count. default: true
+  wordCount?: boolean // Word count. default: true
+  rowNo?: boolean // Row number. default: true
+  colNo?: boolean // Column number. default: true
+  editorMode?: boolean // Editor mode. default: true
+  pageScaleMinus?: boolean // Zoom out. default: true
+  pageScalePercentage?: boolean // Zoom percentage. default: true
+  pageScaleAdd?: boolean // Zoom in. default: true
+  paperSize?: boolean // Paper size. default: true
+  paperDirection?: boolean // Paper direction. default: true
+  paperMargin?: boolean // Page margins. default: true
+  column?: boolean // Columns. default: true
+  ruler?: boolean // Ruler. default: true
+  fullscreen?: boolean // Fullscreen. default: true
+  editorOption?: boolean // Editor settings. default: true
+}
+```
+
+## Menu Configuration
+
+```typescript
+// false: hide toolbar; object: control button visibility (all default true)
+type MenuOption = false | IMenuOption
+
+interface IMenuOption {
+  undo?: boolean // Undo. default: true
+  redo?: boolean // Redo. default: true
+  painter?: boolean // Format painter. default: true
+  format?: boolean // Clear format. default: true
+  font?: boolean // Font. default: true
+  size?: boolean // Font size. default: true
+  sizeAdd?: boolean // Increase font size. default: true
+  sizeMinus?: boolean // Decrease font size. default: true
+  bold?: boolean // Bold. default: true
+  italic?: boolean // Italic. default: true
+  underline?: boolean // Underline. default: true
+  strikeout?: boolean // Strikeout. default: true
+  superscript?: boolean // Superscript. default: true
+  subscript?: boolean // Subscript. default: true
+  color?: boolean // Text color. default: true
+  highlight?: boolean // Highlight. default: true
+  title?: boolean // Title. default: true
+  left?: boolean // Align left. default: true
+  center?: boolean // Align center. default: true
+  right?: boolean // Align right. default: true
+  alignment?: boolean // Align both. default: true
+  justify?: boolean // Justify. default: true
+  rowMargin?: boolean // Line spacing. default: true
+  list?: boolean // List. default: true
+  table?: boolean // Table. default: true
+  image?: boolean // Image. default: true
+  hyperlink?: boolean // Hyperlink. default: true
+  separator?: boolean // Separator. default: true
+  watermark?: boolean // Watermark. default: true
+  codeblock?: boolean // Code block. default: true
+  pageBreak?: boolean // Page break. default: true
+  control?: boolean // Control. default: true
+  checkbox?: boolean // Checkbox. default: true
+  radio?: boolean // Radio. default: true
+  latex?: boolean // LaTeX. default: true
+  date?: boolean // Date. default: true
+  block?: boolean // Block. default: true
+  search?: boolean // Search. default: true
+  print?: boolean // Print. default: true
 }
 ```
 

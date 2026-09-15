@@ -15,6 +15,7 @@ import { IFooter } from './Footer'
 import { IGroup } from './Group'
 import { IHeader } from './Header'
 import { ILabelOption } from './Label'
+import { IFooterBarOption, IMenuOption } from './Menu'
 import { IImgCaptionOption, IListOption } from './Element'
 import { ILineBreakOption } from './LineBreak'
 import { IMargin } from './Margin'
@@ -96,6 +97,8 @@ export interface IEditorOption {
   table?: ITableOption
   header?: IHeader
   footer?: IFooter
+  menu?: false | IMenuOption
+  footerBar?: false | IFooterBarOption
   pageNumber?: IPageNumber
   watermark?: IWatermark
   control?: IControlOption
@@ -125,8 +128,6 @@ export interface IEditorOption {
   trace?: ITraceOption
   ruler?: IRulerOption
   hint?: IHintOption
-  useBuiltinMenu?: boolean
-  useCatalog?: boolean
 }
 
 export interface IEditorResult {
@@ -154,8 +155,8 @@ export type IUpdateOption = Omit<
   | 'paperDirection'
   | 'historyMaxRecordCount'
   | 'scrollContainerSelector'
-  | 'useBuiltinMenu'
-  | 'useCatalog'
+  | 'menu'
+  | 'footerBar'
 >
 
 export interface ISetValueOption {
