@@ -40,6 +40,7 @@ import { IAccessibilityOption } from './Accessibility'
 import { ITraceOption } from './Trace'
 import { IRulerOption } from './Ruler'
 import { IHintOption } from './Hint'
+import { IFileUpload } from './File'
 
 export interface IEditorData {
   header?: IElement[]
@@ -128,6 +129,8 @@ export interface IEditorOption {
   trace?: ITraceOption
   ruler?: IRulerOption
   hint?: IHintOption
+  /** 文件上传回调。选择图片会打开预览/裁剪弹窗；未配置时确认后按 base64 插入，配置后先上传再插入返回地址 */
+  onFileUpload?: IFileUpload | null
 }
 
 export interface IEditorResult {

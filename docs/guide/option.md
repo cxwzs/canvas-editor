@@ -93,7 +93,38 @@ interface IEditorOption {
   trace?: ITraceOption // 留痕配置。默认：禁用
   ruler?: IRulerOption // 标尺配置。默认：禁用
   hint?: IHintOption // 悬浮提示配置。默认：禁用
+  onFileUpload?: IFileUpload | null // 文件上传回调。选择图片会打开列表预览/裁剪弹窗（可继续添加）；未配置时确认后按 base64 插入（无上传进度），配置后先上传（含进度）再插入返回地址
 }
+```
+
+## 文件上传配置
+
+```typescript
+interface IFileUploadOptions {
+  onProgress: (percent: number) => void // 上传进度，0–100
+}
+
+type IFileUpload = (
+  file: File,
+  options: IFileUploadOptions
+) => Promise<string> // 返回可访问的图片地址
+```
+
+示例：
+
+```typescript
+new Editor(container, data, {
+  onFileUpload: async (file, { onProgress }) => {
+    // 模拟上传进度，实际项目中结合 xhr.upload.onprogress / 业务 SDK
+    onProgress(30)
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await fetch('/api/upload', { method: 'POST', body: formData })
+    onProgress(100)
+    const { url } = await res.json()
+    return url
+  }
+})
 ```
 
 ## 表格配置

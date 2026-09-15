@@ -1,5 +1,6 @@
 import prism from 'prismjs'
 import { Dialog } from '../../../components/dialog/Dialog'
+import { ImagePicker } from '../../../components/image-picker/ImagePicker'
 import { formatPrismToken } from '../../../utils/prism'
 import type Editor from '../..'
 import type { Command } from '../command/Command'
@@ -593,23 +594,24 @@ export class BuiltinMenu {
     imageFileDom.click()
   }
   imageFileDom.onchange = function () {
-    const file = imageFileDom.files![0]!
-    const fileReader = new FileReader()
-    fileReader.readAsDataURL(file)
-    fileReader.onload = function () {
-      // 计算宽高
-      const image = new Image()
-      const value = fileReader.result as string
-      image.src = value
-      image.onload = function () {
-        editor.command.executeImage({
-          value,
-          width: image.width,
-          height: image.height
+    const files = Array.from(imageFileDom.files || [])
+    imageFileDom.value = ''
+    if (!files.length) return
+    const onFileUpload = editor.command.getOptions().onFileUpload
+    // 弹窗列表预览/裁剪；未配置 onFileUpload 时确认后按 base64 插入
+    new ImagePicker({
+      files,
+      onFileUpload,
+      onConfirm(payload) {
+        payload.forEach(item => {
+          editor.command.executeImage({
+            value: item.value,
+            width: item.width,
+            height: item.height
+          })
         })
-        imageFileDom.value = ''
       }
-    }
+    })
   }
 
   const hyperlinkDom = q(
