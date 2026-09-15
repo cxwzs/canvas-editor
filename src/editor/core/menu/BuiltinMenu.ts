@@ -1619,37 +1619,37 @@ export class BuiltinMenu {
       name: '留痕模式'
     }
   ]
-  const modeElement = q('.editor-mode')
-  const modeOptionsElement =
-    modeElement.querySelector<HTMLUListElement>('.options')!
-  const modeTextElement = modeElement.querySelector<HTMLSpanElement>('.text')!
-  const modeTextMap = modeList.reduce<Record<string, string>>((acc, item) => {
-    acc[item.mode] = item.name
-    return acc
-  }, {})
+  // const modeElement = q('.editor-mode')
+  // const modeOptionsElement =
+  //   modeElement.querySelector<HTMLUListElement>('.options')!
+  // const modeTextElement = modeElement.querySelector<HTMLSpanElement>('.text')!
+  // const modeTextMap = modeList.reduce<Record<string, string>>((acc, item) => {
+  //   acc[item.mode] = item.name
+  //   return acc
+  // }, {})
   // 初始 active 与 .text 对齐当前模式
   const currentMode = editor.command.getOptions().mode
-  modeTextElement.innerText =
-    modeTextMap[currentMode] || modeTextMap[EditorMode.EDIT]
-  modeOptionsElement.querySelectorAll<HTMLLIElement>('li').forEach(li => {
-    li.classList.toggle('active', li.dataset.mode === currentMode)
-  })
+  // modeTextElement.innerText =
+  //   modeTextMap[currentMode] || modeTextMap[EditorMode.EDIT]
+  // modeOptionsElement.querySelectorAll<HTMLLIElement>('li').forEach(li => {
+  //   li.classList.toggle('active', li.dataset.mode === currentMode)
+  // })
 
   // 留痕记录开关（仅 "留痕模式" 行可见；留痕查看模式下禁用）
-  const traceToggleDom = q('.trace-toggle__input') as HTMLInputElement
-  traceToggleDom.checked = !editor.command.getOptions().trace?.disabled
-  traceToggleDom.disabled = currentMode === EditorMode.TRACE
-  traceToggleDom.onchange = function () {
-    editor.command.executeToggleTrace(traceToggleDom.checked)
-  }
+  // const traceToggleDom = q('.trace-toggle__input') as HTMLInputElement
+  // traceToggleDom.checked = !editor.command.getOptions().trace?.disabled
+  // traceToggleDom.disabled = currentMode === EditorMode.TRACE
+  // traceToggleDom.onchange = function () {
+  //   editor.command.executeToggleTrace(traceToggleDom.checked)
+  // }
 
   const applyMode = (mode: EditorMode) => {
-    modeTextElement.innerText = modeTextMap[mode]
-    editor.command.executeMode(mode)
-    // 更新 active 高亮
-    modeOptionsElement.querySelectorAll<HTMLLIElement>('li').forEach(li => {
-      li.classList.toggle('active', li.dataset.mode === mode)
-    })
+    // modeTextElement.innerText = modeTextMap[mode]
+    // editor.command.executeMode(mode)
+    // // 更新 active 高亮
+    // modeOptionsElement.querySelectorAll<HTMLLIElement>('li').forEach(li => {
+    //   li.classList.toggle('active', li.dataset.mode === mode)
+    // })
     // 设置菜单栏权限视觉反馈
     const isReadonly = mode === EditorMode.READONLY || mode === EditorMode.TRACE
     const enableMenuList = ['search', 'print']
@@ -1660,23 +1660,23 @@ export class BuiltinMenu {
         : dom.classList.remove('disable')
     })
     // 留痕查看模式禁止切回记录态
-    traceToggleDom.disabled = mode === EditorMode.TRACE
+    // traceToggleDom.disabled = mode === EditorMode.TRACE
   }
-  modeElement.onclick = function (evt) {
-    // 点击 li 时不重复 toggle 弹窗（交由 options 处理）
-    if ((evt.target as HTMLElement).tagName === 'LI') return
-    modeOptionsElement.classList.toggle('visible')
-  }
-  modeOptionsElement.onclick = function (evt) {
-    const target = evt.target as HTMLElement
-    if (target.closest('.trace-toggle')) return
-    const li = target.closest('li')
-    if (!li) return
-    const mode = li.dataset.mode as EditorMode
-    if (!modeTextMap[mode]) return
-    applyMode(mode)
-    modeOptionsElement.classList.remove('visible')
-  }
+  // modeElement.onclick = function (evt) {
+  //   // 点击 li 时不重复 toggle 弹窗（交由 options 处理）
+  //   if ((evt.target as HTMLElement).tagName === 'LI') return
+  //   modeOptionsElement.classList.toggle('visible')
+  // }
+  // modeOptionsElement.onclick = function (evt) {
+  //   const target = evt.target as HTMLElement
+  //   if (target.closest('.trace-toggle')) return
+  //   const li = target.closest('li')
+  //   if (!li) return
+  //   const mode = li.dataset.mode as EditorMode
+  //   if (!modeTextMap[mode]) return
+  //   applyMode(mode)
+  //   modeOptionsElement.classList.remove('visible')
+  // }
 
 
   // 8. 内部事件监听
