@@ -1276,31 +1276,31 @@ export class BuiltinMenu {
   }
 
   // 6. 目录显隐 | 页面模式 | 纸张缩放 | 纸张大小 | 纸张方向 | 页边距 | 全屏 | 设置
-  // const editorOptionDom =
-  //   q('.editor-option')
-  // editorOptionDom.onclick = function () {
-  //   const options = editor.command.getOptions()
-  //   new Dialog({
-  //     title: '编辑器配置',
-  //     data: [
-  //       {
-  //         type: 'textarea',
-  //         name: 'option',
-  //         width: 350,
-  //         height: 300,
-  //         required: true,
-  //         value: JSON.stringify(options, null, 2),
-  //         placeholder: '请输入编辑器配置'
-  //       }
-  //     ],
-  //     onConfirm: payload => {
-  //       const newOptionValue = payload.find(p => p.name === 'option')?.value
-  //       if (!newOptionValue) return
-  //       const newOption = JSON.parse(newOptionValue)
-  //       editor.command.executeUpdateOptions(newOption)
-  //     }
-  //   })
-  // }
+  const editorOptionDom =
+    q('.editor-option')
+  editorOptionDom.onclick = function () {
+    const options = editor.command.getOptions()
+    new Dialog({
+      title: '编辑器配置',
+      data: [
+        {
+          type: 'textarea',
+          name: 'option',
+          width: 350,
+          height: 300,
+          required: true,
+          value: JSON.stringify(options, null, 2),
+          placeholder: '请输入编辑器配置'
+        }
+      ],
+      onConfirm: payload => {
+        const newOptionValue = payload.find(p => p.name === 'option')?.value
+        if (!newOptionValue) return
+        const newOption = JSON.parse(newOptionValue)
+        editor.command.executeUpdateOptions(newOption)
+      }
+    })
+  }
 
   async function updateCatalog() {
     const catalog = await editor.command.getCatalog()
@@ -1359,16 +1359,16 @@ export class BuiltinMenu {
     catalogHeaderCloseDom.onclick = switchCatalog
   }
 
-  // const pageModeDom = q('.page-mode')
-  // const pageModeOptionsDom =
-  //   pageModeDom.querySelector<HTMLDivElement>('.options')!
-  // pageModeDom.onclick = function () {
-  //   pageModeOptionsDom.classList.toggle('visible')
-  // }
-  // pageModeOptionsDom.onclick = function (evt) {
-  //   const li = evt.target as HTMLLIElement
-  //   editor.command.executePageMode(<PageMode>li.dataset.pageMode!)
-  // }
+  const pageModeDom = q('.page-mode')
+  const pageModeOptionsDom =
+    pageModeDom.querySelector<HTMLDivElement>('.options')!
+  pageModeDom.onclick = function () {
+    pageModeOptionsDom.classList.toggle('visible')
+  }
+  pageModeOptionsDom.onclick = function (evt) {
+    const li = evt.target as HTMLLIElement
+    editor.command.executePageMode(<PageMode>li.dataset.pageMode!)
+  }
 
   q('.page-scale-percentage').onclick =
     function () {
@@ -1389,50 +1389,50 @@ export class BuiltinMenu {
     }
 
   // 纸张大小
-  // const paperSizeDom = q('.paper-size')
-  // const paperSizeDomOptionsDom =
-  //   paperSizeDom.querySelector<HTMLDivElement>('.options')!
-  // paperSizeDom.onclick = function () {
-  //   paperSizeDomOptionsDom.classList.toggle('visible')
-  // }
-  // paperSizeDomOptionsDom.onclick = function (evt) {
-  //   const li = evt.target as HTMLLIElement
-  //   const paperType = li.dataset.paperSize!
-  //   const [width, height] = paperType.split('*').map(Number)
-  //   editor.command.executePaperSize(width, height)
-  //   // 纸张状态回显
-  //   paperSizeDomOptionsDom
-  //     .querySelectorAll('li')
-  //     .forEach(child => child.classList.remove('active'))
-  //   li.classList.add('active')
-  // }
+  const paperSizeDom = q('.paper-size')
+  const paperSizeDomOptionsDom =
+    paperSizeDom.querySelector<HTMLDivElement>('.options')!
+  paperSizeDom.onclick = function () {
+    paperSizeDomOptionsDom.classList.toggle('visible')
+  }
+  paperSizeDomOptionsDom.onclick = function (evt) {
+    const li = evt.target as HTMLLIElement
+    const paperType = li.dataset.paperSize!
+    const [width, height] = paperType.split('*').map(Number)
+    editor.command.executePaperSize(width, height)
+    // 纸张状态回显
+    paperSizeDomOptionsDom
+      .querySelectorAll('li')
+      .forEach(child => child.classList.remove('active'))
+    li.classList.add('active')
+  }
 
   // 纸张方向
-  // const paperDirectionDom =
-  //   q('.paper-direction')
-  // const paperDirectionDomOptionsDom =
-  //   paperDirectionDom.querySelector<HTMLDivElement>('.options')!
-  // paperDirectionDom.onclick = function () {
-  //   paperDirectionDomOptionsDom.classList.toggle('visible')
-  // }
-  // paperDirectionDomOptionsDom.onclick = function (evt) {
-  //   const li = evt.target as HTMLLIElement
-  //   if (li.tagName !== 'LI' || li.classList.contains('option-caption')) return
-  //   const { paperDirection, sectionDirection } = li.dataset
-  //   if (sectionDirection) {
-  //     // 指定页面方向（本节）
-  //     editor.command.executePageDirection(
-  //       sectionDirection === 'inherit' ? null : <PaperDirection>sectionDirection
-  //     )
-  //   } else if (paperDirection) {
-  //     editor.command.executePaperDirection(<PaperDirection>paperDirection)
-  //   }
-  //   // 纸张方向状态回显
-  //   paperDirectionDomOptionsDom
-  //     .querySelectorAll('li')
-  //     .forEach(child => child.classList.remove('active'))
-  //   li.classList.add('active')
-  // }
+  const paperDirectionDom =
+    q('.paper-direction')
+  const paperDirectionDomOptionsDom =
+    paperDirectionDom.querySelector<HTMLDivElement>('.options')!
+  paperDirectionDom.onclick = function () {
+    paperDirectionDomOptionsDom.classList.toggle('visible')
+  }
+  paperDirectionDomOptionsDom.onclick = function (evt) {
+    const li = evt.target as HTMLLIElement
+    if (li.tagName !== 'LI' || li.classList.contains('option-caption')) return
+    const { paperDirection, sectionDirection } = li.dataset
+    if (sectionDirection) {
+      // 指定页面方向（本节）
+      editor.command.executePageDirection(
+        sectionDirection === 'inherit' ? null : <PaperDirection>sectionDirection
+      )
+    } else if (paperDirection) {
+      editor.command.executePaperDirection(<PaperDirection>paperDirection)
+    }
+    // 纸张方向状态回显
+    paperDirectionDomOptionsDom
+      .querySelectorAll('li')
+      .forEach(child => child.classList.remove('active'))
+    li.classList.add('active')
+  }
 
   // 页面边距
   const paperMarginDom =
@@ -1496,65 +1496,65 @@ export class BuiltinMenu {
   }
 
   // 分栏配置
-  // const columnConfigDom =
-  //   q('.column-config')
-  // columnConfigDom.onclick = function () {
-  //   const current = editor.command.getColumns()
-  //   const count = current?.count ?? 1
-  //   const gap = current?.gap ?? 20
-  //   const separator = current?.separator ? 'true' : 'false'
-  //   new Dialog({
-  //     title: '分栏',
-  //     data: [
-  //       {
-  //         type: 'select',
-  //         label: '栏数',
-  //         name: 'count',
-  //         required: true,
-  //         value: `${count}`,
-  //         options: [
-  //           { value: '1', label: '1（关闭）' },
-  //           { value: '2', label: '2' },
-  //           { value: '3', label: '3' },
-  //           { value: '4', label: '4' },
-  //           { value: '5', label: '5' }
-  //         ]
-  //       },
-  //       {
-  //         type: 'text',
-  //         label: '栏间距',
-  //         name: 'gap',
-  //         required: true,
-  //         value: `${gap}`,
-  //         placeholder: '请输入栏间距（像素）'
-  //       },
-  //       {
-  //         type: 'select',
-  //         label: '分隔线',
-  //         name: 'separator',
-  //         required: true,
-  //         value: separator,
-  //         options: [
-  //           { value: 'false', label: '不显示' },
-  //           { value: 'true', label: '显示' }
-  //         ]
-  //       }
-  //     ],
-  //     onConfirm: payload => {
-  //       const countValue = payload.find(p => p.name === 'count')?.value
-  //       if (!countValue) return
-  //       const gapValue = payload.find(p => p.name === 'gap')?.value
-  //       if (!gapValue) return
-  //       const separatorValue = payload.find(p => p.name === 'separator')?.value
-  //       if (!separatorValue) return
-  //       editor.command.executeSetColumns({
-  //         count: Number(countValue),
-  //         gap: Number(gapValue),
-  //         separator: separatorValue === 'true'
-  //       })
-  //     }
-  //   })
-  // }
+  const columnConfigDom =
+    q('.column-config')
+  columnConfigDom.onclick = function () {
+    const current = editor.command.getColumns()
+    const count = current?.count ?? 1
+    const gap = current?.gap ?? 20
+    const separator = current?.separator ? 'true' : 'false'
+    new Dialog({
+      title: '分栏',
+      data: [
+        {
+          type: 'select',
+          label: '栏数',
+          name: 'count',
+          required: true,
+          value: `${count}`,
+          options: [
+            { value: '1', label: '1（关闭）' },
+            { value: '2', label: '2' },
+            { value: '3', label: '3' },
+            { value: '4', label: '4' },
+            { value: '5', label: '5' }
+          ]
+        },
+        {
+          type: 'text',
+          label: '栏间距',
+          name: 'gap',
+          required: true,
+          value: `${gap}`,
+          placeholder: '请输入栏间距（像素）'
+        },
+        {
+          type: 'select',
+          label: '分隔线',
+          name: 'separator',
+          required: true,
+          value: separator,
+          options: [
+            { value: 'false', label: '不显示' },
+            { value: 'true', label: '显示' }
+          ]
+        }
+      ],
+      onConfirm: payload => {
+        const countValue = payload.find(p => p.name === 'count')?.value
+        if (!countValue) return
+        const gapValue = payload.find(p => p.name === 'gap')?.value
+        if (!gapValue) return
+        const separatorValue = payload.find(p => p.name === 'separator')?.value
+        if (!separatorValue) return
+        editor.command.executeSetColumns({
+          count: Number(countValue),
+          gap: Number(gapValue),
+          separator: separatorValue === 'true'
+        })
+      }
+    })
+  }
 
   // 标尺开关
   const rulerToggleDom =
@@ -1564,25 +1564,25 @@ export class BuiltinMenu {
   }
 
   // 全屏
-  // const fullscreenDom = q('.fullscreen')
-  // fullscreenDom.onclick = toggleFullscreen
-  // window.addEventListener('keydown', evt => {
-  //   if (evt.key === 'F11') {
-  //     toggleFullscreen()
-  //     evt.preventDefault()
-  //   }
-  // })
-  // document.addEventListener('fullscreenchange', () => {
-  //   fullscreenDom.classList.toggle('exist')
-  // })
-  // function toggleFullscreen() {
-  //   console.log('fullscreen')
-  //   if (!document.fullscreenElement) {
-  //     document.documentElement.requestFullscreen()
-  //   } else {
-  //     document.exitFullscreen()
-  //   }
-  // }
+  const fullscreenDom = q('.fullscreen')
+  fullscreenDom.onclick = toggleFullscreen
+  window.addEventListener('keydown', evt => {
+    if (evt.key === 'F11') {
+      toggleFullscreen()
+      evt.preventDefault()
+    }
+  })
+  document.addEventListener('fullscreenchange', () => {
+    fullscreenDom.classList.toggle('exist')
+  })
+  function toggleFullscreen() {
+    console.log('fullscreen')
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen()
+    } else {
+      document.exitFullscreen()
+    }
+  }
 
   // 7. 编辑器使用模式
   const modeList = [
@@ -1619,37 +1619,37 @@ export class BuiltinMenu {
       name: '留痕模式'
     }
   ]
-  // const modeElement = q('.editor-mode')
-  // const modeOptionsElement =
-  //   modeElement.querySelector<HTMLUListElement>('.options')!
-  // const modeTextElement = modeElement.querySelector<HTMLSpanElement>('.text')!
-  // const modeTextMap = modeList.reduce<Record<string, string>>((acc, item) => {
-  //   acc[item.mode] = item.name
-  //   return acc
-  // }, {})
+  const modeElement = q('.editor-mode')
+  const modeOptionsElement =
+    modeElement.querySelector<HTMLUListElement>('.options')!
+  const modeTextElement = modeElement.querySelector<HTMLSpanElement>('.text')!
+  const modeTextMap = modeList.reduce<Record<string, string>>((acc, item) => {
+    acc[item.mode] = item.name
+    return acc
+  }, {})
   // 初始 active 与 .text 对齐当前模式
   const currentMode = editor.command.getOptions().mode
-  // modeTextElement.innerText =
-  //   modeTextMap[currentMode] || modeTextMap[EditorMode.EDIT]
-  // modeOptionsElement.querySelectorAll<HTMLLIElement>('li').forEach(li => {
-  //   li.classList.toggle('active', li.dataset.mode === currentMode)
-  // })
+  modeTextElement.innerText =
+    modeTextMap[currentMode] || modeTextMap[EditorMode.EDIT]
+  modeOptionsElement.querySelectorAll<HTMLLIElement>('li').forEach(li => {
+    li.classList.toggle('active', li.dataset.mode === currentMode)
+  })
 
   // 留痕记录开关（仅 "留痕模式" 行可见；留痕查看模式下禁用）
-  // const traceToggleDom = q('.trace-toggle__input') as HTMLInputElement
-  // traceToggleDom.checked = !editor.command.getOptions().trace?.disabled
-  // traceToggleDom.disabled = currentMode === EditorMode.TRACE
-  // traceToggleDom.onchange = function () {
-  //   editor.command.executeToggleTrace(traceToggleDom.checked)
-  // }
+  const traceToggleDom = q('.trace-toggle__input') as HTMLInputElement
+  traceToggleDom.checked = !editor.command.getOptions().trace?.disabled
+  traceToggleDom.disabled = currentMode === EditorMode.TRACE
+  traceToggleDom.onchange = function () {
+    editor.command.executeToggleTrace(traceToggleDom.checked)
+  }
 
   const applyMode = (mode: EditorMode) => {
-    // modeTextElement.innerText = modeTextMap[mode]
-    // editor.command.executeMode(mode)
-    // // 更新 active 高亮
-    // modeOptionsElement.querySelectorAll<HTMLLIElement>('li').forEach(li => {
-    //   li.classList.toggle('active', li.dataset.mode === mode)
-    // })
+    modeTextElement.innerText = modeTextMap[mode]
+    editor.command.executeMode(mode)
+    // 更新 active 高亮
+    modeOptionsElement.querySelectorAll<HTMLLIElement>('li').forEach(li => {
+      li.classList.toggle('active', li.dataset.mode === mode)
+    })
     // 设置菜单栏权限视觉反馈
     const isReadonly = mode === EditorMode.READONLY || mode === EditorMode.TRACE
     const enableMenuList = ['search', 'print']
@@ -1660,23 +1660,23 @@ export class BuiltinMenu {
         : dom.classList.remove('disable')
     })
     // 留痕查看模式禁止切回记录态
-    // traceToggleDom.disabled = mode === EditorMode.TRACE
+    traceToggleDom.disabled = mode === EditorMode.TRACE
   }
-  // modeElement.onclick = function (evt) {
-  //   // 点击 li 时不重复 toggle 弹窗（交由 options 处理）
-  //   if ((evt.target as HTMLElement).tagName === 'LI') return
-  //   modeOptionsElement.classList.toggle('visible')
-  // }
-  // modeOptionsElement.onclick = function (evt) {
-  //   const target = evt.target as HTMLElement
-  //   if (target.closest('.trace-toggle')) return
-  //   const li = target.closest('li')
-  //   if (!li) return
-  //   const mode = li.dataset.mode as EditorMode
-  //   if (!modeTextMap[mode]) return
-  //   applyMode(mode)
-  //   modeOptionsElement.classList.remove('visible')
-  // }
+  modeElement.onclick = function (evt) {
+    // 点击 li 时不重复 toggle 弹窗（交由 options 处理）
+    if ((evt.target as HTMLElement).tagName === 'LI') return
+    modeOptionsElement.classList.toggle('visible')
+  }
+  modeOptionsElement.onclick = function (evt) {
+    const target = evt.target as HTMLElement
+    if (target.closest('.trace-toggle')) return
+    const li = target.closest('li')
+    if (!li) return
+    const mode = li.dataset.mode as EditorMode
+    if (!modeTextMap[mode]) return
+    applyMode(mode)
+    modeOptionsElement.classList.remove('visible')
+  }
 
 
   // 8. 内部事件监听
@@ -1885,15 +1885,15 @@ export class BuiltinMenu {
     })
   }
 
-  // const onPageModeChange = (payload: PageMode) => {
-  //   const activeMode = pageModeOptionsDom.querySelector<HTMLLIElement>(
-  //     `[data-page-mode='${payload}']`
-  //   )!
-  //   pageModeOptionsDom
-  //     .querySelectorAll('li')
-  //     .forEach(li => li.classList.remove('active'))
-  //   activeMode.classList.add('active')
-  // }
+  const onPageModeChange = (payload: PageMode) => {
+    const activeMode = pageModeOptionsDom.querySelector<HTMLLIElement>(
+      `[data-page-mode='${payload}']`
+    )!
+    pageModeOptionsDom
+      .querySelectorAll('li')
+      .forEach(li => li.classList.remove('active'))
+    activeMode.classList.add('active')
+  }
 
   const handleContentChange = async () => {
     const wordCount = await editor.command.getWordCount()
@@ -1971,7 +1971,7 @@ export class BuiltinMenu {
     )
     editor.eventBus.on('pageScaleChange', onPageScaleChange)
     editor.eventBus.on('controlChange', onControlChange)
-    // editor.eventBus.on('pageModeChange', onPageModeChange)
+    editor.eventBus.on('pageModeChange', onPageModeChange)
     this.disposeList.push(() => {
       editor.eventBus.off('contentChange', onContentChange)
       editor.eventBus.off('rangeStyleChange', onRangeStyleChange)
@@ -1986,7 +1986,7 @@ export class BuiltinMenu {
       )
       editor.eventBus.off('pageScaleChange', onPageScaleChange)
       editor.eventBus.off('controlChange', onControlChange)
-      // editor.eventBus.off('pageModeChange', onPageModeChange)
+      editor.eventBus.off('pageModeChange', onPageModeChange)
     })
   }
 }

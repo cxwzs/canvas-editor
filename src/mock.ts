@@ -702,7 +702,7 @@ export const commentList: IComment[] = [
 ]
 
 export const options: IEditorOption = {
-  pageVirtualScroll: true,
+  pageVirtualScroll: true, // 是否启用虚拟滚动
   margins: [100, 120, 100, 120],
   trace: {
     author: '游客1'
@@ -718,6 +718,6 @@ export const options: IEditorOption = {
     tipDisabled: false
   },
   maskMargin: [60, 0, 30, 0], // 菜单栏高度60，底部工具栏30为遮盖层
-  // useBuiltinMenu: false, // 设为 false 时不渲染内置菜单，改由外部自定义
+  useBuiltinMenu: true, // 设为 false 时不渲染内置菜单，改由外部自定义
   useCatalog: false, // 设为 false 时不渲染内置目录模块
 }
