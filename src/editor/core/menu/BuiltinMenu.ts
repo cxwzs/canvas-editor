@@ -17,7 +17,7 @@ import { TextDecorationStyle } from '../../dataset/enum/Text'
 import { TitleLevel } from '../../dataset/enum/Title'
 import { debounce, nextTick, splitText } from '../../utils'
 import { IRangeStyle } from '../../interface/Listener'
-import { builtinMenuTemplate } from './template'
+import builtinMenuTemplate from './template.html?raw'
 import './menu.css'
 
 export class BuiltinMenu {
