@@ -130,6 +130,17 @@ describe('deepClone', () => {
     expect(cloned).toEqual(obj)
     expect(cloned.date).not.toBe(obj.date)
   })
+
+  it('含函数的对象走兼容克隆', () => {
+    const fn = () => 1
+    const obj = { a: 1, nested: { b: 2 }, fn }
+    const cloned = deepClone(obj)
+    expect(cloned).not.toBe(obj)
+    expect(cloned.a).toBe(1)
+    expect(cloned.nested).not.toBe(obj.nested)
+    expect(cloned.nested.b).toBe(2)
+    expect(cloned.fn).toBe(fn)
+  })
 })
 
 describe('deepCloneOmitKeys', () => {

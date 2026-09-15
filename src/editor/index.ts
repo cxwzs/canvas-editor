@@ -180,7 +180,8 @@ export {
   createDomFromElementList,
   getElementListByHTML,
   getTextFromElementList,
-  builtinMenuPlugin
+  builtinMenuPlugin,
+  mergeOption
 }
 
 // 对外常量
