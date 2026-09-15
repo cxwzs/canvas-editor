@@ -58,7 +58,6 @@ interface IEditorOption {
   printPixelRatio?: number // 打印像素比率（值越大越清晰，但尺寸越大）。默认：3
   maskMargin?: IMargin // 编辑器上的遮盖边距（如外部悬浮菜单栏、底部工具栏）。默认：[0, 0, 0, 0]（内置菜单为上中下布局，不遮盖编辑区）
   useBuiltinMenu?: boolean // 是否使用核心库内置菜单（顶部工具栏+底部状态栏）。true：使用内置菜单；false：由外部自定义菜单。默认：true
-  useCatalog?: boolean // 是否启用内置目录模块（侧边目录面板+底部目录按钮）。true：启用；false：不渲染。默认：true
   letterClass?: string[] // 排版支持的字母类。默认：a-zA-Z。内置可选择的字母表类：LETTER_CLASS
   contextMenuDisableKeys?: string[] // 禁用的右键菜单。默认：[]
   shortcutDisableKeys?: string[] // 禁用的快捷键。默认：[]

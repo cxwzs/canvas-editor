@@ -717,7 +717,6 @@ export const options: IEditorOption = {
   zone: {
     tipDisabled: false
   },
-  maskMargin: [60, 0, 30, 0], // 菜单栏高度60，底部工具栏30为遮盖层
-  // useBuiltinMenu: false, // 设为 false 时不渲染内置菜单，改由外部自定义
-  useCatalog: false, // 设为 false 时不渲染内置目录模块
+  maskMargin: [60, 0, 30, 0] // 菜单栏高度60，底部工具栏30为遮盖层
+  // useBuiltinMenu: false // 设为 false 时不渲染内置菜单，改由外部自定义
 }
