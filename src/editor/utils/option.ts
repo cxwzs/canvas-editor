@@ -214,6 +214,7 @@ export function mergeOption(
   }
 
   const useBuiltinMenu = options.useBuiltinMenu !== false
+  const useCatalog = options.useCatalog !== false
 
   return {
     mode: EditorMode.EDIT,
@@ -293,6 +294,7 @@ export function mergeOption(
     ruler: rulerOptions,
     hint: hintOptions,
     useBuiltinMenu,
+    useCatalog,
     scrollContainerSelector:
       options.scrollContainerSelector ??
       (useBuiltinMenu ? '.ce-has-builtin-menu' : ''),

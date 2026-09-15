@@ -58,6 +58,7 @@ interface IEditorOption {
   printPixelRatio?: number // Print the pixel ratio (larger values are clearer, but larger sizes). default: 3
   maskMargin?: IMargin // Masking margins above the editor（for example: external floating menu/toolbar）. default: [0, 0, 0, 0] (builtin menu uses top-middle-bottom layout and does not overlay the editor)
   useBuiltinMenu?: boolean // Use the bundled toolbar/footer. true: builtin menu; false: provide a custom menu. default: true
+  useCatalog?: boolean // Enable the builtin catalog module (side panel + footer button). true: enable; false: do not render. default: true
   letterClass?: string[] // Alphabet class supported by typesetting. default: a-zA-Z. Built-in alternative alphabet class: LETTER_CLASS
   contextMenuDisableKeys?: string[] // Disable context menu keys. default: []
   shortcutDisableKeys?: string[] // Disable shortcut keys. default: []
