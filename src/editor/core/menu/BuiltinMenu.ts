@@ -1389,23 +1389,23 @@ export class BuiltinMenu {
     }
 
   // 纸张大小
-  const paperSizeDom = q('.paper-size')
-  const paperSizeDomOptionsDom =
-    paperSizeDom.querySelector<HTMLDivElement>('.options')!
-  paperSizeDom.onclick = function () {
-    paperSizeDomOptionsDom.classList.toggle('visible')
-  }
-  paperSizeDomOptionsDom.onclick = function (evt) {
-    const li = evt.target as HTMLLIElement
-    const paperType = li.dataset.paperSize!
-    const [width, height] = paperType.split('*').map(Number)
-    editor.command.executePaperSize(width, height)
-    // 纸张状态回显
-    paperSizeDomOptionsDom
-      .querySelectorAll('li')
-      .forEach(child => child.classList.remove('active'))
-    li.classList.add('active')
-  }
+  // const paperSizeDom = q('.paper-size')
+  // const paperSizeDomOptionsDom =
+  //   paperSizeDom.querySelector<HTMLDivElement>('.options')!
+  // paperSizeDom.onclick = function () {
+  //   paperSizeDomOptionsDom.classList.toggle('visible')
+  // }
+  // paperSizeDomOptionsDom.onclick = function (evt) {
+  //   const li = evt.target as HTMLLIElement
+  //   const paperType = li.dataset.paperSize!
+  //   const [width, height] = paperType.split('*').map(Number)
+  //   editor.command.executePaperSize(width, height)
+  //   // 纸张状态回显
+  //   paperSizeDomOptionsDom
+  //     .querySelectorAll('li')
+  //     .forEach(child => child.classList.remove('active'))
+  //   li.classList.add('active')
+  // }
 
   // 纸张方向
   const paperDirectionDom =
