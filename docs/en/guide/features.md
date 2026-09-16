@@ -336,7 +336,7 @@ Developer integration, extension mechanisms, and runtime capabilities.
 
 <div class="feat">
   <div class="it"><b>listener</b><span>Single-callback listening (direct assignment)</span></div>
-  <div class="it"><b>eventBus</b><span>Pub/sub (multi-listener), covering contentChange / rangeChange / rangeStyleChange / controlChange / controlContentChange / saved / pageSizeChange / pageScaleChange / pageModeChange / zoneChange / positionContextChange / imageSizeChange / imageMousedown / imageDblclick / labelMousedown / visiblePageNoListChange / intersectionPageNoChange and more (16+)</span></div>
+  <div class="it"><b>eventBus</b><span>Pub/sub (multi-listener), covering contentChange / rangeChange / rangeStyleChange / controlChange / controlContentChange / saved / pageSizeChange / pageScaleChange / pageModeChange / zoneChange / positionContextChange / imageSizeChange / imageMousedown / imageDblclick / labelMousedown / areaMousedown / visiblePageNoListChange / intersectionPageNoChange and more (16+)</span></div>
   <div class="it"><b>Interaction events</b><span>Mouse move / enter / leave / down / up / click, scroll</span></div>
 </div>
 

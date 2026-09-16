@@ -88,4 +88,8 @@ export type ILabelMousedown = (payload: {
   element: IElement
 }) => void
 
+export type IAreaMousedown = (payload: {
+  areaId: string
+}) => void
+
 export type IRangeChange = (payload: IRange) => void

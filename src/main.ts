@@ -14,7 +14,7 @@ import shortMock from './shortMock.json'
 
 const mockHtmlStr = shortMock.reduce(
   (acc, cur) =>
-    `${acc}<div paraId="${cur.paraId}" data-title="${cur.paraName}">${cur.content}</div>`,
+    `${acc}<div paraId="${cur.paraId}" data-disabled="${cur.disabled}" data-title="${cur.paraName}">${cur.content}</div>`,
   ''
 )
 
@@ -46,6 +46,11 @@ window.onload = function () {
   //   id: shortMock[0].paraId,
   //   properties: { mode: 'readonly' } // AreaMode.READONLY
   // })
+
+  // 点击区域正文时拿到 areaId
+  instance.eventBus.on('areaMousedown', ({ areaId }) => {
+    console.log('areaMousedown areaId:', areaId)
+  })
 
   instance.command.executeSetHTML({
     main: mockHtmlStr
