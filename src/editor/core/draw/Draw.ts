@@ -24,6 +24,7 @@ import {
   IElementMetrics,
   IElementFillRect,
   IElementStyle,
+  IElementPosition,
   ISpliceElementListOption,
   IInsertElementListOption
 } from '../../interface/Element'
@@ -798,6 +799,31 @@ export class Draw {
       !this.forceFullPageRender &&
       !!this.options.pageVirtualScroll
     )
+  }
+
+  public scrollPositionIntoView(position: IElementPosition) {
+    const {
+      coordinate: { leftTop, leftBottom, rightTop },
+      pageNo
+    } = position
+    this.setPageNo(pageNo)
+    this.setIntersectionPageNo(pageNo)
+    if (this.getIsVirtualPageMode()) {
+      this.syncVirtualPages(pageNo, { isDraw: true })
+    }
+    const { x: pageLeft, y: preY } = this.getPageOffset(pageNo)
+    const anchor = document.createElement('div')
+    anchor.style.position = 'absolute'
+    const ANCHOR_OVERFLOW_SIZE = 50
+    anchor.style.width = `${rightTop[0] - leftTop[0] + ANCHOR_OVERFLOW_SIZE}px`
+    anchor.style.height = `${
+      leftBottom[1] - leftTop[1] + ANCHOR_OVERFLOW_SIZE
+    }px`
+    anchor.style.left = `${leftTop[0] + pageLeft}px`
+    anchor.style.top = `${leftTop[1] + preY}px`
+    this.container.append(anchor)
+    anchor.scrollIntoView({ block: 'center', inline: 'nearest' })
+    anchor.remove()
   }
 
   private _getPageListIndex(pageNo: number): number {

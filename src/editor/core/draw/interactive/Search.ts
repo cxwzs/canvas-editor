@@ -143,30 +143,7 @@ export class Search {
   }
 
   public searchNavigateScrollIntoView(position: IElementPosition) {
-    const {
-      coordinate: { leftTop, leftBottom, rightTop },
-      pageNo
-    } = position
-    // 虚拟滚动先挂载目标页，再滚动定位
-    if (this.draw.getIsVirtualPageMode()) {
-      this.draw.syncVirtualPages(pageNo, { isDraw: true })
-    }
-    const { x: pageLeft, y: preY } = this.draw.getPageOffset(pageNo)
-    // 创建定位锚点
-    const anchor = document.createElement('div')
-    anchor.style.position = 'absolute'
-    // 扩大搜索词尺寸，使可视范围更广
-    const ANCHOR_OVERFLOW_SIZE = 50
-    anchor.style.width = `${rightTop[0] - leftTop[0] + ANCHOR_OVERFLOW_SIZE}px`
-    anchor.style.height = `${
-      leftBottom[1] - leftTop[1] + ANCHOR_OVERFLOW_SIZE
-    }px`
-    anchor.style.left = `${leftTop[0] + pageLeft}px`
-    anchor.style.top = `${leftTop[1] + preY}px`
-    this.draw.getContainer().append(anchor)
-    // 移动到可视范围
-    anchor.scrollIntoView(false)
-    anchor.remove()
+    this.draw.scrollPositionIntoView(position)
   }
 
   public getSearchNavigateIndexList() {

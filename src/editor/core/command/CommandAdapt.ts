@@ -2862,7 +2862,8 @@ export class CommandAdapt {
     const context = this.draw.getArea().getContextByAreaId(areaId, options)
     if (!context) return
     const {
-      range: { endIndex }
+      range: { endIndex },
+      elementPosition
     } = context
     this.position.setPositionContext({
       isTable: false
@@ -2874,6 +2875,8 @@ export class CommandAdapt {
       isCompute: false,
       isSubmitHistory: false
     })
+    // 虚拟分页时绘制光标不会可靠滚入视口，用锚点滚动
+    this.draw.scrollPositionIntoView(elementPosition)
   }
 
   // 清空涂鸦信息
