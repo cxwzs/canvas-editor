@@ -364,6 +364,82 @@ describe('zipElementList', () => {
     expect(result[0].trace?.[0].type).toBe(TraceType.INSERTED)
     expect(result[0].trace?.[1].type).toBe(TraceType.DELETED)
   })
+
+  it('area 内表格压缩时单元格不因继承 areaId 变成嵌套 area', () => {
+    const list: IElement[] = [
+      {
+        type: ElementType.AREA,
+        value: '',
+        areaId: 'area-1',
+        area: { mode: AreaMode.EDIT },
+        valueList: [
+          {
+            type: ElementType.TABLE,
+            value: '',
+            colgroup: [{ width: 100 }, { width: 100 }],
+            trList: [
+              {
+                height: 40,
+                tdList: [
+                  {
+                    colspan: 1,
+                    rowspan: 1,
+                    value: [{ value: '单元格' }]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+    formatElementList(list, { editorOptions: mockOptions as any })
+    const zipped = zipElementList(list, { isClassifyArea: true })
+    const area = zipped.find(el => el.type === ElementType.AREA)
+    const table = area?.valueList?.find(el => el.type === ElementType.TABLE)
+    expect(table).toBeTruthy()
+    const cellValue = table!.trList![0].tdList[0].value
+    expect(cellValue.some(el => el.type === ElementType.AREA)).toBe(false)
+    expect(cellValue.some(el => el.value?.includes('单元格'))).toBe(true)
+  })
+
+  it('表格单元格内独立 area 仍可正常归类', () => {
+    const list: IElement[] = [
+      {
+        type: ElementType.TABLE,
+        value: '',
+        colgroup: [{ width: 100 }],
+        trList: [
+          {
+            height: 40,
+            tdList: [
+              {
+                colspan: 1,
+                rowspan: 1,
+                value: [
+                  {
+                    type: ElementType.AREA,
+                    value: '',
+                    areaId: 'cell-area',
+                    area: { mode: AreaMode.EDIT },
+                    valueList: [{ value: '区内文本' }]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+    formatElementList(list, { editorOptions: mockOptions as any })
+    const zipped = zipElementList(list, { isClassifyArea: true })
+    const table = zipped.find(el => el.type === ElementType.TABLE)
+    const cellValue = table!.trList![0].tdList[0].value
+    expect(cellValue.some(el => el.type === ElementType.AREA)).toBe(true)
+    expect(cellValue.find(el => el.type === ElementType.AREA)?.areaId).toBe(
+      'cell-area'
+    )
+  })
 })
 
 describe('trace element filter', () => {

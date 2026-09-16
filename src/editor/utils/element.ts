@@ -794,6 +794,33 @@ interface IZipElementListOption {
   isClone?: boolean
   isListValue?: boolean
 }
+
+/** 清除表格单元格内继承自父级 area 的标记，避免压缩时被误判为嵌套 area */
+function clearInheritedAreaAttrFromTable(
+  table: IElement,
+  inheritedAreaId: string
+) {
+  const trList = table.trList
+  if (!trList) return
+  for (let r = 0; r < trList.length; r++) {
+    const tdList = trList[r].tdList
+    for (let d = 0; d < tdList.length; d++) {
+      const tdValueList = tdList[d].value
+      for (let t = 0; t < tdValueList.length; t++) {
+        const tdValue = tdValueList[t]
+        if (tdValue.areaId === inheritedAreaId) {
+          delete tdValue.areaId
+          delete tdValue.area
+          delete tdValue.areaIndex
+        }
+        if (tdValue.type === ElementType.TABLE) {
+          clearInheritedAreaAttrFromTable(tdValue, inheritedAreaId)
+        }
+      }
+    }
+  }
+}
+
 export function zipElementList(
   payload: IElement[],
   options: IZipElementListOption = {}
@@ -833,6 +860,10 @@ export function zipElementList(
         }
         delete areaE.area
         delete areaE.areaId
+        // 表格单元格会继承父级 areaId，压缩前需剥离，否则会变成嵌套 area
+        if (areaE.type === ElementType.TABLE) {
+          clearInheritedAreaAttrFromTable(areaE, areaId)
+        }
         valueList.push(areaE)
         e++
       }
