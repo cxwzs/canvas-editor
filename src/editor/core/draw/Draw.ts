@@ -1741,6 +1741,10 @@ export class Draw {
         isForceCompensation: true
       })
     })
+    // 空正文 area 补偿可编辑占位行（含仅有 data-title 的初始空区域）
+    if (main?.length) {
+      this.area.ensureEditableBodies(main)
+    }
     this.setEditorData({
       header,
       main,
