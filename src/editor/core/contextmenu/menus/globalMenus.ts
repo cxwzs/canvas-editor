@@ -7,17 +7,17 @@ const {
 } = INTERNAL_CONTEXT_MENU_KEY
 
 export const globalMenus: IRegisterContextMenu[] = [
-  {
-    key: CUT,
-    i18nPath: 'contextmenu.global.cut',
-    shortCut: `${isApple ? '⌘' : 'Ctrl'} + X`,
-    when: payload => {
-      return !payload.isReadonly
-    },
-    callback: (command: Command) => {
-      command.executeCut()
-    }
-  },
+  // {
+  //   key: CUT,
+  //   i18nPath: 'contextmenu.global.cut',
+  //   shortCut: `${isApple ? '⌘' : 'Ctrl'} + X`,
+  //   when: payload => {
+  //     return !payload.isReadonly
+  //   },
+  //   callback: (command: Command) => {
+  //     command.executeCut()
+  //   }
+  // },
   {
     key: COPY,
     i18nPath: 'contextmenu.global.copy',
@@ -51,16 +51,16 @@ export const globalMenus: IRegisterContextMenu[] = [
       command.executeSelectAll()
     }
   },
-  {
-    isDivider: true
-  },
-  {
-    key: PRINT,
-    i18nPath: 'contextmenu.global.print',
-    icon: 'print',
-    when: () => true,
-    callback: (command: Command) => {
-      command.executePrint()
-    }
-  }
+  // {
+  //   isDivider: true
+  // },
+  // {
+  //   key: PRINT,
+  //   i18nPath: 'contextmenu.global.print',
+  //   icon: 'print',
+  //   when: () => true,
+  //   callback: (command: Command) => {
+  //     command.executePrint()
+  //   }
+  // }
 ]
