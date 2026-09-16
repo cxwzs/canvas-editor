@@ -268,3 +268,15 @@ instance.eventBus.on('labelMousedown', (payload: {
   element: IElement
 }) => void)
 ```
+
+## areaMousedown
+
+功能：光标进入区域正文时触发（不含区域标题；同一区域内移动不重复触发）
+
+用法：
+
+```javascript
+instance.eventBus.on('areaMousedown', (payload: {
+  areaId: string
+}) => void)
+```

@@ -7,6 +7,7 @@ import {
   IImageSizeChange,
   IInputEventChange,
   IIntersectionPageNoChange,
+  IAreaMousedown,
   ILabelMousedown,
   IMouseEventChange,
   IPageModeChange,
@@ -44,5 +45,6 @@ export interface EventBusMap {
   imageMousedown: IImageMousedown
   imageDblclick: IImageDblclick
   labelMousedown: ILabelMousedown
+  areaMousedown: IAreaMousedown
   rangeChange: IRangeChange
 }

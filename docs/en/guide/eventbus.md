@@ -268,3 +268,15 @@ instance.eventBus.on('labelMousedown', (payload: {
   element: IElement
 }) => void)
 ```
+
+## areaMousedown
+
+Feature: Fired when the caret enters area body content (excluding area title; not re-fired while staying in the same area)
+
+Usage:
+
+```javascript
+instance.eventBus.on('areaMousedown', (payload: {
+  areaId: string
+}) => void)
+```

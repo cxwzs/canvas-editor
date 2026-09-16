@@ -336,7 +336,7 @@ canvas-editor 提供完整的「类 Word」文档编辑能力,按使用场景分
 
 <div class="feat">
   <div class="it"><b>listener</b><span>单回调监听(直接赋值)</span></div>
-  <div class="it"><b>eventBus</b><span>发布订阅(支持多监听),覆盖 contentChange / rangeChange / rangeStyleChange / controlChange / controlContentChange / saved / pageSizeChange / pageScaleChange / pageModeChange / zoneChange / positionContextChange / imageSizeChange / imageMousedown / imageDblclick / labelMousedown / visiblePageNoListChange / intersectionPageNoChange 等 16+ 事件</span></div>
+  <div class="it"><b>eventBus</b><span>发布订阅(支持多监听),覆盖 contentChange / rangeChange / rangeStyleChange / controlChange / controlContentChange / saved / pageSizeChange / pageScaleChange / pageModeChange / zoneChange / positionContextChange / imageSizeChange / imageMousedown / imageDblclick / labelMousedown / areaMousedown / visiblePageNoListChange / intersectionPageNoChange 等 16+ 事件</span></div>
   <div class="it"><b>交互事件</b><span>鼠标移动 / 进入 / 离开 / 按下 / 抬起 / 点击、滚动</span></div>
 </div>
 

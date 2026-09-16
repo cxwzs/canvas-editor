@@ -31,6 +31,7 @@ export class RangeManager {
   private position: Position
   private historyManager: HistoryManager
   private defaultStyle: IRangeElementStyle | null
+  private lastAreaBodyId: string | null
 
   constructor(draw: Draw) {
     this.draw = draw
@@ -44,10 +45,20 @@ export class RangeManager {
       endIndex: -1
     }
     this.defaultStyle = null
+    this.lastAreaBodyId = null
   }
 
   public getRange(): IRange {
     return this.range
+  }
+
+  /** 当前光标所在区域正文 areaId（标题或区域外为 null） */
+  public getActiveAreaBodyId(): string | null {
+    const { startIndex } = this.range
+    if (!~startIndex) return null
+    const element = this.draw.getElementList()[startIndex]
+    if (!element?.areaId || element.title?.disabled) return null
+    return element.areaId
   }
 
   public clearRange() {
@@ -452,6 +463,18 @@ export class RangeManager {
       this.setDefaultStyle(null)
     }
     this.range.zone = this.draw.getZone().getZone()
+    // 光标进入区域正文
+    if (isChange) {
+      const areaId = this.getActiveAreaBodyId()
+      if (
+        areaId &&
+        areaId !== this.lastAreaBodyId &&
+        this.eventBus.isSubscribe('areaMousedown')
+      ) {
+        this.eventBus.emit('areaMousedown', { areaId })
+      }
+      this.lastAreaBodyId = areaId
+    }
     // 激活控件
     const control = this.draw.getControl()
     if (~startIndex && ~endIndex) {
