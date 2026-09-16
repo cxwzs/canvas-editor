@@ -470,26 +470,36 @@ export class Area {
     return null
   }
 
-  public setAreaProperties(payload: ISetAreaPropertiesOption) {
-    const areaId = payload.id || this.getActiveAreaId()
-    if (!areaId) return
-    const areaInfo = this.areaInfoMap.get(areaId)
-    if (!areaInfo) return
-    if (!areaInfo.area) {
-      areaInfo.area = {}
-    }
+  public setAreaProperties(
+    payload: ISetAreaPropertiesOption | ISetAreaPropertiesOption[]
+  ) {
+    const payloadList = Array.isArray(payload) ? payload : [payload]
+    if (!payloadList.length) return
     // 需要计算的属性
     let isCompute = false
+    let isExistUpdate = false
     const computeProps: Array<keyof IArea> = ['top', 'hide']
-    // 循环设置
-    Object.entries(payload.properties).forEach(([key, value]) => {
-      if (isNonValue(value)) return
-      const propKey = key as keyof IArea
-      areaInfo.area[propKey] = value
-      if (computeProps.includes(propKey)) {
-        isCompute = true
+    const activeAreaId = this.getActiveAreaId()
+    for (const item of payloadList) {
+      const areaId = item.id || activeAreaId
+      if (!areaId) continue
+      const areaInfo = this.areaInfoMap.get(areaId)
+      if (!areaInfo) continue
+      if (!areaInfo.area) {
+        areaInfo.area = {}
       }
-    })
+      // 循环设置
+      Object.entries(item.properties).forEach(([key, value]) => {
+        if (isNonValue(value)) return
+        const propKey = key as keyof IArea
+        areaInfo.area[propKey] = value
+        if (computeProps.includes(propKey)) {
+          isCompute = true
+        }
+      })
+      isExistUpdate = true
+    }
+    if (!isExistUpdate) return
     this.draw.render({
       isCompute,
       isSetCursor: false

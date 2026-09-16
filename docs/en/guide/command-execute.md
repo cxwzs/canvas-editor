@@ -1092,12 +1092,12 @@ const areaId = instance.command.executeInsertArea(payload: IInsertAreaOption)
 
 ## executeSetAreaProperties
 
-Feature: set area properties
+Feature: set area properties (supports batch)
 
 Usage:
 
 ```javascript
-instance.command.executeSetAreaProperties(payload: ISetAreaPropertiesOption)
+instance.command.executeSetAreaProperties(payload: ISetAreaPropertiesOption | ISetAreaPropertiesOption[])
 ```
 
 ## executeSetAreaValue
