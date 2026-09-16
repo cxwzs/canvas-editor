@@ -67,25 +67,58 @@ export function isDisabledTitleLineMerge(
 /**
  * 按方向跳过禁用元素，返回可落点索引。
  * Delete：向后跳过；Backspace：向前跳过。
+ * 默认不跨 area 边界。
  */
 export function getSkipFocusDisabledIndex(
   elementList: IElement[],
   index: number,
   direction: 1 | -1,
-  draw: Draw
+  draw: Draw,
+  options?: { allowCrossArea?: boolean }
 ): number {
+  const allowCrossArea = options?.allowCrossArea ?? false
+  const boundaryAreaId = elementList[index]?.areaId
   let i = index
   if (direction === 1) {
     while (i < elementList.length && isElementFocusDisabled(elementList[i], draw)) {
+      if (
+        !allowCrossArea &&
+        elementList[i].areaId !== boundaryAreaId
+      ) {
+        break
+      }
       i++
     }
     // 光标落在跳过段最后一个字符之后（即下一个可编辑元素之前）
     return i > index ? i - 1 : index
   }
   while (i >= 0 && isElementFocusDisabled(elementList[i], draw)) {
+    if (
+      !allowCrossArea &&
+      elementList[i].areaId !== boundaryAreaId
+    ) {
+      break
+    }
     i--
   }
   return i
+}
+
+/** 是否为区域正文占位换行（标题尾换行后的可编辑空行） */
+export function isAreaBodyPlaceholderBreak(
+  elementList: IElement[],
+  index: number
+): boolean {
+  const cur = elementList[index]
+  const prev = elementList[index - 1]
+  return !!(
+    cur?.value === ZERO &&
+    !cur.title?.disabled &&
+    cur.areaId &&
+    prev?.value === ZERO &&
+    prev.title?.disabled &&
+    prev.areaId === cur.areaId
+  )
 }
 
 /** 更新画布悬停光标：禁用元素为 not-allowed */
@@ -95,6 +128,24 @@ export function updateDisabledHoverCursor(draw: Draw, evt: MouseEvent) {
   // 格式刷模式保持 copy 光标
   if (draw.getPainterStyle()) return
   const element = getHitElementByEvent(draw, evt)
+  if (
+    element?.value === ZERO &&
+    element.title?.disabled &&
+    element.areaId
+  ) {
+    // 标题尾换行后紧跟正文占位换行时，允许文本光标
+    const elementList = draw.getElementList()
+    const index = elementList.indexOf(element)
+    const next = ~index ? elementList[index + 1] : undefined
+    if (
+      next?.value === ZERO &&
+      !next.title?.disabled &&
+      next.areaId === element.areaId
+    ) {
+      target.style.cursor = 'text'
+      return
+    }
+  }
   target.style.cursor = isElementFocusDisabled(element, draw)
     ? 'not-allowed'
     : 'text'

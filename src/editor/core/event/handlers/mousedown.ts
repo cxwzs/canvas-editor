@@ -1,4 +1,5 @@
 import { ImageDisplay } from '../../../dataset/enum/Common'
+import { ZERO } from '../../../dataset/constant/Common'
 import { EditorMode } from '../../../dataset/enum/Editor'
 import { ElementType } from '../../../dataset/enum/Element'
 import { MouseEventButton } from '../../../dataset/enum/Event'
@@ -126,14 +127,36 @@ export function mousedown(evt: MouseEvent, host: CanvasEvent) {
   const positionList = position.getPositionList()
   const curIndex = isTable ? tdValueIndex! : index
   const curElement = elementList[curIndex]
-  // 禁用元素不可获取焦点
+  // 禁用元素不可获取焦点；区域标题尾换行后的正文空行可落到下一可编辑换行
   if (isElementFocusDisabled(curElement, draw)) {
-    host.isAllowSelection = false
-    position.setPositionContext(oldPositionContext)
-    const pageTarget = evt.target as HTMLElement
-    if (pageTarget?.style) {
-      pageTarget.style.cursor = 'not-allowed'
+    const nextElement = elementList[curIndex + 1]
+    const canFocusAreaBody =
+      curElement?.value === ZERO &&
+      curElement.title?.disabled &&
+      nextElement?.value === ZERO &&
+      !nextElement.title?.disabled &&
+      !!curElement.areaId &&
+      nextElement.areaId === curElement.areaId
+    if (!canFocusAreaBody) {
+      host.isAllowSelection = false
+      position.setPositionContext(oldPositionContext)
+      const pageTarget = evt.target as HTMLElement
+      if (pageTarget?.style) {
+        pageTarget.style.cursor = 'not-allowed'
+      }
+      return
     }
+    // 落到正文占位换行
+    const bodyIndex = curIndex + 1
+    rangeManager.setRange(bodyIndex, bodyIndex)
+    position.setCursorPosition(positionList[bodyIndex])
+    draw.render({
+      curIndex: bodyIndex,
+      isSubmitHistory: false,
+      isCompute: false,
+      isSetCursor: true
+    })
+    host.isAllowSelection = false
     return
   }
   // 绘制

@@ -43,6 +43,11 @@ export async function cut(host: CanvasEvent) {
     draw.deleteElementList(elementList, start + 1, end - start)
     curIndex = start
   }
+  // 区域正文被清空时保留可编辑空行，光标落到正文
+  const areaBodyIndex = draw.getArea().ensureEditableBodies(elementList)
+  if (areaBodyIndex !== null) {
+    curIndex = areaBodyIndex
+  }
   rangeManager.setRange(curIndex, curIndex)
   draw.render({ curIndex })
 }

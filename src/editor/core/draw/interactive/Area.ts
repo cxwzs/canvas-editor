@@ -30,6 +30,7 @@ import { defaultPlaceholderOption } from '../../../dataset/constant/Placeholder'
 import { DeepRequired } from '../../../interface/Common'
 import { IEditorOption } from '../../../interface/Editor'
 import { ITd } from '../../../interface/table/Td'
+import { ZERO } from '../../../dataset/constant/Common'
 
 export class Area {
   private draw: Draw
@@ -63,6 +64,157 @@ export class Area {
     const activeAreaId = this.getActiveAreaId()
     if (!activeAreaId) return null
     return this.areaInfoMap.get(activeAreaId) || null
+  }
+
+  /** 跳过区域开头禁用标题，返回正文起始下标 */
+  public getAreaBodyStartOffset(elementList: IElement[]): number {
+    if (!elementList[0]?.title?.disabled) return 0
+    const titleId = elementList[0].titleId
+    let offset = 0
+    while (
+      offset < elementList.length &&
+      elementList[offset].titleId === titleId
+    ) {
+      offset++
+    }
+    return offset
+  }
+
+  /** 区域正文是否为空（仅标题，或正文只剩一个换行） */
+  public isAreaBodyEmpty(elementList: IElement[]): boolean {
+    const bodyStart = this.getAreaBodyStartOffset(elementList)
+    const body = elementList.slice(bodyStart)
+    if (!body.length) return true
+    return (
+      body.length === 1 &&
+      body[0].value === ZERO &&
+      (!body[0].type || body[0].type === ElementType.TEXT)
+    )
+  }
+
+  /**
+   * 全选当前区域内容（排除 data-title 生成的不可编辑标题）
+   */
+  public areaSelectAll() {
+    const areaInfo = this.getActiveAreaInfo()
+    if (!areaInfo?.positionList.length) return
+    const { elementList, positionList } = areaInfo
+    const contentStart = this.getAreaBodyStartOffset(elementList)
+    if (contentStart >= elementList.length) return
+    // 选区为 (startIndex, endIndex]，start 取标题末字符或区域首字符
+    const startIndex =
+      contentStart > 0
+        ? positionList[contentStart - 1].index
+        : positionList[0].index
+    const endIndex = positionList[positionList.length - 1].index
+    this.range.setRange(startIndex, endIndex)
+    this.draw.render({
+      isSubmitHistory: false,
+      isSetCursor: false,
+      isCompute: false
+    })
+  }
+
+  /**
+   * 删除后若区域正文被清空：保留标题尾换行，再补一个默认样式的可编辑空行。
+   * @returns 当前激活区域正文光标索引（若有）
+   */
+  public ensureEditableBodies(elementList: IElement[]): number | null {
+    const activeAreaId = this.getActiveAreaId()
+    const defaultSize = this.options.defaultSize
+    let cursorIndex: number | null = null
+    let i = 0
+    while (i < elementList.length) {
+      const areaId = elementList[i].areaId
+      if (!areaId) {
+        i++
+        continue
+      }
+      const start = i
+      while (i < elementList.length && elementList[i].areaId === areaId) {
+        i++
+      }
+      let areaElements = elementList.slice(start, i)
+      let bodyStart = this.getAreaBodyStartOffset(areaElements)
+      let body = areaElements.slice(bodyStart)
+      const titleRef = areaElements.find(
+        el => el.title?.disabled && el.titleId
+      )
+
+      // 正文已空：保证标题尾禁用换行仍在，再插入默认样式正文换行
+      if (!body.length && bodyStart > 0 && titleRef) {
+        const lastTitle = areaElements[bodyStart - 1]
+        const hasTitleTrailBreak =
+          lastTitle?.value === ZERO && !!lastTitle.title?.disabled
+        // 若标题尾换行曾被剥掉禁用属性，恢复之
+        if (lastTitle?.value === ZERO && !lastTitle.title?.disabled) {
+          lastTitle.title = titleRef.title
+          lastTitle.titleId = titleRef.titleId
+          lastTitle.level = titleRef.level
+          delete lastTitle.size
+          lastTitle.bold = false
+        } else if (!hasTitleTrailBreak) {
+          elementList.splice(start + bodyStart, 0, {
+            value: ZERO,
+            areaId,
+            area: titleRef.area,
+            title: titleRef.title,
+            titleId: titleRef.titleId,
+            level: titleRef.level
+          })
+          i++
+          bodyStart++
+        } else if (lastTitle) {
+          // 标题尾换行不使用标题字号，避免与正文空行叠高
+          delete lastTitle.size
+          lastTitle.bold = false
+        }
+        elementList.splice(start + bodyStart, 0, {
+          value: ZERO,
+          areaId,
+          area: titleRef.area,
+          size: defaultSize,
+          bold: false
+        })
+        i++
+        if (areaId === activeAreaId) {
+          cursorIndex = start + bodyStart
+        }
+        continue
+      }
+
+      if (!body.length) {
+        const anchor = areaElements[0]
+        elementList.splice(start + bodyStart, 0, {
+          value: ZERO,
+          areaId,
+          area: anchor.area,
+          size: defaultSize,
+          bold: false
+        })
+        i++
+        if (areaId === activeAreaId) {
+          cursorIndex = start + bodyStart
+        }
+        continue
+      }
+
+      // 已有正文占位时仅校正样式，不强制拉回光标（避免打断跨 area 删除导航）
+      areaElements = elementList.slice(start, i)
+      bodyStart = this.getAreaBodyStartOffset(areaElements)
+      body = areaElements.slice(bodyStart)
+      if (this.isAreaBodyEmpty(areaElements)) {
+        const bodyEl = elementList[start + bodyStart]
+        if (bodyEl) {
+          bodyEl.size = defaultSize
+          bodyEl.bold = false
+          delete bodyEl.title
+          delete bodyEl.titleId
+          delete bodyEl.level
+        }
+      }
+    }
+    return cursorIndex
   }
 
   public isReadonly() {
@@ -124,10 +276,17 @@ export class Area {
     const margins = this.draw.getMargins()
     const width = this.draw.getInnerWidth()
     for (const areaInfoItem of this.areaInfoMap) {
-      const { area, positionList } = areaInfoItem[1]
+      const { area, positionList, elementList } = areaInfoItem[1]
+      if (area?.hide && !this.draw.isAreaHideDisabled()) continue
+      const placeholderOption = area.placeholder?.data
+        ? area.placeholder
+        : this.options.placeholder
+      const isBodyEmpty = this.isAreaBodyEmpty(elementList)
+      const needPlaceholder = !!(placeholderOption?.data && isBodyEmpty)
       if (
-        (area?.hide && !this.draw.isAreaHideDisabled()) ||
-        (!area?.backgroundColor && !area?.borderColor && !area?.placeholder)
+        !area?.backgroundColor &&
+        !area?.borderColor &&
+        !needPlaceholder
       ) {
         continue
       }
@@ -160,15 +319,24 @@ export class Area {
         ctx.strokeStyle = area.borderColor
         ctx.strokeRect(x, y, areaWidth, height)
       }
-      // 提示词
-      if (area.placeholder && positionList.length <= 1) {
+      // 提示词：正文为空时画在正文行（标题下方）
+      if (needPlaceholder) {
+        const bodyStart = this.getAreaBodyStartOffset(elementList)
+        const bodyPosition =
+          bodyStart < positionList.length
+            ? positionList[bodyStart]
+            : lastPosition
         const placeholder = new Placeholder(this.draw)
         placeholder.render(ctx, {
           placeholder: {
             ...defaultPlaceholderOption,
-            ...area.placeholder
+            ...placeholderOption
           },
-          startY: firstPosition.coordinate.leftTop[1]
+          startY: Math.ceil(
+            bodyPosition.pageNo === pageNo
+              ? bodyPosition.coordinate.leftTop[1]
+              : firstPosition.coordinate.leftTop[1]
+          )
         })
       }
       ctx.translate(-0.5, -0.5)
