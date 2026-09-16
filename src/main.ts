@@ -1,46 +1,24 @@
-import { commentList, data, options } from './mock'
+import { commentList, options } from './mock'
 import './style.css'
 import Editor, {
   Command,
   EditorMode,
   EditorZone,
   ElementType,
-  IElement,
-  getElementListByHTML
+  IElement
 } from './editor'
 import { Dialog } from './components/dialog/Dialog'
 import { Signature } from './components/signature/Signature'
 import { debounce, nextTick, scrollIntoView } from './utils'
-import mockHtml from './mockHtml.json'
 import shortMock from './shortMock.json'
-const areaTitleStyle =
-  'font-family: &quot;Microsoft YaHei&quot;; font-weight: 600; font-size: 26px;'
-
-// const mockHtmlStr = mockHtml.reduce(
-//   (acc, cur) =>
-//     `${acc}<div paraId="${cur.paraId}"><h1><span style="${areaTitleStyle}">${cur.paraName}</span></h1>${cur.content}</div>`,
-//   ''
-// )
 
 const mockHtmlStr = shortMock.reduce(
   (acc, cur) =>
-    `${acc}<div paraId="${cur.paraId}"><h1><span style="${areaTitleStyle}">${cur.paraName}</span></h1>${cur.content}</div>`,
+    `${acc}<div paraId="${cur.paraId}" data-title="${cur.paraName}">${cur.content}</div>`,
   ''
 )
 
 window.onload = function () {
-  const elList = getElementListByHTML(mockHtmlStr, { innerWidth: 554 })
-  for (const el of elList) {
-    if (el.type !== ElementType.AREA || !el.valueList) continue
-    for (const child of el.valueList) {
-      if (child.type === ElementType.TITLE) {
-        const titleValueList = child.valueList || []
-        for ( const titleChild of titleValueList) {
-          titleChild.disabled = true
-        }
-      }
-    }
-  }
   // 1. 初始化编辑器
   const container = document.querySelector<HTMLDivElement>('.editor')!
   const instance = new Editor(
@@ -48,7 +26,7 @@ window.onload = function () {
     {
       header: [],
       // main: <IElement[]>data,
-      main: <IElement[]>elList,
+      main: <IElement[]>[],
       footer: []
     },
     options
@@ -69,9 +47,9 @@ window.onload = function () {
   //   properties: { mode: 'readonly' } // AreaMode.READONLY
   // })
 
-  // instance.command.executeSetHTML({
-  //   main: mockHtmlStr
-  // })
+  instance.command.executeSetHTML({
+    main: mockHtmlStr
+  })
 
   // 模拟批注
   const commentDom = document.querySelector<HTMLDivElement>('.comment')!

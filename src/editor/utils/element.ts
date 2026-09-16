@@ -45,6 +45,7 @@ import { ControlComponent, ControlType } from '../dataset/enum/Control'
 import { EditorMode } from '../dataset/enum/Editor'
 import { ElementType } from '../dataset/enum/Element'
 import { ListStyle, ListType, UlStyle } from '../dataset/enum/List'
+import { TitleLevel } from '../dataset/enum/Title'
 import { RowFlex } from '../dataset/enum/Row'
 import { TraceType } from '../dataset/enum/Trace'
 import { TableBorder, TdBorder } from '../dataset/enum/table/Table'
@@ -248,6 +249,24 @@ export function formatElementList(
         isForceCompensation: true
       })
       if (valueList.length) {
+        // 区域首个补偿换行紧邻禁用标题时一并禁用，避免标题前插入/落点
+        const first = valueList[0]
+        const second = valueList[1]
+        if (
+          first?.value === ZERO &&
+          (second?.disabled || second?.title?.disabled)
+        ) {
+          if (second.disabled) {
+            first.disabled = true
+          }
+          if (second.title) {
+            first.title = second.title
+          }
+          if (second.titleId) {
+            first.titleId = second.titleId
+            first.level = second.level
+          }
+        }
         const areaId = getUUID()
         for (let v = 0; v < valueList.length; v++) {
           const value = valueList[v]
@@ -1435,6 +1454,9 @@ export function createDomFromElementList(
         const h = document.createElement(
           `h${titleOrderNumberMapping[element.level!]}`
         )
+        if (element.title?.disabled) {
+          h.setAttribute('data-disabled', 'true')
+        }
         const childDom = buildDom(element.valueList!)
         h.innerHTML = childDom.innerHTML
         clipboardDom.append(h)
@@ -1836,6 +1858,21 @@ export function getElementListByHTML(
           const areaNode = node as HTMLElement
           const areaId = getAreaIdFromHTMLElement(areaNode)!
           const valueList = getElementListByHTML(areaNode.innerHTML, options)
+          // data-title：作为区域不可编辑标题插入到内容最前（自带换行，独占一行）
+          const areaTitle = areaNode.getAttribute('data-title')?.trim()
+          if (areaTitle) {
+            valueList.unshift({
+              value: '',
+              type: ElementType.TITLE,
+              level: TitleLevel.FIRST,
+              title: {
+                disabled: true,
+                deletable: false
+              },
+              // 尾部换行同属禁用标题，避免删除后与正文并排
+              valueList: [{ value: areaTitle }, { value: '\n' }]
+            })
+          }
           elementList.push({
             type: ElementType.AREA,
             value: '',
@@ -1868,12 +1905,20 @@ export function getElementListByHTML(
             replaceHTMLElementTag(hElement, 'div').outerHTML,
             options
           )
-          elementList.push({
+          const titleElement: IElement = {
             value: '',
             type: ElementType.TITLE,
             level: titleNodeNameMapping[node.nodeName],
             valueList
-          })
+          }
+          // data-disabled / data-editable=false：标题不可编辑、删除
+          if (isHTMLElementDisabled(hElement)) {
+            titleElement.title = {
+              disabled: true,
+              deletable: false
+            }
+          }
+          elementList.push(titleElement)
           if (
             node.nextSibling &&
             !INLINE_NODE_NAME.includes(node.nextSibling.nodeName)

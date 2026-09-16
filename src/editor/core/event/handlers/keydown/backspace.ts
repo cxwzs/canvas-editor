@@ -1,5 +1,10 @@
 import { ZERO } from '../../../../dataset/constant/Common'
 import { CanvasEvent } from '../../CanvasEvent'
+import {
+  getSkipFocusDisabledIndex,
+  isDisabledTitleLineMerge,
+  isElementFocusDisabled
+} from '../disabledHit'
 
 // 删除光标前隐藏元素，跳过留痕删除元素（痕迹不可移除）
 function backspaceHideElement(host: CanvasEvent) {
@@ -168,8 +173,25 @@ export function backspace(evt: KeyboardEvent, host: CanvasEvent) {
     if (!isCollapsed) {
       draw.deleteElementList(elementList, startIndex + 1, endIndex - startIndex)
     } else {
-      // 禁止删除不可编辑元素
-      if (elementList[index]?.disabled && !draw.isDesignMode()) {
+      // 禁用元素：整段向前跳过（不删除）
+      if (isElementFocusDisabled(elementList[index], draw)) {
+        const skipIndex = getSkipFocusDisabledIndex(
+          elementList,
+          index,
+          -1,
+          draw
+        )
+        rangeManager.setRange(skipIndex, skipIndex)
+        draw.render({
+          curIndex: skipIndex,
+          isSubmitHistory: false,
+          isCompute: false
+        })
+        evt.preventDefault()
+        return
+      }
+      // 禁止删除标题与正文之间的换行，避免并排同一行
+      if (isDisabledTitleLineMerge(elementList, index, draw)) {
         evt.preventDefault()
         return
       }
