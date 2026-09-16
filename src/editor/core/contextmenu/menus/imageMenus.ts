@@ -49,86 +49,86 @@ export const imageMenus: IRegisterContextMenu[] = [
       proxyInputFile.click()
     }
   },
-  {
-    key: SAVE_AS,
-    i18nPath: 'contextmenu.image.saveAs',
-    icon: 'image',
-    when: payload => {
-      return (
-        !payload.editorHasSelection &&
-        payload.startElement?.type === ElementType.IMAGE
-      )
-    },
-    callback: (command: Command) => {
-      command.executeSaveAsImageElement()
-    }
-  },
-  {
-    key: TEXT_WRAP,
-    i18nPath: 'contextmenu.image.textWrap',
-    when: payload => {
-      return (
-        !payload.isReadonly &&
-        !payload.editorHasSelection &&
-        payload.startElement?.type === ElementType.IMAGE
-      )
-    },
-    childMenus: [
-      {
-        key: TEXT_WRAP_EMBED,
-        i18nPath: 'contextmenu.image.textWrapType.embed',
-        when: () => true,
-        callback: (command: Command, context: IContextMenuContext) => {
-          command.executeChangeImageDisplay(
-            context.startElement!,
-            ImageDisplay.BLOCK
-          )
-        }
-      },
-      {
-        key: TEXT_WRAP_UP_DOWN,
-        i18nPath: 'contextmenu.image.textWrapType.upDown',
-        when: () => true,
-        callback: (command: Command, context: IContextMenuContext) => {
-          command.executeChangeImageDisplay(
-            context.startElement!,
-            ImageDisplay.INLINE
-          )
-        }
-      },
-      {
-        key: TEXT_WRAP_SURROUND,
-        i18nPath: 'contextmenu.image.textWrapType.surround',
-        when: () => true,
-        callback: (command: Command, context: IContextMenuContext) => {
-          command.executeChangeImageDisplay(
-            context.startElement!,
-            ImageDisplay.SURROUND
-          )
-        }
-      },
-      {
-        key: TEXT_WRAP_FLOAT_TOP,
-        i18nPath: 'contextmenu.image.textWrapType.floatTop',
-        when: () => true,
-        callback: (command: Command, context: IContextMenuContext) => {
-          command.executeChangeImageDisplay(
-            context.startElement!,
-            ImageDisplay.FLOAT_TOP
-          )
-        }
-      },
-      {
-        key: TEXT_WRAP_FLOAT_BOTTOM,
-        i18nPath: 'contextmenu.image.textWrapType.floatBottom',
-        when: () => true,
-        callback: (command: Command, context: IContextMenuContext) => {
-          command.executeChangeImageDisplay(
-            context.startElement!,
-            ImageDisplay.FLOAT_BOTTOM
-          )
-        }
-      }
-    ]
-  }
+  // {
+  //   key: SAVE_AS,
+  //   i18nPath: 'contextmenu.image.saveAs',
+  //   icon: 'image',
+  //   when: payload => {
+  //     return (
+  //       !payload.editorHasSelection &&
+  //       payload.startElement?.type === ElementType.IMAGE
+  //     )
+  //   },
+  //   callback: (command: Command) => {
+  //     command.executeSaveAsImageElement()
+  //   }
+  // },
+  // {
+  //   key: TEXT_WRAP,
+  //   i18nPath: 'contextmenu.image.textWrap',
+  //   when: payload => {
+  //     return (
+  //       !payload.isReadonly &&
+  //       !payload.editorHasSelection &&
+  //       payload.startElement?.type === ElementType.IMAGE
+  //     )
+  //   },
+  //   childMenus: [
+  //     {
+  //       key: TEXT_WRAP_EMBED,
+  //       i18nPath: 'contextmenu.image.textWrapType.embed',
+  //       when: () => true,
+  //       callback: (command: Command, context: IContextMenuContext) => {
+  //         command.executeChangeImageDisplay(
+  //           context.startElement!,
+  //           ImageDisplay.BLOCK
+  //         )
+  //       }
+  //     },
+  //     {
+  //       key: TEXT_WRAP_UP_DOWN,
+  //       i18nPath: 'contextmenu.image.textWrapType.upDown',
+  //       when: () => true,
+  //       callback: (command: Command, context: IContextMenuContext) => {
+  //         command.executeChangeImageDisplay(
+  //           context.startElement!,
+  //           ImageDisplay.INLINE
+  //         )
+  //       }
+  //     },
+  //     {
+  //       key: TEXT_WRAP_SURROUND,
+  //       i18nPath: 'contextmenu.image.textWrapType.surround',
+  //       when: () => true,
+  //       callback: (command: Command, context: IContextMenuContext) => {
+  //         command.executeChangeImageDisplay(
+  //           context.startElement!,
+  //           ImageDisplay.SURROUND
+  //         )
+  //       }
+  //     },
+  //     {
+  //       key: TEXT_WRAP_FLOAT_TOP,
+  //       i18nPath: 'contextmenu.image.textWrapType.floatTop',
+  //       when: () => true,
+  //       callback: (command: Command, context: IContextMenuContext) => {
+  //         command.executeChangeImageDisplay(
+  //           context.startElement!,
+  //           ImageDisplay.FLOAT_TOP
+  //         )
+  //       }
+  //     },
+  //     {
+  //       key: TEXT_WRAP_FLOAT_BOTTOM,
+  //       i18nPath: 'contextmenu.image.textWrapType.floatBottom',
+  //       when: () => true,
+  //       callback: (command: Command, context: IContextMenuContext) => {
+  //         command.executeChangeImageDisplay(
+  //           context.startElement!,
+  //           ImageDisplay.FLOAT_BOTTOM
+  //         )
+  //       }
+  //     }
+  //   ]
+  // }
 ]
