@@ -41,7 +41,6 @@ export interface ISetAreaPropertiesOption {
   id?: string
   properties: IArea
 }
-
 export interface IGetAreaValueOption {
   id?: string
 }

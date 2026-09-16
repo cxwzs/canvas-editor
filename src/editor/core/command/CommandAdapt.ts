@@ -2830,7 +2830,9 @@ export class CommandAdapt {
     return this.draw.getArea().setAreaValue(payload)
   }
 
-  public setAreaProperties(payload: ISetAreaPropertiesOption) {
+  public setAreaProperties(
+    payload: ISetAreaPropertiesOption | ISetAreaPropertiesOption[]
+  ) {
     this.draw.getArea().setAreaProperties(payload)
   }
 
