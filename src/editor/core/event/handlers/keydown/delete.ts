@@ -1,5 +1,10 @@
 import { ZERO } from '../../../../dataset/constant/Common'
 import { CanvasEvent } from '../../CanvasEvent'
+import {
+  getSkipFocusDisabledIndex,
+  isDisabledTitleLineMerge,
+  isElementFocusDisabled
+} from '../disabledHit'
 
 // 删除光标后隐藏元素，跳过留痕删除元素（痕迹不可移除）
 function deleteHideElement(host: CanvasEvent) {
@@ -136,8 +141,25 @@ export function del(evt: KeyboardEvent, host: CanvasEvent) {
       } else {
         const nextElement = elementList[index + 1]
         if (!nextElement) return
-        // 禁止删除不可编辑元素
-        if (nextElement.disabled && !draw.isDesignMode()) {
+        // 禁用元素：整段跳过（不删除）
+        if (isElementFocusDisabled(nextElement, draw)) {
+          const skipIndex = getSkipFocusDisabledIndex(
+            elementList,
+            index + 1,
+            1,
+            draw
+          )
+          rangeManager.setRange(skipIndex, skipIndex)
+          draw.render({
+            curIndex: skipIndex,
+            isSubmitHistory: false,
+            isCompute: false
+          })
+          evt.preventDefault()
+          return
+        }
+        // 禁止删除标题与正文之间的换行，避免并排同一行
+        if (isDisabledTitleLineMerge(elementList, index + 1, draw)) {
           evt.preventDefault()
           return
         }

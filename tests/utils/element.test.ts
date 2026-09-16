@@ -583,6 +583,33 @@ describe('getElementListByHTML', () => {
     expect(area?.area?.mode).toBe(AreaMode.READONLY)
   })
 
+  it('data-title 解析为区域禁用标题', () => {
+    const html =
+      '<div paraId="para-title" data-title="章节标题"><p>body text</p></div>'
+    const result = getElementListByHTML(html, { innerWidth: 500 })
+    const area = result.find(el => el.type === ElementType.AREA)
+    expect(area?.areaId).toBe('para-title')
+    expect(area?.area?.mode).toBe(AreaMode.EDIT)
+    const title = area?.valueList?.[0]
+    expect(title?.type).toBe(ElementType.TITLE)
+    expect(title?.title?.disabled).toBe(true)
+    expect(title?.title?.deletable).toBe(false)
+    expect(title?.valueList?.[0]?.value).toBe('章节标题')
+    // 标题自带换行，保证独占一行
+    expect(title?.valueList?.[1]?.value).toBe('\n')
+  })
+
+  it('h1 data-disabled 解析为禁用标题', () => {
+    const html = '<h1 data-disabled="true">锁定标题</h1><p>body</p>'
+    const result = getElementListByHTML(html, { innerWidth: 500 })
+    const title = result.find(el => el.type === ElementType.TITLE)
+    expect(title?.title?.disabled).toBe(true)
+    expect(title?.title?.deletable).toBe(false)
+    expect(title?.valueList?.some(v => v.value.includes('锁定标题'))).toBe(
+      true
+    )
+  })
+
   it('无 paraId 的普通 div 不产生 AREA', () => {
     const html = '<div><p>plain</p></div>'
     const result = getElementListByHTML(html, { innerWidth: 500 })

@@ -1,8 +1,11 @@
+import { LocationPosition } from '../../../../dataset/enum/Common'
 import { ElementType } from '../../../../dataset/enum/Element'
 import { KeyMap } from '../../../../dataset/enum/KeyMap'
 import { MoveDirection } from '../../../../dataset/enum/Observer'
 import { IElementPosition } from '../../../../interface/Element'
+import { getNonHideElementIndex } from '../../../../utils/element'
 import { CanvasEvent } from '../../CanvasEvent'
+import { isElementFocusDisabled } from '../disabledHit'
 
 interface IGetNextPositionIndexPayload {
   positionList: IElementPosition[]
@@ -323,6 +326,25 @@ export function updown(evt: KeyboardEvent, host: CanvasEvent) {
   if (anchorStartIndex > anchorEndIndex) {
     ;[anchorStartIndex, anchorEndIndex] = [anchorEndIndex, anchorStartIndex]
   }
+  // 隐藏/禁用元素跳过
+  const elementListForSkip = draw.getElementList()
+  const traceParticle = draw.getTraceParticle()
+  const skipPos = isUp ? LocationPosition.BEFORE : LocationPosition.AFTER
+  const shouldSkip = (el?: (typeof elementListForSkip)[number]) =>
+    !!el &&
+    (traceParticle.isTraceHidden(el) || isElementFocusDisabled(el, draw))
+  anchorStartIndex = getNonHideElementIndex(
+    elementListForSkip,
+    anchorStartIndex,
+    skipPos,
+    shouldSkip
+  )
+  anchorEndIndex = getNonHideElementIndex(
+    elementListForSkip,
+    anchorEndIndex,
+    skipPos,
+    shouldSkip
+  )
   rangeManager.setRange(anchorStartIndex, anchorEndIndex)
   const isCollapsed = anchorStartIndex === anchorEndIndex
   draw.render({

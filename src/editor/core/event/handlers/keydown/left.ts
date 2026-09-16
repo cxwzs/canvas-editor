@@ -10,6 +10,7 @@ import {
 } from '../../../../utils/element'
 import { isApple } from '../../../../utils/ua'
 import { CanvasEvent } from '../../CanvasEvent'
+import { isElementFocusDisabled } from '../disabledHit'
 
 export function left(evt: KeyboardEvent, host: CanvasEvent) {
   const draw = host.getDraw()
@@ -150,20 +151,23 @@ export function left(evt: KeyboardEvent, host: CanvasEvent) {
   }
   // 执行跳转
   if (!~anchorStartIndex || !~anchorEndIndex) return
-  // 隐藏元素跳过
+  // 隐藏/禁用元素跳过
   const traceParticle = draw.getTraceParticle()
   const newElementList = draw.getElementList()
+  const shouldSkip = (el?: (typeof newElementList)[number]) =>
+    !!el &&
+    (traceParticle.isTraceHidden(el) || isElementFocusDisabled(el, draw))
   anchorStartIndex = getNonHideElementIndex(
     newElementList,
     anchorStartIndex,
     LocationPosition.BEFORE,
-    el => traceParticle.isTraceHidden(el)
+    shouldSkip
   )
   anchorEndIndex = getNonHideElementIndex(
     newElementList,
     anchorEndIndex,
     LocationPosition.BEFORE,
-    el => traceParticle.isTraceHidden(el)
+    shouldSkip
   )
   // 设置上下文
   rangeManager.setRange(anchorStartIndex, anchorEndIndex)
