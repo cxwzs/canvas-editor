@@ -2420,7 +2420,15 @@ export class Draw {
           preElement?.controlComponent === ControlComponent.VALUE) ||
         (i !== 0 &&
           element.value === ZERO &&
-          !(element.area?.hide && !this.isAreaHideDisabled()))
+          !(element.area?.hide && !this.isAreaHideDisabled()) &&
+          // 区域标题尾换行后的正文占位换行：同一行，避免双空行
+          !(
+            preElement?.value === ZERO &&
+            preElement.title?.disabled &&
+            !element.title?.disabled &&
+            !!element.areaId &&
+            element.areaId === preElement.areaId
+          ))
       // 是否宽度不足导致换行
       const isWidthNotEnough = curRowWidth > availableWidth
       const isWrap = isForceBreak || isWidthNotEnough

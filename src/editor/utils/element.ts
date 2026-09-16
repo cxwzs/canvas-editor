@@ -173,8 +173,13 @@ export function formatElementList(
             value.titleId = titleId
             value.level = el.level
           }
-          // 文本型元素设置字体及加粗
-          if (isTextLikeElement(value)) {
+          // 文本型元素设置字体及加粗（换行不套标题字号，避免正文行被撑高）
+          if (
+            isTextLikeElement(value) &&
+            value.value !== ZERO &&
+            value.value !== '\n' &&
+            value.value !== '\r\n'
+          ) {
             if (!value.size) {
               value.size = titleOptions[titleSizeMapping[value.level!]]
             }

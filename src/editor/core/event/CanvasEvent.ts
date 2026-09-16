@@ -163,18 +163,27 @@ export class CanvasEvent {
   }
 
   public selectAll() {
-    // 光标在表格内时选择整个表格
-    if (this.position.getPositionContext().isTable) {
-      this.draw.getTableOperate().tableSelectAll()
-    } else {
-      const positionList = this.position.getPositionList()
-      this.range.setRange(0, positionList.length - 1)
-      this.draw.render({
-        isSubmitHistory: false,
-        isSetCursor: false,
-        isCompute: false
-      })
+    const isTable = this.position.getPositionContext().isTable
+    const area = this.draw.getArea()
+    const areaInfo = area.getActiveAreaInfo()
+    // 当前在 area 内：只全选该 area 正文（不含 data-title 标题）
+    // 表格内仅当 area 位于单元格内时按 area 全选，避免主文档 area 包裹表格时索引错位
+    if (areaInfo && (!isTable || areaInfo.tableCell)) {
+      area.areaSelectAll()
+      return
     }
+    // 光标在表格内时选择整个表格
+    if (isTable) {
+      this.draw.getTableOperate().tableSelectAll()
+      return
+    }
+    const positionList = this.position.getPositionList()
+    this.range.setRange(0, positionList.length - 1)
+    this.draw.render({
+      isSubmitHistory: false,
+      isSetCursor: false,
+      isCompute: false
+    })
   }
 
   public mousemove(evt: MouseEvent) {

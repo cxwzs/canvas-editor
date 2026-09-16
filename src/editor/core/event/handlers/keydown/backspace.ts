@@ -2,6 +2,7 @@ import { ZERO } from '../../../../dataset/constant/Common'
 import { CanvasEvent } from '../../CanvasEvent'
 import {
   getSkipFocusDisabledIndex,
+  isAreaBodyPlaceholderBreak,
   isDisabledTitleLineMerge,
   isElementFocusDisabled
 } from '../disabledHit'
@@ -179,7 +180,8 @@ export function backspace(evt: KeyboardEvent, host: CanvasEvent) {
           elementList,
           index,
           -1,
-          draw
+          draw,
+          { allowCrossArea: true }
         )
         rangeManager.setRange(skipIndex, skipIndex)
         draw.render({
@@ -187,6 +189,26 @@ export function backspace(evt: KeyboardEvent, host: CanvasEvent) {
           isSubmitHistory: false,
           isCompute: false
         })
+        evt.preventDefault()
+        return
+      }
+      // 区域正文占位空行：Backspace 跳到上一可编辑位置（上一 area 末尾）
+      if (isAreaBodyPlaceholderBreak(elementList, index)) {
+        const jumpIndex = getSkipFocusDisabledIndex(
+          elementList,
+          index - 1,
+          -1,
+          draw,
+          { allowCrossArea: true }
+        )
+        if (jumpIndex >= 0 && jumpIndex !== index) {
+          rangeManager.setRange(jumpIndex, jumpIndex)
+          draw.render({
+            curIndex: jumpIndex,
+            isSubmitHistory: false,
+            isCompute: false
+          })
+        }
         evt.preventDefault()
         return
       }
@@ -198,6 +220,16 @@ export function backspace(evt: KeyboardEvent, host: CanvasEvent) {
       draw.deleteElementList(elementList, index, 1)
     }
     curIndex = isCollapsed ? index - 1 : startIndex
+  }
+  // 区域正文被清空时保留可编辑空行；仅在仍停留于该 area 时校正光标
+  const elementListAfter = draw.getElementList()
+  const areaBodyIndex = draw.getArea().ensureEditableBodies(elementListAfter)
+  if (
+    areaBodyIndex !== null &&
+    elementListAfter[curIndex ?? -1]?.areaId ===
+      elementListAfter[areaBodyIndex]?.areaId
+  ) {
+    curIndex = areaBodyIndex
   }
   draw.getGlobalEvent().setCanvasEventAbility()
   if (curIndex === null) {

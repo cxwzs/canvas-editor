@@ -2,6 +2,7 @@ import { ZERO } from '../../../../dataset/constant/Common'
 import { CanvasEvent } from '../../CanvasEvent'
 import {
   getSkipFocusDisabledIndex,
+  isAreaBodyPlaceholderBreak,
   isDisabledTitleLineMerge,
   isElementFocusDisabled
 } from '../disabledHit'
@@ -141,8 +142,12 @@ export function del(evt: KeyboardEvent, host: CanvasEvent) {
       } else {
         const nextElement = elementList[index + 1]
         if (!nextElement) return
-        // 禁用元素：整段跳过（不删除）
+        // 禁用元素：整段跳过（不删除）；不跨 area，避免跳到下一区域
         if (isElementFocusDisabled(nextElement, draw)) {
+          if (nextElement.areaId !== elementList[index]?.areaId) {
+            evt.preventDefault()
+            return
+          }
           const skipIndex = getSkipFocusDisabledIndex(
             elementList,
             index + 1,
@@ -160,6 +165,14 @@ export function del(evt: KeyboardEvent, host: CanvasEvent) {
         }
         // 禁止删除标题与正文之间的换行，避免并排同一行
         if (isDisabledTitleLineMerge(elementList, index + 1, draw)) {
+          evt.preventDefault()
+          return
+        }
+        // 区域正文占位空行后已是下一区域：Delete 不跨区
+        if (
+          isAreaBodyPlaceholderBreak(elementList, index + 1) &&
+          elementList[index + 2]?.areaId !== elementList[index + 1]?.areaId
+        ) {
           evt.preventDefault()
           return
         }
@@ -183,6 +196,14 @@ export function del(evt: KeyboardEvent, host: CanvasEvent) {
       }
       curIndex = isCollapsed ? index : startIndex
     }
+  }
+  // 区域正文被清空时保留可编辑空行；仅在仍停留于该 area 时校正光标
+  const areaBodyIndex = draw.getArea().ensureEditableBodies(elementList)
+  if (
+    areaBodyIndex !== null &&
+    elementList[curIndex ?? -1]?.areaId === elementList[areaBodyIndex]?.areaId
+  ) {
+    curIndex = areaBodyIndex
   }
   draw.getGlobalEvent().setCanvasEventAbility()
   if (curIndex === null) {
