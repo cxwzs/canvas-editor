@@ -133,14 +133,16 @@ export function updateDisabledHoverCursor(draw: Draw, evt: MouseEvent) {
     element.title?.disabled &&
     element.areaId
   ) {
-    // 标题尾换行后紧跟正文占位换行时，允许文本光标
+    // 标题尾换行：其后为正文占位，或空 area（无同 area 后续元素）时显示文本光标
     const elementList = draw.getElementList()
     const index = elementList.indexOf(element)
     const next = ~index ? elementList[index + 1] : undefined
     if (
-      next?.value === ZERO &&
-      !next.title?.disabled &&
-      next.areaId === element.areaId
+      !next ||
+      next.areaId !== element.areaId ||
+      (next.value === ZERO &&
+        !next.title?.disabled &&
+        next.areaId === element.areaId)
     ) {
       target.style.cursor = 'text'
       return

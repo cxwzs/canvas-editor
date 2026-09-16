@@ -1878,6 +1878,10 @@ export function getElementListByHTML(
               valueList: [{ value: areaTitle }, { value: '\n' }]
             })
           }
+          // 无正文时补可编辑换行，否则空 area 无法点击聚焦
+          if (valueList.length <= (areaTitle ? 1 : 0)) {
+            valueList.push({ value: '\n' })
+          }
           elementList.push({
             type: ElementType.AREA,
             value: '',

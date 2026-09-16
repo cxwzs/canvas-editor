@@ -137,26 +137,44 @@ export function mousedown(evt: MouseEvent, host: CanvasEvent) {
       !nextElement.title?.disabled &&
       !!curElement.areaId &&
       nextElement.areaId === curElement.areaId
-    if (!canFocusAreaBody) {
+    if (canFocusAreaBody) {
+      const bodyIndex = curIndex + 1
+      rangeManager.setRange(bodyIndex, bodyIndex)
+      position.setCursorPosition(positionList[bodyIndex])
+      draw.render({
+        curIndex: bodyIndex,
+        isSubmitHistory: false,
+        isCompute: false,
+        isSetCursor: true
+      })
       host.isAllowSelection = false
-      position.setPositionContext(oldPositionContext)
-      const pageTarget = evt.target as HTMLElement
-      if (pageTarget?.style) {
-        pageTarget.style.cursor = 'not-allowed'
-      }
       return
     }
-    // 落到正文占位换行
-    const bodyIndex = curIndex + 1
-    rangeManager.setRange(bodyIndex, bodyIndex)
-    position.setCursorPosition(positionList[bodyIndex])
-    draw.render({
-      curIndex: bodyIndex,
-      isSubmitHistory: false,
-      isCompute: false,
-      isSetCursor: true
-    })
+    // 仅有标题的空 area：点击时补偿正文占位并聚焦
+    if (
+      curElement?.value === ZERO &&
+      curElement.title?.disabled &&
+      curElement.areaId &&
+      nextElement?.areaId !== curElement.areaId
+    ) {
+      rangeManager.setRange(curIndex, curIndex)
+      const bodyIndex = draw.getArea().ensureEditableBodies(elementList)
+      if (bodyIndex !== null) {
+        rangeManager.setRange(bodyIndex, bodyIndex)
+        draw.render({
+          curIndex: bodyIndex,
+          isSubmitHistory: false
+        })
+        host.isAllowSelection = false
+        return
+      }
+    }
     host.isAllowSelection = false
+    position.setPositionContext(oldPositionContext)
+    const pageTarget = evt.target as HTMLElement
+    if (pageTarget?.style) {
+      pageTarget.style.cursor = 'not-allowed'
+    }
     return
   }
   // 绘制
