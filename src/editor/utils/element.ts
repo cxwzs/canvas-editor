@@ -1867,6 +1867,32 @@ export function isHTMLElementDisabled(el: HTMLElement): boolean {
   return false
 }
 
+/** 节点有效内容是否以 BR / 换行文本开头（跳过空白文本） */
+function isHTMLNodeStartWithBreak(node: Node | null): boolean {
+  let current: Node | null = node
+  while (current) {
+    if (current.nodeName === 'BR') return true
+    if (current.nodeType === 3) {
+      const text = current.textContent || ''
+      if (/^[\n\r]/.test(text)) return true
+      if (text.trim()) return false
+      current = current.nextSibling
+      continue
+    }
+    if (current.nodeType === 1) {
+      return isHTMLNodeStartWithBreak(current.firstChild)
+    }
+    current = current.nextSibling
+  }
+  return false
+}
+
+/** 元素列表末尾是否已是换行 */
+function isElementListEndWithBreak(list: IElement[]): boolean {
+  const last = list[list.length - 1]
+  return !!last && (last.value === '\n' || last.value === '\r\n')
+}
+
 export function getElementListByHTML(
   htmlText: string,
   options: IGetElementListByHTMLOption
@@ -2186,14 +2212,20 @@ export function getElementListByHTML(
           }
           if (htmlEl && n !== childNodes.length - 1) {
             const display = window.getComputedStyle(htmlEl).display
-            if (
-              display === 'block' &&
-              !/(\n|\r\n)$/.test(htmlEl.textContent!)
-            ) {
-              elementList.push({
-                value: '\n',
-                ...(partId ? { partId } : {})
-              })
+            if (display === 'block') {
+              const producedNothing = beforeLen === elementList.length
+              // 空块级保留为空段落；非空时仅在尚未换行、下一段也不以 <br> 开头时补换行
+              if (
+                producedNothing ||
+                (!/(\n|\r\n)$/.test(htmlEl.textContent!) &&
+                  !isElementListEndWithBreak(elementList) &&
+                  !isHTMLNodeStartWithBreak(childNodes[n + 1]))
+              ) {
+                elementList.push({
+                  value: '\n',
+                  ...(partId ? { partId } : {})
+                })
+              }
             }
           } else if (partId && beforeLen === elementList.length) {
             // 空块级节点仅有 partid 时也需保留，例如 <p partid="x"></p>
