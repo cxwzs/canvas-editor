@@ -513,6 +513,9 @@ export class ImagePicker {
       for (let i = 0; i < this.items.length; i++) {
         const item = this.items[i]
         const file = await this._exportCroppedFile(item)
+        // 裁剪导出尺寸已知，避免依赖远程 URL 再读宽高（跨域/鉴权等会导致确认中断）
+        const width = Math.max(1, Math.round(item.crop.width))
+        const height = Math.max(1, Math.round(item.crop.height))
         let value: string
         if (onFileUpload) {
           this._setProgress(
@@ -530,14 +533,16 @@ export class ImagePicker {
               )
             }
           })
+          if (!value || typeof value !== 'string') {
+            throw new Error('onFileUpload must return an image url string')
+          }
         } else {
           value = await this._fileToDataURL(file)
         }
-        const size = await this._readImageSize(value)
         results.push({
           value,
-          width: size.width,
-          height: size.height,
+          width,
+          height,
           fileName: item.file.name
         })
       }
@@ -610,18 +615,6 @@ export class ImagePicker {
       reader.onload = () => resolve(reader.result as string)
       reader.onerror = () => reject(reader.error)
       reader.readAsDataURL(file)
-    })
-  }
-
-  private _readImageSize(
-    src: string
-  ): Promise<{ width: number; height: number }> {
-    return new Promise((resolve, reject) => {
-      const img = new Image()
-      img.onload = () =>
-        resolve({ width: img.naturalWidth, height: img.naturalHeight })
-      img.onerror = () => reject(new Error('image size read failed'))
-      img.src = src
     })
   }
 
