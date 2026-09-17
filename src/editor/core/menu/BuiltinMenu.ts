@@ -603,11 +603,16 @@ export class BuiltinMenu {
     imageFileDom.value = ''
     if (!files.length) return
     const onFileUpload = editor.command.getOptions().onFileUpload
+    // 打开弹窗前缓存选区，避免确认插入时选区失效导致不落内容
+    const cachedRange = editor.command.getRange()
     // 弹窗列表预览/裁剪；未配置 onFileUpload 时确认后按 base64 插入
     new ImagePicker({
       files,
       onFileUpload,
       onConfirm(payload) {
+        if (~cachedRange.startIndex && ~cachedRange.endIndex) {
+          editor.command.executeReplaceRange(cachedRange)
+        }
         payload.forEach(item => {
           editor.command.executeImage({
             value: item.value,
