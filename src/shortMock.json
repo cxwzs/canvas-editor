@@ -17,7 +17,7 @@
     },
     {
         "level": 1,
-        "content": "",
+        "content": "<div style='text-align: center;'><span partid='c00a1cf6-007f-45a5-89db-78bcf41252f5' style='font-family: &quot;Microsoft YaHei&quot;; text-align: center; font-size: 16px;'><br>111111111111111</span></div><div style='text-align: right;'><span partid='c5e52493-265b-401b-a98d-441a4977da38' style='font-family: &quot;Microsoft YaHei&quot;; text-align: right; font-size: 16px;'><br>222222222222</span></div><span partid='49dbf11c-b573-4342-aa84-e032c31f37ea' style='font-family: &quot;Microsoft YaHei&quot;; font-size: 16px;'><br>33333333333333</span>",
         "paraName": "营业执照",
         "paraId": "2090364809753260033",
         "disabled": false,

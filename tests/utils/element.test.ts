@@ -710,6 +710,41 @@ describe('getElementListByHTML', () => {
     const result = getElementListByHTML(html, { innerWidth: 500 })
     expect(result.some(el => el.partId === 'empty-1')).toBe(true)
   })
+
+  it('居中/右对齐外层 div 与段首 br 不叠出多余空段', () => {
+    const html =
+      '<div style="text-align: center;"><span partid="a"><br>111</span></div><div style="text-align: right;"><span partid="b"><br>222</span></div><span partid="c"><br>333</span>'
+    const result = getElementListByHTML(html, { innerWidth: 500 })
+    const values = result.map(el => el.value)
+    // 仅三段之间各一个换行，不应出现连续 \\n\\n 空段
+    let consecutiveBreaks = 0
+    for (let i = 0; i < values.length - 1; i++) {
+      if (
+        (values[i] === '\n' || values[i] === '\r\n') &&
+        (values[i + 1] === '\n' || values[i + 1] === '\r\n')
+      ) {
+        consecutiveBreaks++
+      }
+    }
+    expect(consecutiveBreaks).toBe(0)
+    expect(values.join('')).toContain('111')
+    expect(values.join('')).toContain('222')
+    expect(values.join('')).toContain('333')
+  })
+
+  it('无段首 br 的相邻块级 div 仍补一个换行', () => {
+    const html = '<div>111</div><div>222</div>'
+    const result = getElementListByHTML(html, { innerWidth: 500 })
+    const joined = result.map(el => el.value).join('')
+    expect(joined).toBe('111\n222')
+  })
+
+  it('空块级 div 保留为空段落换行', () => {
+    const html = '<div>111</div><div></div><div>333</div>'
+    const result = getElementListByHTML(html, { innerWidth: 500 })
+    const joined = result.map(el => el.value).join('')
+    expect(joined).toBe('111\n\n333')
+  })
 })
 
 describe('partId round-trip', () => {
