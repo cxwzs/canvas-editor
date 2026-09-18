@@ -143,6 +143,7 @@
   position: relative;
 }
 
+.menu-item__quick-format .select,
 .menu-item__font .select,
 .menu-item__size .select {
   width: 100%;
@@ -1030,4 +1031,13 @@
 
 .ce-has-builtin-menu .ce-page-container canvas {
   box-shadow: rgb(158 161 165 / 40%) 0px 2px 12px 0px;
+}
+
+.menu-item .menu-item__quick-format {
+  width: 100px;
+  position: relative;
+}
+
+.menu-item .menu-item__quick-format .options {
+  width: 150px;
 }

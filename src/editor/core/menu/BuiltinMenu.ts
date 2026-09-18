@@ -37,6 +37,7 @@ const MENU_ITEM_SELECTORS: MenuSelectorMap = {
   redo: '.menu-item__redo',
   painter: '.menu-item__painter',
   format: '.menu-item__format',
+  quickFormat: '.menu-item__quick-format',
   font: '.menu-item__font',
   size: '.menu-item__size',
   sizeAdd: '.menu-item__size-add',
@@ -294,6 +295,20 @@ export class BuiltinMenu {
       console.log('format')
       editor.command.executeFormat()
     }
+
+  const quickFormatDom = q('.menu-item__quick-format')
+  const quickFormatOptionDom =
+    quickFormatDom.querySelector<HTMLDivElement>('.options')!
+  quickFormatDom.onclick = function () {
+    console.log('quickFormat')
+    quickFormatOptionDom.classList.toggle('visible')
+  }
+  quickFormatOptionDom.onclick = function (evt) {
+    const li = evt.target as HTMLLIElement
+    const format = li.dataset.format
+    if (!format) return
+    console.log('quickFormat:', format)
+  }
 
   // 3. | 字体 | 字体变大 | 字体变小 | 加粗 | 斜体 | 下划线 | 删除线 | 上标 | 下标 | 字体颜色 | 背景色 |
   const fontDom = q('.menu-item__font')
