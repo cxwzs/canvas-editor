@@ -39,6 +39,7 @@ export interface IMenuOption {
   block?: boolean
   search?: boolean
   print?: boolean
+  quickFormat?: boolean
 }
 
 /** 内置底部工具栏操作按钮显示开关，默认均为 true */
