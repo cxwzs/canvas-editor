@@ -1,0 +1,48 @@
+.ce-toast {
+  position: fixed;
+  left: 50%;
+  top: 80px;
+  transform: translate(-50%, -8px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.78);
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.4;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  max-width: calc(100% - 32px);
+  white-space: nowrap;
+}
+
+.ce-toast.visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.ce-toast__spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: ce-toast-spin 0.7s linear infinite;
+}
+
+.ce-toast__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@keyframes ce-toast-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

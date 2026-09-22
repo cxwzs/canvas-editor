@@ -13,6 +13,7 @@
 @import './trace/trace.css';
 @import './hint/hint.css';
 @import './ruler/ruler.css';
+@import '../../core/toast/toast.css';
 
 .ce-inputarea {
   width: 100px;

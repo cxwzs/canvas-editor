@@ -129,7 +129,7 @@ export interface IEditorOption {
   trace?: ITraceOption
   ruler?: IRulerOption
   hint?: IHintOption
-  /** 文件上传回调。选择图片会打开预览/裁剪弹窗；未配置时确认后按 base64 插入，配置后先上传再插入返回地址 */
+  /** 文件上传回调。菜单选图、粘贴/拖放图片（含 WPS 图文）均会走此回调；未配置时按 base64 插入，配置后先上传再插入返回地址 */
   onFileUpload?: IFileUpload | null
 }
 

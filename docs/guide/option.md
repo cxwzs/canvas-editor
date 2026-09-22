@@ -93,7 +93,7 @@ interface IEditorOption {
   trace?: ITraceOption // 留痕配置。默认：禁用
   ruler?: IRulerOption // 标尺配置。默认：禁用
   hint?: IHintOption // 悬浮提示配置。默认：禁用
-  onFileUpload?: IFileUpload | null // 文件上传回调。选择图片会打开列表预览/裁剪弹窗（可继续添加）；未配置时确认后按 base64 插入（无上传进度），配置后先上传（含进度）再插入返回地址
+  onFileUpload?: IFileUpload | null // 文件上传回调。菜单选图、粘贴/拖放图片（含 WPS/Word 图文）均会走此回调；未配置时按 base64 插入，配置后先上传再插入返回地址
 }
 ```
 
@@ -109,6 +109,12 @@ type IFileUpload = (
   options: IFileUploadOptions
 ) => Promise<string> // 返回可访问的图片地址
 ```
+
+适用场景：
+
+- 菜单插入图片（预览/裁剪弹窗，配置后含上传进度）
+- 粘贴纯图片、拖入图片
+- 从 WPS/Word 等粘贴图文：HTML 内本地图片会结合剪贴板文件走上传；未配置则转 base64 回显
 
 示例：
 

@@ -1,6 +1,7 @@
 import { IDatePickerLang } from '../../core/draw/particle/date/DatePicker'
 import { IContextmenuLang } from '../contextmenu/ContextMenu'
 import { IAccessibilityLang } from './Accessibility'
+import { IToastLang } from './Toast'
 import { ITraceLang } from './Trace'
 import { IValidateLang } from './Validate'
 
@@ -10,4 +11,5 @@ export interface ILang {
   accessibility: IAccessibilityLang
   trace: ITraceLang
   validate: IValidateLang
+  toast: IToastLang
 }

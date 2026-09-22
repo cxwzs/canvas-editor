@@ -93,7 +93,7 @@ interface IEditorOption {
   trace?: ITraceOption // Trace configuration. default: disabled
   ruler?: IRulerOption // Ruler configuration. default: disabled
   hint?: IHintOption // Hover hint configuration. default: disabled
-  onFileUpload?: IFileUpload | null // File upload callback. Selecting images opens a preview/crop list dialog (more images can be added). Without it, confirm inserts base64 (no upload progress); with it, upload (with progress) first, then insert the returned URL
+  onFileUpload?: IFileUpload | null // File upload callback for menu insert, paste, and drop (including WPS/Word mixed content). Without it, images are inserted as base64; with it, upload first then insert the returned URL
 }
 ```
 
@@ -109,6 +109,12 @@ type IFileUpload = (
   options: IFileUploadOptions
 ) => Promise<string> // Returns an accessible image URL
 ```
+
+Applies to:
+
+- Menu image insert (preview/crop dialog; progress when configured)
+- Paste or drop of plain images
+- Paste mixed content from WPS/Word: local images in HTML are resolved via clipboard files and uploaded; without the callback they become base64
 
 Example:
 

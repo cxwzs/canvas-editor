@@ -109,6 +109,9 @@
     "selected": "Selected: ",
     "input": "Input: "
   },
+  "toast": {
+    "pasting": "Pasting, please wait…"
+  },
   "trace": {
     "insert": "Inserted",
     "delete": "Deleted",

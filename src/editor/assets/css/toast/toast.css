@@ -1,0 +1,46 @@
+.ce-toast {
+  position: fixed;
+  left: 50%;
+  top: 72px;
+  transform: translate(-50%, -8px);
+  z-index: 10000;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 10px 16px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.78);
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.4;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.ce-toast--visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.ce-toast__text {
+  word-break: break-word;
+}
+
+.ce-toast__spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: ce-toast-spin 0.7s linear infinite;
+}
+
+@keyframes ce-toast-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

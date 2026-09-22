@@ -109,6 +109,9 @@
     "selected": "选中：",
     "input": "输入："
   },
+  "toast": {
+    "pasting": "正在粘贴，请稍候…"
+  },
   "trace": {
     "insert": "新增内容",
     "delete": "删除内容",
