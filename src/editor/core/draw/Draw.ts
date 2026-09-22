@@ -1175,6 +1175,8 @@ export class Draw {
     })
     this.traceParticle.markElementListInserted(payload)
     let curIndex = -1
+    // 变更起点：大段粘贴后光标在末尾，脏页须从插入起点算起
+    const changeStartIndex = startIndex
     // 判断是否在控件内
     let activeControl = this.control.getActiveControl()
     // 光标在控件内如果当前没有被激活，需要手动激活
@@ -1213,6 +1215,7 @@ export class Draw {
       this.range.setRange(curIndex, curIndex)
       this.render({
         curIndex,
+        changeStartIndex,
         isSubmitHistory
       })
     }
@@ -1229,17 +1232,21 @@ export class Draw {
     })
     this.traceParticle.markElementListInserted(elementList)
     let curIndex: number
+    let changeStartIndex: number
     const { isPrepend, isSubmitHistory = true } = options
     if (isPrepend) {
       this.elementList.splice(1, 0, ...elementList)
       curIndex = elementList.length
+      changeStartIndex = 0
     } else {
+      changeStartIndex = this.elementList.length
       this.elementList.push(...elementList)
       curIndex = this.elementList.length - 1
     }
     this.range.setRange(curIndex, curIndex)
     this.render({
       curIndex,
+      changeStartIndex,
       isSubmitHistory
     })
   }
@@ -2776,11 +2783,16 @@ export class Draw {
             this.highlight.render(ctx)
           }
           // 当前元素位置信息记录（表格跨页片段行优先使用片段位置）
+          const highlightPosition =
+            curRow.fragmentPosition || positionList[curRow.startIndex + j]
+          if (!highlightPosition?.coordinate?.leftTop) {
+            continue
+          }
           const {
             coordinate: {
               leftTop: [x, y]
             }
-          } = curRow.fragmentPosition || positionList[curRow.startIndex + j]
+          } = highlightPosition
           // 元素向左偏移量
           const offsetX = element.left || 0
           this.highlight.recordFillInfo(
@@ -2845,12 +2857,17 @@ export class Draw {
         }
         const metrics = element.metrics
         // 当前元素位置信息（表格跨页片段行优先使用片段位置）
+        const position =
+          curRow.fragmentPosition || positionList[curRow.startIndex + j]
+        if (!position?.coordinate?.leftTop) {
+          continue
+        }
         const {
           ascent: offsetY,
           coordinate: {
             leftTop: [x, y]
           }
-        } = curRow.fragmentPosition || positionList[curRow.startIndex + j]
+        } = position
         const preElement = curRow.elementList[j - 1]
         // 元素绘制
         if (
@@ -3192,11 +3209,10 @@ export class Draw {
       }
       // 绘制列表样式
       if (curRow.isList && curRow.height > 0) {
-        this.listParticle.drawListStyle(
-          ctx,
-          curRow,
-          positionList[curRow.startIndex]
-        )
+        const listPosition = positionList[curRow.startIndex]
+        if (listPosition?.coordinate?.leftTop) {
+          this.listParticle.drawListStyle(ctx, curRow, listPosition)
+        }
       }
       // 绘制文字、边框、下划线、删除线
       this.textParticle.complete()
@@ -3438,12 +3454,13 @@ export class Draw {
     } = payload || {}
     // isLazy：虚拟窗口下挂载页很少，统一立即绘制；导出全量时同样走立即绘制
     let { curIndex } = payload || {}
+    const changeStartIndex = payload?.changeStartIndex
     const innerWidth = this.getInnerWidth()
     const isPagingMode = this.getIsPagingMode()
     // 缓存当前页数信息
     const oldPageSize = this.pageRowList.length
     const oldPageDirectionList = this.pageDirectionList
-    // 脏页：输入时仅从光标页起增量计算位置并重绘，降低大文档卡顿
+    // 脏页：输入时仅从变更起点页起增量计算位置并重绘，降低大文档卡顿
     let dirtyPageNo = 0
     // 计算文档信息
     if (isCompute) {
@@ -3482,17 +3499,21 @@ export class Draw {
       // 页面信息
       this.pageRowList = this._computePageList()
       // 计算脏页（历史回放/初始化/全量导出仍全量）
+      // 优先用变更起点，避免大段粘贴后 curIndex 在末尾导致脏页偏后、positionList 错位
+      const dirtyIndex =
+        changeStartIndex !== undefined ? changeStartIndex : curIndex
       const canIncremental =
         !isInit &&
         !isFirstRender &&
         !isSourceHistory &&
         !this.forceFullPageRender &&
-        curIndex !== undefined &&
+        dirtyIndex !== undefined &&
         isPagingMode
       dirtyPageNo = canIncremental
-        ? this.getPageNoByElementIndex(curIndex!)
+        ? this.getPageNoByElementIndex(dirtyIndex!)
         : 0
-      // 浮动元素：仅清理脏页及之后，保留前面页缓存
+      // 先解析实际起始页（缓存不足/表格续排会回退），再清理浮动元素，避免回退后 float 重复
+      dirtyPageNo = this.position.resolveComputeStartPage(dirtyPageNo)
       if (dirtyPageNo <= 0) {
         this.position.setFloatPositionList([])
       } else {
@@ -3503,7 +3524,7 @@ export class Draw {
         )
       }
       // 位置信息（从脏页增量计算）
-      this.position.computePositionList(dirtyPageNo)
+      dirtyPageNo = this.position.computePositionList(dirtyPageNo)
       // 区域信息
       this.area.compute()
       if (!this.isPrintMode()) {

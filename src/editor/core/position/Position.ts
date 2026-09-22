@@ -670,38 +670,46 @@ export class Position {
     }
   }
 
-  public computePositionList(fromPageNo = 0) {
+  /**
+   * 解析位置增量计算的实际起始页。
+   * 缓存不足以覆盖脏页起始元素索引，或存在跨页表格续排时回退全量。
+   */
+  public resolveComputeStartPage(fromPageNo = 0): number {
     const pageRowList = this.draw.getPageRowList()
-    const header = this.draw.getHeader()
     let startPageNo = Math.max(0, fromPageNo)
     // 跨页表格续排依赖前页累积的 td.positionList，遇续排则回退全量计算
     if (startPageNo > 0 && this._hasTableContinuationFrom(startPageNo)) {
       startPageNo = 0
     }
+    if (startPageNo > 0) {
+      const startRow = pageRowList[startPageNo]?.[0]
+      // positionList 按元素索引稠密存储；长度不足说明插入后脏页越过了旧缓存
+      if (!startRow || this.positionList.length < startRow.startIndex) {
+        startPageNo = 0
+      }
+    }
+    return startPageNo
+  }
+
+  public computePositionList(fromPageNo = 0): number {
+    const pageRowList = this.draw.getPageRowList()
+    const header = this.draw.getHeader()
+    let startPageNo = this.resolveComputeStartPage(fromPageNo)
     if (startPageNo <= 0) {
       this.positionList = []
       this.tablePagingPositionList = []
       this.tablePagingPositionMap.clear()
       startPageNo = 0
     } else {
-      const startRow = pageRowList[startPageNo]?.[0]
-      if (!startRow) {
-        this.positionList = []
-        this.tablePagingPositionList = []
-        this.tablePagingPositionMap.clear()
-        startPageNo = 0
-      } else {
-        const cutStartIndex = startRow.startIndex
-        if (this.positionList.length > cutStartIndex) {
-          this.positionList.length = cutStartIndex
-        }
-        this.tablePagingPositionList = this.tablePagingPositionList.filter(
-          position => position.pageNo < startPageNo
-        )
-        for (const pageNo of [...this.tablePagingPositionMap.keys()]) {
-          if (pageNo >= startPageNo) {
-            this.tablePagingPositionMap.delete(pageNo)
-          }
+      const startRow = pageRowList[startPageNo][0]
+      const cutStartIndex = startRow.startIndex
+      this.positionList.length = cutStartIndex
+      this.tablePagingPositionList = this.tablePagingPositionList.filter(
+        position => position.pageNo < startPageNo
+      )
+      for (const pageNo of [...this.tablePagingPositionMap.keys()]) {
+        if (pageNo >= startPageNo) {
+          this.tablePagingPositionMap.delete(pageNo)
         }
       }
     }
@@ -730,6 +738,7 @@ export class Position {
       })
       startRowIndex += rowList.length
     }
+    return startPageNo
   }
 
   private _hasTableContinuationFrom(pageNo: number): boolean {

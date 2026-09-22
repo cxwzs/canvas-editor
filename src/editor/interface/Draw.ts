@@ -5,6 +5,8 @@ import { IRow } from './Row'
 
 export interface IDrawOption {
   curIndex?: number
+  /** 内容变更起始元素索引，分页增量脏页按此计算（避免大段粘贴后光标在末尾导致脏页偏后） */
+  changeStartIndex?: number
   isSetCursor?: boolean
   isSubmitHistory?: boolean
   isCompute?: boolean
