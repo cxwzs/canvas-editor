@@ -50,6 +50,7 @@ import {
   IForceUpdateOption,
   IGetImageOption,
   IGetValueOption,
+  IImageAutoLayoutOption,
   IPainterOption
 } from '../../interface/Draw'
 import {
@@ -1486,6 +1487,182 @@ export class CommandAdapt {
     this.draw.render({
       isSetCursor: false
     })
+  }
+
+  public imageAutoLayout(payload: IImageAutoLayoutOption) {
+    const isDisabled = this.draw.isReadonly() || this.draw.isDisabled()
+    if (isDisabled) return
+    const perRow = Math.floor(Number(payload.perRow))
+    if (!perRow || perRow < 1) return
+
+    const { startIndex, endIndex } = this.range.getRange()
+    const hasSelection = startIndex !== endIndex
+    // 有选区：当前上下文（含表格单元格）；无选区：全文正文
+    const elementList = hasSelection
+      ? this.draw.getElementList()
+      : this.draw.getOriginalMainElementList()
+    let rangeStart = 0
+    let rangeEnd = elementList.length
+    if (hasSelection) {
+      rangeStart =
+        elementList[startIndex]?.value === ZERO ? startIndex : startIndex + 1
+      rangeEnd = endIndex + 1
+    }
+
+    const runs = this._findConsecutiveImageRuns(
+      elementList,
+      rangeStart,
+      rangeEnd
+    )
+    if (!runs.length) return
+
+    const contentWidth = hasSelection
+      ? this.draw.getContextInnerWidth()
+      : this.draw.getOriginalInnerWidth()
+    if (contentWidth <= 0) return
+
+    const border = !!payload.border
+    const borderColor = payload.borderColor || '#000000'
+    const borderWidth = Number(payload.borderWidth) || 1
+
+    // 从后往前替换，避免索引偏移
+    for (let r = runs.length - 1; r >= 0; r--) {
+      const run = runs[r]
+      const newList = this._buildImageAutoLayoutList(
+        run.images,
+        perRow,
+        contentWidth,
+        border,
+        borderColor,
+        borderWidth
+      )
+      this.draw.spliceElementList(
+        elementList,
+        run.start,
+        run.end - run.start,
+        newList
+      )
+    }
+
+    this.draw.getPreviewer().clearResizer()
+    // 图片尺寸变化会影响后续所有分页；须从最早变更点重算 position，
+    // 否则脏页偏后会导致旧坐标与新 pageRowList 叠加、内容重叠
+    const changeStartIndex = (() => {
+      const positionContext = this.position.getPositionContext()
+      if (hasSelection && positionContext.isTable) {
+        return positionContext.index ?? 0
+      }
+      return runs[0].start
+    })()
+    this.draw.render({
+      isSetCursor: !!~endIndex,
+      curIndex: ~endIndex ? endIndex : undefined,
+      changeStartIndex,
+      isCompute: true
+    })
+  }
+
+  private _isImageAutoLayoutIgnorable(element: IElement): boolean {
+    if (element.type === ElementType.IMAGE) return false
+    if (element.value === ZERO) return true
+    if (!element.type && /^\s*$/.test(element.value || '')) return true
+    return false
+  }
+
+  private _findConsecutiveImageRuns(
+    elementList: IElement[],
+    start: number,
+    end: number
+  ): Array<{ start: number; end: number; images: IElement[] }> {
+    const runs: Array<{ start: number; end: number; images: IElement[] }> = []
+    let i = start
+    while (i < end) {
+      if (elementList[i]?.type !== ElementType.IMAGE) {
+        i++
+        continue
+      }
+      const runStart = i
+      const images: IElement[] = []
+      let lastImageIndex = i
+      while (i < end) {
+        const el = elementList[i]
+        if (el.type === ElementType.IMAGE) {
+          images.push(el)
+          lastImageIndex = i
+          i++
+          continue
+        }
+        let j = i
+        while (
+          j < end &&
+          this._isImageAutoLayoutIgnorable(elementList[j])
+        ) {
+          j++
+        }
+        if (j < end && elementList[j].type === ElementType.IMAGE) {
+          i = j
+          continue
+        }
+        break
+      }
+      if (images.length) {
+        runs.push({
+          start: runStart,
+          end: lastImageIndex + 1,
+          images
+        })
+      }
+    }
+    return runs
+  }
+
+  private _buildImageAutoLayoutList(
+    images: IElement[],
+    perRow: number,
+    contentWidth: number,
+    border: boolean,
+    borderColor: string,
+    borderWidth: number
+  ): IElement[] {
+    const newList: IElement[] = []
+    for (let rowStart = 0; rowStart < images.length; rowStart += perRow) {
+      const rowImages = images.slice(rowStart, rowStart + perRow)
+      const count = rowImages.length
+      const baseWidth = Math.floor(contentWidth / count)
+      const first = rowImages[0]
+      const firstOriginWidth = first.width || baseWidth
+      const firstOriginHeight = first.height || baseWidth
+      // 高度借鉴当前行第一张图（按新宽度等比换算）
+      const firstWidth =
+        count === 1 ? contentWidth : baseWidth
+      const height =
+        firstOriginWidth > 0
+          ? (firstOriginHeight / firstOriginWidth) * firstWidth
+          : firstOriginHeight
+
+      let usedWidth = 0
+      for (let i = 0; i < rowImages.length; i++) {
+        const img = rowImages[i]
+        const width =
+          i === count - 1 ? contentWidth - usedWidth : baseWidth
+        usedWidth += width
+        img.width = width
+        img.height = height
+        img.imgDisplay = ImageDisplay.BLOCK
+        delete img.imgFloatPosition
+        if (border) {
+          img.imgBorder = true
+          img.imgBorderColor = borderColor
+          img.imgBorderWidth = borderWidth
+        } else {
+          delete img.imgBorder
+          delete img.imgBorderColor
+          delete img.imgBorderWidth
+        }
+        newList.push(img)
+      }
+    }
+    return newList
   }
 
   public changeImageDisplay(element: IElement, display: ImageDisplay) {

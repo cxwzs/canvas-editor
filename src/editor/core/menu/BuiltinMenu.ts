@@ -304,9 +304,71 @@ export class BuiltinMenu {
     quickFormatOptionDom.classList.toggle('visible')
   }
   quickFormatOptionDom.onclick = function (evt) {
+    evt.stopPropagation()
     const li = evt.target as HTMLLIElement
     const format = li.dataset.format
     if (!format) return
+    quickFormatOptionDom.classList.remove('visible')
+    if (format === 'imageAutoLayout') {
+      new Dialog({
+        title: '自动调整图片布局',
+        data: [
+          {
+            type: 'select',
+            label: '图片边框',
+            name: 'border',
+            value: '1',
+            options: [
+              { label: '无', value: '0' },
+              { label: '有', value: '1' }
+            ]
+          },
+          {
+            type: 'color',
+            label: '边框颜色',
+            name: 'borderColor',
+            value: '#000000',
+            visibleWhen: { name: 'border', value: '1' }
+          },
+          {
+            type: 'number',
+            label: '边框粗细',
+            name: 'borderWidth',
+            value: '1',
+            placeholder: '请输入边框粗细',
+            visibleWhen: { name: 'border', value: '1' }
+          },
+          {
+            type: 'number',
+            label: '同一行图片数量',
+            name: 'perRow',
+            required: true,
+            value: '2',
+            placeholder: '请输入同一行显示数量'
+          }
+        ],
+        onConfirm: payload => {
+          const perRow = Number(
+            payload.find(p => p.name === 'perRow')?.value
+          )
+          if (!perRow || perRow < 1) return
+          const border =
+            payload.find(p => p.name === 'border')?.value === '1'
+          const borderColor =
+            payload.find(p => p.name === 'borderColor')?.value || '#000000'
+          const borderWidth = Number(
+            payload.find(p => p.name === 'borderWidth')?.value
+          )
+          editor.command.executeImageAutoLayout({
+            border,
+            borderColor,
+            borderWidth: borderWidth > 0 ? borderWidth : 1,
+            perRow
+          })
+        }
+      })
+      return
+    }
     console.log('quickFormat:', format)
   }
 

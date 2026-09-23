@@ -12,6 +12,8 @@ export interface IDialogData {
   width?: number
   height?: number
   required?: boolean
+  /** 仅当指定字段当前值为 value 时显示该项 */
+  visibleWhen?: { name: string; value: string }
 }
 
 export interface IDialogConfirm {
@@ -88,6 +90,7 @@ export class Dialog {
     const optionContainer = document.createElement('div')
     optionContainer.classList.add('dialog-option')
     // 选项
+    const optionItemMap = new Map<string, HTMLDivElement>()
     for (let i = 0; i < data.length; i++) {
       const option = data[i]
       const optionItemContainer = document.createElement('div')
@@ -133,8 +136,28 @@ export class Dialog {
       }
       optionItemContainer.append(optionInput)
       optionContainer.append(optionItemContainer)
+      optionItemMap.set(option.name, optionItemContainer)
       this.inputList.push(optionInput)
     }
+    // 按 visibleWhen 联动显示/隐藏
+    const syncVisible = () => {
+      const valueMap = new Map(
+        this.inputList.map(input => [input.name, input.value])
+      )
+      for (let i = 0; i < data.length; i++) {
+        const option = data[i]
+        const item = optionItemMap.get(option.name)
+        if (!item || !option.visibleWhen) continue
+        const visible =
+          valueMap.get(option.visibleWhen.name) === option.visibleWhen.value
+        item.style.display = visible ? '' : 'none'
+      }
+    }
+    this.inputList.forEach(input => {
+      input.addEventListener('change', syncVisible)
+      input.addEventListener('input', syncVisible)
+    })
+    syncVisible()
     dialogContainer.append(optionContainer)
     // 按钮容器
     const menuContainer = document.createElement('div')

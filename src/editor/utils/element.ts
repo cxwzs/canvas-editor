@@ -1520,6 +1520,11 @@ export function createDomFromElementList(
           img.width = element.width!
           img.height = element.height!
         }
+        if (element.imgBorder && element.imgBorderWidth) {
+          img.style.border = `${element.imgBorderWidth}px solid ${
+            element.imgBorderColor || '#000000'
+          }`
+        }
         setPartIdAttribute(img, element.partId)
         clipboardDom.append(img)
       } else if (element.type === ElementType.BLOCK) {
@@ -1770,6 +1775,16 @@ export function createImageElementFromHTMLImage(
   }
   if (maxHeight) {
     imageElement.imgMaxHeight = maxHeight
+  }
+
+  const borderWidth =
+    parseFloat(imgNode.style.borderWidth) ||
+    parseFloat(imgNode.style.border) ||
+    0
+  if (borderWidth > 0) {
+    imageElement.imgBorder = true
+    imageElement.imgBorderWidth = borderWidth
+    imageElement.imgBorderColor = imgNode.style.borderColor || '#000000'
   }
 
   if (width && height) {

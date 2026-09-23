@@ -193,6 +193,12 @@ export interface IImageBasic {
   imgMaxHeight?: number
   /** 尺寸待图片加载后修正（不序列化） */
   imgSizePending?: boolean
+  /** 是否绘制图片边框 */
+  imgBorder?: boolean
+  /** 图片边框颜色 */
+  imgBorderColor?: string
+  /** 图片边框粗细（未缩放逻辑像素） */
+  imgBorderWidth?: number
 }
 
 export type IImageElement = IImageBasic & IImageRule

@@ -30,6 +30,17 @@ export interface IDrawImagePayload {
   extension?: unknown
 }
 
+export interface IImageAutoLayoutOption {
+  /** 是否显示边框 */
+  border?: boolean
+  /** 边框颜色 */
+  borderColor?: string
+  /** 边框粗细 */
+  borderWidth?: number
+  /** 同一行显示图片数量 */
+  perRow: number
+}
+
 export interface IDrawRowPayload {
   elementList: IElement[]
   positionList: IElementPosition[]

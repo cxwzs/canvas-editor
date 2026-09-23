@@ -224,6 +224,32 @@ export class ImageParticle {
     }
   }
 
+  private _renderImageBorder(
+    ctx: CanvasRenderingContext2D,
+    element: IElement,
+    x: number,
+    y: number,
+    width: number,
+    height: number
+  ) {
+    if (!element.imgBorder || !element.imgBorderWidth || !width || !height) {
+      return
+    }
+    const { scale } = this.options
+    const lineWidth = element.imgBorderWidth * scale
+    ctx.save()
+    ctx.strokeStyle = element.imgBorderColor || '#000000'
+    ctx.lineWidth = lineWidth
+    const offset = lineWidth / 2
+    ctx.strokeRect(
+      x + offset,
+      y + offset,
+      Math.max(0, width - lineWidth),
+      Math.max(0, height - lineWidth)
+    )
+    ctx.restore()
+  }
+
   private _renderCaption(
     ctx: CanvasRenderingContext2D,
     element: IElement,
@@ -405,6 +431,7 @@ export class ImageParticle {
         return
       }
       this._drawImageWithCrop(ctx, img, element, x, y, width, height)
+      this._renderImageBorder(ctx, element, x, y, width, height)
       this._renderCaption(ctx, element, x, y, width, height)
       return
     }
@@ -444,6 +471,7 @@ export class ImageParticle {
           })
         } else {
           this._drawImageWithCrop(ctx, img, element, x, y, width, height)
+          this._renderImageBorder(ctx, element, x, y, width, height)
           this._renderCaption(ctx, element, x, y, width, height)
         }
       }
@@ -460,6 +488,7 @@ export class ImageParticle {
             width,
             height
           )
+          this._renderImageBorder(ctx, element, x, y, width, height)
           this.imageCache.set(element.value, fallbackImage)
           this._renderCaption(ctx, element, x, y, width, height)
         }

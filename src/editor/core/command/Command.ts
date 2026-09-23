@@ -74,6 +74,7 @@ export class Command {
   public executeSaveAsImageElement: CommandAdapt['saveAsImageElement']
   public executeSetImageCrop: CommandAdapt['setImageCrop']
   public executeSetImageCaption: CommandAdapt['setImageCaption']
+  public executeImageAutoLayout: CommandAdapt['imageAutoLayout']
   public executeChangeImageDisplay: CommandAdapt['changeImageDisplay']
   public executePageMode: CommandAdapt['pageMode']
   public executeSetColumns: CommandAdapt['setColumns']
@@ -397,6 +398,10 @@ export class Command {
     this.executeSetImageCaption = this.wrap(
       'executeSetImageCaption',
       adapt.setImageCaption.bind(adapt)
+    )
+    this.executeImageAutoLayout = this.wrap(
+      'executeImageAutoLayout',
+      adapt.imageAutoLayout.bind(adapt)
     )
     this.executeChangeImageDisplay = this.wrap(
       'executeChangeImageDisplay',
