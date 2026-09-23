@@ -45,13 +45,21 @@ export class Dialog {
     this._render()
   }
 
+  private _getMountParent(): HTMLElement {
+    return (
+      (document.querySelector('.ce-builtin-menu-host') as HTMLElement | null) ||
+      document.body
+    )
+  }
+
   private _render() {
     const { title, data, onClose, onCancel, onConfirm } = this.options
+    const mountParent = this._getMountParent()
     // 渲染遮罩层
     const mask = document.createElement('div')
     mask.classList.add('dialog-mask')
     mask.setAttribute(EDITOR_COMPONENT, EditorComponent.COMPONENT)
-    document.body.append(mask)
+    mountParent.append(mask)
     // 渲染容器
     const container = document.createElement('div')
     container.classList.add('dialog-container')
@@ -159,8 +167,8 @@ export class Dialog {
     }
     menuContainer.append(confirmBtn)
     dialogContainer.append(menuContainer)
-    // 渲染
-    document.body.append(container)
+    // 渲染（挂载到 ce-builtin-menu-host，相对其绝对定位居中）
+    mountParent.append(container)
     this.container = container
     this.mask = mask
   }
