@@ -111,7 +111,8 @@
   },
   "toast": {
     "pasting": "正在粘贴，请稍候…",
-    "imageAutoLayout": "正在排版图片，请稍候…"
+    "imageAutoLayout": "正在排版图片，请稍候…",
+    "imageProcessing": "正在处理图片，请稍候…"
   },
   "trace": {
     "insert": "新增内容",

@@ -701,6 +701,10 @@ export class BuiltinMenu {
     new ImagePicker({
       files,
       onFileUpload,
+      toastContainer: editor.command.getContainer(),
+      toastMessage:
+        editor.command.executeTranslate('toast.imageProcessing') ||
+        '正在处理图片，请稍候…',
       onConfirm(payload) {
         if (~cachedRange.startIndex && ~cachedRange.endIndex) {
           editor.command.executeReplaceRange(cachedRange)

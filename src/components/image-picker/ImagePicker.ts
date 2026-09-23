@@ -1,6 +1,10 @@
 import { EditorComponent } from '../../editor/dataset/enum/Editor'
 import { EDITOR_COMPONENT } from '../../editor/dataset/constant/Editor'
 import type { IFileUpload } from '../../editor/interface/File'
+import {
+  IToastHandle,
+  showToast
+} from '../../editor/core/toast/Toast'
 import './image-picker.css'
 
 export interface IImagePickerResult {
@@ -13,6 +17,10 @@ export interface IImagePickerResult {
 export interface IImagePickerOptions {
   files: File[]
   onFileUpload?: IFileUpload | null
+  /** Toast 挂载容器；未传时挂到弹窗宿主节点 */
+  toastContainer?: HTMLElement
+  /** 确认处理中的 Toast 文案 */
+  toastMessage?: string
   onClose?: () => void
   onCancel?: () => void
   onConfirm?: (payload: IImagePickerResult[]) => void
@@ -512,9 +520,26 @@ export class ImagePicker {
     this.cancelBtn.disabled = submitting
   }
 
+  private _waitForToastPaint(): Promise<void> {
+    return new Promise(resolve => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => resolve())
+      })
+    })
+  }
+
   private async _handleConfirm() {
     if (this.submitting || !this.items.length) return
     this._setSubmitting(true)
+    // 无论是否配置 onFileUpload，确认后都提示用户正在处理
+    const toastContainer =
+      this.options.toastContainer || this._getMountParent()
+    const toastMessage =
+      this.options.toastMessage || '正在处理图片，请稍候…'
+    let toast: IToastHandle | null = showToast(toastContainer, toastMessage, {
+      duration: 0
+    })
+    await this._waitForToastPaint()
     try {
       const results: IImagePickerResult[] = []
       const total = this.items.length
@@ -559,8 +584,12 @@ export class ImagePicker {
         this._setProgress(true, '上传完成', 100)
       }
       this.options.onConfirm?.(results)
+      toast?.close()
+      toast = null
       this._dispose()
     } catch (error) {
+      toast?.close()
+      toast = null
       if (this.options.onFileUpload) {
         this._setProgress(true, '上传失败，请重试', 0)
       }

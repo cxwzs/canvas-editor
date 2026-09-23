@@ -60,14 +60,16 @@
 .image-picker-body {
   display: flex;
   gap: 16px;
+  height: 400px;
   min-height: 360px;
 }
 
 .image-picker-list {
-  width: 120px;
+  width: 112px;
   flex-shrink: 0;
+  height: 100%;
+  overflow-x: hidden;
   overflow-y: auto;
-  max-height: 400px;
   border: 1px solid #e2e6ed;
   border-radius: 2px;
   padding: 8px;
@@ -75,12 +77,14 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  align-items: center;
 }
 
 .image-picker-list__item {
   position: relative;
-  width: 100%;
-  aspect-ratio: 1;
+  width: 96px;
+  height: 96px;
+  flex-shrink: 0;
   border: 2px solid transparent;
   border-radius: 2px;
   overflow: hidden;
@@ -121,8 +125,9 @@
 }
 
 .image-picker-list__add {
-  width: 100%;
-  aspect-ratio: 1;
+  width: 96px;
+  height: 96px;
+  flex-shrink: 0;
   border: 1px dashed #c5cad3;
   border-radius: 2px;
   box-sizing: border-box;

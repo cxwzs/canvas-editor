@@ -111,7 +111,8 @@
   },
   "toast": {
     "pasting": "Pasting, please wait…",
-    "imageAutoLayout": "Arranging images, please wait…"
+    "imageAutoLayout": "Arranging images, please wait…",
+    "imageProcessing": "Processing images, please wait…"
   },
   "trace": {
     "insert": "Inserted",
