@@ -110,7 +110,8 @@
     "input": "Input: "
   },
   "toast": {
-    "pasting": "Pasting, please wait…"
+    "pasting": "Pasting, please wait…",
+    "imageAutoLayout": "Arranging images, please wait…"
   },
   "trace": {
     "insert": "Inserted",

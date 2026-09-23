@@ -19,6 +19,7 @@ import { TitleLevel } from '../../dataset/enum/Title'
 import { debounce, nextTick, splitText } from '../../utils'
 import { IRangeStyle } from '../../interface/Listener'
 import type { IFooterBarOption, IMenuOption } from '../../interface/Menu'
+import { showToast } from '../toast/Toast'
 import builtinMenuTemplate from './template.html?raw'
 import './menu.css'
 
@@ -359,11 +360,25 @@ export class BuiltinMenu {
           const borderWidth = Number(
             payload.find(p => p.name === 'borderWidth')?.value
           )
-          editor.command.executeImageAutoLayout({
-            border,
-            borderColor,
-            borderWidth: borderWidth > 0 ? borderWidth : 1,
-            perRow
+          // 先展示 toast，等绘制完成后再排版，避免主线程阻塞导致提示不出现
+          const toast = showToast(
+            editor.command.getContainer(),
+            '正在排版图片，请稍候…',
+            { duration: 0 }
+          )
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              try {
+                editor.command.executeImageAutoLayout({
+                  border,
+                  borderColor,
+                  borderWidth: borderWidth > 0 ? borderWidth : 1,
+                  perRow
+                })
+              } finally {
+                toast.close()
+              }
+            })
           })
         }
       })

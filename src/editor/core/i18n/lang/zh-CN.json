@@ -110,7 +110,8 @@
     "input": "输入："
   },
   "toast": {
-    "pasting": "正在粘贴，请稍候…"
+    "pasting": "正在粘贴，请稍候…",
+    "imageAutoLayout": "正在排版图片，请稍候…"
   },
   "trace": {
     "insert": "新增内容",
