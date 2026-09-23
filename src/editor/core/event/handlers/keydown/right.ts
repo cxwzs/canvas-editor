@@ -10,7 +10,11 @@ import {
 } from '../../../../utils/element'
 import { isApple } from '../../../../utils/ua'
 import { CanvasEvent } from '../../CanvasEvent'
-import { isElementFocusDisabled } from '../disabledHit'
+import {
+  isElementFocusDisabled,
+  isFocusDisabledCursorHost,
+  resolveArrowAreaLandingIndex
+} from '../disabledHit'
 
 export function right(evt: KeyboardEvent, host: CanvasEvent) {
   const draw = host.getDraw()
@@ -158,12 +162,18 @@ export function right(evt: KeyboardEvent, host: CanvasEvent) {
   ) {
     return
   }
-  // 隐藏/禁用元素跳过
+  // 隐藏/禁用元素跳过（区域标题→正文交界换行可作为段首光标锚点，不跳过）
   const traceParticle = draw.getTraceParticle()
   const newElementList = draw.getElementList()
-  const shouldSkip = (el?: (typeof newElementList)[number]) =>
-    !!el &&
-    (traceParticle.isTraceHidden(el) || isElementFocusDisabled(el, draw))
+  const fromIndex = cursorPosition.index
+  const shouldSkip = (el?: (typeof newElementList)[number]) => {
+    if (!el) return false
+    if (traceParticle.isTraceHidden(el)) return true
+    if (!isElementFocusDisabled(el, draw)) return false
+    const idx = newElementList.indexOf(el)
+    return !~idx || !isFocusDisabledCursorHost(newElementList, idx)
+  }
+  const rawStartIndex = anchorStartIndex
   anchorStartIndex = getNonHideElementIndex(
     newElementList,
     anchorStartIndex,
@@ -176,6 +186,18 @@ export function right(evt: KeyboardEvent, host: CanvasEvent) {
     LocationPosition.AFTER,
     shouldSkip
   )
+  // 跨 area / 只读：衔接到相邻可编辑正文（闭合光标）
+  if (!evt.shiftKey) {
+    anchorStartIndex = resolveArrowAreaLandingIndex(
+      newElementList,
+      fromIndex,
+      anchorStartIndex,
+      1,
+      draw,
+      { rawIndex: rawStartIndex }
+    )
+    anchorEndIndex = anchorStartIndex
+  }
   // 设置上下文
   rangeManager.setRange(anchorStartIndex, anchorEndIndex)
   const isAnchorCollapsed = anchorStartIndex === anchorEndIndex

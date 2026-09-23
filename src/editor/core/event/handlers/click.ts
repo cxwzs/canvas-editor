@@ -6,6 +6,8 @@ import { IRange } from '../../../interface/Range'
 import { CanvasEvent } from '../CanvasEvent'
 import {
   getHitElementByEvent,
+  isAreaTitleBodyBoundaryBreak,
+  isEditableAreaElement,
   isElementFocusDisabled
 } from './disabledHit'
 
@@ -110,8 +112,19 @@ export function getWordRangeByCursor(host: CanvasEvent): IRange | null {
 
 function dblclick(host: CanvasEvent, evt: MouseEvent) {
   const draw = host.getDraw()
-  // 禁用元素不可扩选/获取焦点
-  if (isElementFocusDisabled(getHitElementByEvent(draw, evt), draw)) return
+  // 禁用元素不可扩选/获取焦点（区域标题→正文交界换行除外）
+  const hitElement = getHitElementByEvent(draw, evt)
+  if (isElementFocusDisabled(hitElement, draw)) {
+    const elementList = draw.getElementList()
+    const hitIndex = hitElement ? elementList.indexOf(hitElement) : -1
+    if (
+      !~hitIndex ||
+      !isAreaTitleBodyBoundaryBreak(elementList, hitIndex) ||
+      !isEditableAreaElement(hitElement)
+    ) {
+      return
+    }
+  }
   const position = draw.getPosition()
   const positionContext = position.getPositionByXY({
     x: evt.offsetX,

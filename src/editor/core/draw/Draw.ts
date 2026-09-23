@@ -3550,6 +3550,22 @@ export class Draw {
     }
     // 创建/同步纸张（分页虚拟滚动仅挂载窗口内页面）
     if (isPagingMode) {
+      // 设置光标时先用落点页更新 pageNo，避免虚拟页窗口仍以旧页为中心导致二次移动抖动
+      if (isSetCursor && curIndex !== undefined && this.zone.isMainActive()) {
+        const positionContext = this.position.getPositionContext()
+        let cursorPageNo: number | undefined
+        if (positionContext.isTable) {
+          cursorPageNo = this.position.getTableTdByContext(
+            this.getOriginalElementList(),
+            positionContext
+          )?.positionList?.[curIndex]?.pageNo
+        } else {
+          cursorPageNo = this.position.getPositionList()[curIndex]?.pageNo
+        }
+        if (cursorPageNo !== undefined && cursorPageNo !== this.pageNo) {
+          this.setPageNo(cursorPageNo)
+        }
+      }
       const centerPageNo = Math.min(
         Math.max(this.pageNo, 0),
         Math.max(this.pageRowList.length - 1, 0)

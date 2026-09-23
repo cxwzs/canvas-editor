@@ -13,7 +13,11 @@ import { RadioControl } from '../../draw/control/radio/RadioControl'
 import { CanvasEvent } from '../CanvasEvent'
 import { IElement } from '../../../interface/Element'
 import { Draw } from '../../draw/Draw'
-import { isElementFocusDisabled } from './disabledHit'
+import {
+  isAreaTitleBodyBoundaryBreak,
+  isEditableAreaElement,
+  isElementFocusDisabled
+} from './disabledHit'
 
 export function setRangeCache(host: CanvasEvent) {
   const draw = host.getDraw()
@@ -127,27 +131,40 @@ export function mousedown(evt: MouseEvent, host: CanvasEvent) {
   const positionList = position.getPositionList()
   const curIndex = isTable ? tdValueIndex! : index
   const curElement = elementList[curIndex]
-  // 禁用元素不可获取焦点；区域标题尾换行后的正文空行可落到下一可编辑换行
+  // 禁用元素不可获取焦点；区域标题→正文交界换行可作为段首光标锚点
   if (isElementFocusDisabled(curElement, draw)) {
     const nextElement = elementList[curIndex + 1]
-    const canFocusAreaBody =
-      curElement?.value === ZERO &&
-      curElement.title?.disabled &&
-      nextElement?.value === ZERO &&
-      !nextElement.title?.disabled &&
-      !!curElement.areaId &&
-      nextElement.areaId === curElement.areaId
-    if (canFocusAreaBody) {
-      const bodyIndex = curIndex + 1
-      rangeManager.setRange(bodyIndex, bodyIndex)
-      position.setCursorPosition(positionList[bodyIndex])
-      draw.render({
-        curIndex: bodyIndex,
-        isSubmitHistory: false,
-        isCompute: false,
-        isSetCursor: true
-      })
-      host.isAllowSelection = false
+    // 有正文内容时：光标落在标题尾换行上（首字符之前）
+    if (
+      isAreaTitleBodyBoundaryBreak(elementList, curIndex) &&
+      isEditableAreaElement(curElement)
+    ) {
+      // 空正文占位：仍落到下一可编辑换行，与既有空行行为一致
+      if (
+        nextElement?.value === ZERO &&
+        !nextElement.title?.disabled
+      ) {
+        const bodyIndex = curIndex + 1
+        rangeManager.setRange(bodyIndex, bodyIndex)
+        position.setCursorPosition(positionList[bodyIndex])
+        draw.render({
+          curIndex: bodyIndex,
+          isSubmitHistory: false,
+          isCompute: false,
+          isSetCursor: true
+        })
+        host.isAllowSelection = false
+      } else {
+        // 有正文：光标落在标题尾换行（首字符之前），允许拖选
+        rangeManager.setRange(curIndex, curIndex)
+        position.setCursorPosition(positionList[curIndex])
+        draw.render({
+          curIndex,
+          isSubmitHistory: false,
+          isCompute: false,
+          isSetCursor: true
+        })
+      }
       return
     }
     // 仅有标题的空 area：点击时补偿正文占位并聚焦

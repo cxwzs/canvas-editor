@@ -5,7 +5,11 @@ import { MoveDirection } from '../../../../dataset/enum/Observer'
 import { IElementPosition } from '../../../../interface/Element'
 import { getNonHideElementIndex } from '../../../../utils/element'
 import { CanvasEvent } from '../../CanvasEvent'
-import { isElementFocusDisabled } from '../disabledHit'
+import {
+  isElementFocusDisabled,
+  isFocusDisabledCursorHost,
+  resolveArrowAreaLandingIndex
+} from '../disabledHit'
 
 interface IGetNextPositionIndexPayload {
   positionList: IElementPosition[]
@@ -326,13 +330,20 @@ export function updown(evt: KeyboardEvent, host: CanvasEvent) {
   if (anchorStartIndex > anchorEndIndex) {
     ;[anchorStartIndex, anchorEndIndex] = [anchorEndIndex, anchorStartIndex]
   }
-  // 隐藏/禁用元素跳过
+  // 隐藏/禁用元素跳过（区域标题→正文交界换行可作为段首光标锚点，不跳过）
   const elementListForSkip = draw.getElementList()
   const traceParticle = draw.getTraceParticle()
   const skipPos = isUp ? LocationPosition.BEFORE : LocationPosition.AFTER
-  const shouldSkip = (el?: (typeof elementListForSkip)[number]) =>
-    !!el &&
-    (traceParticle.isTraceHidden(el) || isElementFocusDisabled(el, draw))
+  const direction = isUp ? -1 : 1
+  const fromIndex = cursorPosition.index
+  const shouldSkip = (el?: (typeof elementListForSkip)[number]) => {
+    if (!el) return false
+    if (traceParticle.isTraceHidden(el)) return true
+    if (!isElementFocusDisabled(el, draw)) return false
+    const idx = elementListForSkip.indexOf(el)
+    return !~idx || !isFocusDisabledCursorHost(elementListForSkip, idx)
+  }
+  const rawStartIndex = anchorStartIndex
   anchorStartIndex = getNonHideElementIndex(
     elementListForSkip,
     anchorStartIndex,
@@ -345,6 +356,18 @@ export function updown(evt: KeyboardEvent, host: CanvasEvent) {
     skipPos,
     shouldSkip
   )
+  // 跨 area / 只读：衔接到上下可编辑正文（闭合光标）
+  if (!evt.shiftKey) {
+    anchorStartIndex = resolveArrowAreaLandingIndex(
+      elementListForSkip,
+      fromIndex,
+      anchorStartIndex,
+      direction,
+      draw,
+      { rawIndex: rawStartIndex, isVertical: true }
+    )
+    anchorEndIndex = anchorStartIndex
+  }
   rangeManager.setRange(anchorStartIndex, anchorEndIndex)
   const isCollapsed = anchorStartIndex === anchorEndIndex
   draw.render({

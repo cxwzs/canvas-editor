@@ -209,6 +209,10 @@ export class Cursor {
     const pageNo = zoneManager.isMainActive()
       ? cursorPosition.pageNo
       : this.draw.getPageNo()
+    // 与 scrollPositionIntoView 对齐：键盘移动后同步当前页，避免虚拟页窗口来回切换抖动
+    if (zoneManager.isMainActive() && pageNo !== this.draw.getPageNo()) {
+      this.draw.setPageNo(pageNo)
+    }
     // 虚拟滚动：光标跨页时先挂载目标页
     if (this.draw.getIsVirtualPageMode()) {
       this.draw.syncVirtualPages(pageNo, { isDraw: true })

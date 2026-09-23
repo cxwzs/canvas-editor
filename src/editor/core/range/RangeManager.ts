@@ -1,6 +1,7 @@
 import { ElementType } from '../..'
 import { ZERO } from '../../dataset/constant/Common'
 import { TEXTLIKE_ELEMENT_TYPE } from '../../dataset/constant/Element'
+import { AreaMode } from '../../dataset/enum/Area'
 import { ControlComponent } from '../../dataset/enum/Control'
 import { EditorContext } from '../../dataset/enum/Editor'
 import { IControlContext } from '../../interface/Control'
@@ -56,8 +57,23 @@ export class RangeManager {
   public getActiveAreaBodyId(): string | null {
     const { startIndex } = this.range
     if (!~startIndex) return null
-    const element = this.draw.getElementList()[startIndex]
-    if (!element?.areaId || element.title?.disabled) return null
+    const elementList = this.draw.getElementList()
+    const element = elementList[startIndex]
+    if (!element?.areaId) return null
+    // 标题文本不可视为正文；可编辑区域标题→正文交界换行可作为段首锚点
+    if (element.title?.disabled) {
+      const next = elementList[startIndex + 1]
+      if (
+        element.value === ZERO &&
+        element.area?.mode !== AreaMode.READONLY &&
+        next &&
+        next.areaId === element.areaId &&
+        !next.title?.disabled
+      ) {
+        return element.areaId
+      }
+      return null
+    }
     return element.areaId
   }
 
