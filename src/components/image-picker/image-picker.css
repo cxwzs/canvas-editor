@@ -1,7 +1,9 @@
 .image-picker-mask {
-  position: fixed;
+  position: absolute;
   left: 0;
   top: 0;
+  right: 0;
+  bottom: 0;
   width: 100%;
   height: 100%;
   opacity: 0.5;
@@ -10,7 +12,7 @@
 }
 
 .image-picker-container {
-  position: fixed;
+  position: absolute;
   top: 0;
   right: 0;
   bottom: 0;
@@ -24,9 +26,9 @@
 }
 
 .image-picker {
-  position: absolute;
+  position: relative;
   width: 720px;
-  max-width: calc(100vw - 40px);
+  max-width: calc(100% - 40px);
   padding: 0 24px 24px;
   background: #ffffff;
   box-shadow: 0 2px 12px 0 rgb(56 56 56 / 20%);

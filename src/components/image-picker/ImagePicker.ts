@@ -87,12 +87,20 @@ export class ImagePicker {
     document.body.classList.add('overflow-hidden')
   }
 
+  private _getMountParent(): HTMLElement {
+    return (
+      (document.querySelector('.ce-builtin-menu-host') as HTMLElement | null) ||
+      document.body
+    )
+  }
+
   private _render() {
     const { onClose, onCancel } = this.options
+    const mountParent = this._getMountParent()
     const mask = document.createElement('div')
     mask.classList.add('image-picker-mask')
     mask.setAttribute(EDITOR_COMPONENT, EditorComponent.COMPONENT)
-    document.body.append(mask)
+    mountParent.append(mask)
 
     const container = document.createElement('div')
     container.classList.add('image-picker-container')
@@ -200,7 +208,8 @@ export class ImagePicker {
     menu.append(cancelBtn, confirmBtn)
     picker.append(menu)
 
-    document.body.append(container)
+    // 挂载到 ce-builtin-menu-host，相对其绝对定位居中
+    mountParent.append(container)
     return {
       mask,
       container,
