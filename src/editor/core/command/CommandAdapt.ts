@@ -1516,9 +1516,14 @@ export class CommandAdapt {
     )
     if (!runs.length) return
 
-    const contentWidth = hasSelection
-      ? this.draw.getContextInnerWidth()
-      : this.draw.getOriginalInnerWidth()
+    // 与 computeRowList 的 availableWidth 对齐：getWidth 会对页宽取整，
+    // 若直接用 originalInnerWidth，小数页宽/边距下图片总宽会略大并被挤到下一行
+    const positionContext = this.position.getPositionContext()
+    const { scale } = this.options
+    const contentWidth =
+      hasSelection && positionContext.isTable
+        ? this.draw.getContextInnerWidth()
+        : this.draw.getInnerWidth() / scale
     if (contentWidth <= 0) return
 
     const border = !!payload.border
@@ -1633,8 +1638,7 @@ export class CommandAdapt {
       const firstOriginWidth = first.width || baseWidth
       const firstOriginHeight = first.height || baseWidth
       // 高度借鉴当前行第一张图（按新宽度等比换算）
-      const firstWidth =
-        count === 1 ? contentWidth : baseWidth
+      const firstWidth = count === 1 ? contentWidth : baseWidth
       const height =
         firstOriginWidth > 0
           ? (firstOriginHeight / firstOriginWidth) * firstWidth
