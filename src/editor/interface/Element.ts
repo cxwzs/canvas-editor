@@ -43,6 +43,8 @@ export interface IElementStyle {
   strikeout?: boolean
   rowFlex?: RowFlex
   rowMargin?: number
+  /** 首行缩进，单位 em（对应 CSS text-indent） */
+  textIndent?: number
   level?: TitleLevel
   title?: ITitle
   letterSpacing?: number

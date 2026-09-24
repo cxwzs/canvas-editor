@@ -15,7 +15,11 @@ export const EDITOR_ELEMENT_STYLE_ATTR: Array<keyof IElement> = [
   'textDecoration'
 ]
 
-export const EDITOR_ROW_ATTR: Array<keyof IElement> = ['rowFlex', 'rowMargin']
+export const EDITOR_ROW_ATTR: Array<keyof IElement> = [
+  'rowFlex',
+  'rowMargin',
+  'textIndent'
+]
 
 export const EDITOR_TRACE_ATTR: Array<keyof IElement> = ['trace']
 
@@ -24,9 +28,13 @@ export const EDITOR_HINT_ATTR: Array<keyof IElement> = ['hint']
 export const EDITOR_ELEMENT_PARAGRAPH_STYLE_ATTR: Array<keyof IElement> = [
   'rowFlex',
   'rowMargin',
+  'textIndent',
   'level',
   'title'
 ]
+
+/** 增加/减少缩进的步长（em） */
+export const TEXT_INDENT_STEP = 2
 
 export const EDITOR_ELEMENT_COPY_ATTR: Array<keyof IElement> = [
   'type',
@@ -46,6 +54,7 @@ export const EDITOR_ELEMENT_COPY_ATTR: Array<keyof IElement> = [
   'dateFormat',
   'groupIds',
   'rowMargin',
+  'textIndent',
   'textDecoration',
   'disabled',
   'partId'
@@ -63,6 +72,7 @@ export const EDITOR_ELEMENT_ZIP_ATTR: Array<keyof IElement> = [
   'strikeout',
   'rowFlex',
   'rowMargin',
+  'textIndent',
   'dashArray',
   'trList',
   'tableToolDisabled',

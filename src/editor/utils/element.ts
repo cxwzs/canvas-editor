@@ -1177,6 +1177,41 @@ export function convertRowFlexToJustifyContent(rowFlex: RowFlex) {
   }
 }
 
+/** 从节点读取 CSS text-indent，返回 em 数值 */
+export function convertTextIndentToEm(node: HTMLElement): number | undefined {
+  let el: HTMLElement | null = node
+  while (el) {
+    const style = window.getComputedStyle(el)
+    const display = style.display
+    const isBlock =
+      display === 'block' ||
+      display === 'list-item' ||
+      el.nodeName === 'P' ||
+      el.nodeName === 'DIV' ||
+      el.nodeName === 'LI' ||
+      el.nodeName === 'TD' ||
+      el.nodeName === 'TH'
+    if (isBlock) {
+      const textIndent = style.textIndent
+      if (!textIndent || textIndent === '0px' || textIndent === '0') {
+        return undefined
+      }
+      if (textIndent.endsWith('em')) {
+        const em = parseFloat(textIndent)
+        return em > 0 ? em : undefined
+      }
+      const px = parseFloat(textIndent)
+      const fontSize = parseFloat(style.fontSize) || 16
+      if (px > 0 && fontSize > 0) {
+        return Math.round((px / fontSize) * 100) / 100
+      }
+      return undefined
+    }
+    el = el.parentElement
+  }
+  return undefined
+}
+
 export function isTextLikeElement(element: IElement): boolean {
   return !element.type || TEXTLIKE_ELEMENT_TYPE.includes(element.type)
 }
@@ -1295,6 +1330,9 @@ export function convertElementToDom(
   dom.style.fontFamily = element.font || options.defaultFont
   if (element.rowFlex) {
     dom.style.textAlign = convertRowFlexToTextAlign(element.rowFlex)
+  }
+  if (element.textIndent) {
+    dom.style.textIndent = `${element.textIndent}em`
   }
   if (element.color) {
     dom.style.color = element.color
@@ -1625,10 +1663,11 @@ export function createDomFromElementList(
     const isDefaultRowFlex =
       !elementGroupRowFlex.rowFlex ||
       elementGroupRowFlex.rowFlex === RowFlex.LEFT
+    const firstElement = elementGroupRowFlex.data[0]
+    const textIndent = firstElement?.textIndent
     // 块元素使用flex否则使用text-align
     const rowFlexDom = document.createElement('div')
     if (!isDefaultRowFlex) {
-      const firstElement = elementGroupRowFlex.data[0]
       if (getIsBlockElement(firstElement)) {
         rowFlexDom.style.display = 'flex'
         rowFlexDom.style.justifyContent = convertRowFlexToJustifyContent(
@@ -1643,10 +1682,13 @@ export function createDomFromElementList(
         }
       }
     }
+    if (textIndent) {
+      rowFlexDom.style.textIndent = `${textIndent}em`
+    }
     // 布局内容
     rowFlexDom.innerHTML = buildDom(elementGroupRowFlex.data).innerHTML
-    // 未设置行布局时无需行布局容器
-    if (!isDefaultRowFlex) {
+    // 未设置行布局且无首行缩进时无需容器
+    if (!isDefaultRowFlex || textIndent) {
       clipboardDom.append(rowFlexDom)
     } else {
       rowFlexDom.childNodes.forEach(child => {
@@ -1686,6 +1728,11 @@ export function convertTextNodeToElement(
   // 行对齐
   if (rowFlex !== RowFlex.LEFT) {
     element.rowFlex = rowFlex
+  }
+  // 首行缩进
+  const textIndent = convertTextIndentToEm(anchorNode)
+  if (textIndent) {
+    element.textIndent = textIndent
   }
   // 业务片段 id（标签自身或其祖先上的 partid）
   const partId = getPartIdFromClosestHTMLElement(anchorNode)

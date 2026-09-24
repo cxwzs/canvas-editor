@@ -22,6 +22,8 @@ export interface IMenuOption {
   right?: boolean
   alignment?: boolean
   justify?: boolean
+  increaseIndent?: boolean
+  decreaseIndent?: boolean
   rowMargin?: boolean
   list?: boolean
   table?: boolean

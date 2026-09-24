@@ -2050,6 +2050,15 @@ export class Draw {
       isPagingMode && !isFromTable ? this.columnManager.getLayout() : null
     let isColumnEnabled = !!layout && layout.count > 1
     if (elementList.length) {
+      const firstElement = elementList[0]
+      const indentElement =
+        firstElement?.value === ZERO
+          ? firstElement
+          : elementList.find(el => el.textIndent != null) || firstElement
+      const textIndent = indentElement?.textIndent
+      const textIndentOffsetX = textIndent
+        ? textIndent * (indentElement.size || defaultSize) * scale
+        : 0
       rowList.push({
         width: 0,
         height: 0,
@@ -2058,6 +2067,7 @@ export class Draw {
         startIndex: 0,
         rowIndex: 0,
         rowFlex: elementList?.[0]?.rowFlex || elementList?.[1]?.rowFlex,
+        ...(textIndentOffsetX ? { offsetX: textIndentOffsetX } : {}),
         ...(isColumnEnabled ? { columnIndex: 0 } : {})
       })
     }
@@ -2587,6 +2597,12 @@ export class Draw {
               ? this.listParticle.LIST_INDENT_WIDTH * element.listLevel * scale
               : 0)
           row.listIndex = listIndexMap.get(element.listId!) ?? 0
+        }
+        // 首行缩进（text-indent，仅段落首行）
+        if (element.value === ZERO && element.textIndent) {
+          const textIndentOffsetX =
+            element.textIndent * (element.size || defaultSize) * scale
+          row.offsetX = (row.offsetX || 0) + textIndentOffsetX
         }
         // Y轴偏移量
         row.offsetY =

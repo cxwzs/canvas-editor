@@ -57,6 +57,8 @@ const MENU_ITEM_SELECTORS: MenuSelectorMap = {
   right: '.menu-item__right',
   alignment: '.menu-item__alignment',
   justify: '.menu-item__justify',
+  increaseIndent: '.menu-item__increase-indent',
+  decreaseIndent: '.menu-item__decrease-indent',
   rowMargin: '.menu-item__row-margin',
   list: '.menu-item__list',
   table: ['.menu-item__table', '.menu-item__table__collapse'],
@@ -578,6 +580,18 @@ export class BuiltinMenu {
   justifyDom.onclick = function () {
     console.log('justify')
     editor.command.executeRowFlex(RowFlex.JUSTIFY)
+  }
+
+  const increaseIndentDom = q('.menu-item__increase-indent')
+  increaseIndentDom.onclick = function () {
+    console.log('increase-indent')
+    editor.command.executeIncreaseIndent()
+  }
+
+  const decreaseIndentDom = q('.menu-item__decrease-indent')
+  decreaseIndentDom.onclick = function () {
+    console.log('decrease-indent')
+    editor.command.executeDecreaseIndent()
   }
 
   const rowMarginDom = q(

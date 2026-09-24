@@ -357,6 +357,14 @@
   background-image: url('../../../assets/images/justify.svg');
 }
 
+.menu-item__increase-indent i {
+  background-image: url('../../../assets/images/increase-indent.svg');
+}
+
+.menu-item__decrease-indent i {
+  background-image: url('../../../assets/images/decrease-indent.svg');
+}
+
 .menu-item__row-margin {
   position: relative;
 }

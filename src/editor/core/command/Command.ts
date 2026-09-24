@@ -35,6 +35,8 @@ export class Command {
   public executeList: CommandAdapt['list']
   public executeRowFlex: CommandAdapt['rowFlex']
   public executeRowMargin: CommandAdapt['rowMargin']
+  public executeIncreaseIndent: CommandAdapt['increaseIndent']
+  public executeDecreaseIndent: CommandAdapt['decreaseIndent']
   public executeInsertTable: CommandAdapt['insertTable']
   public executeInsertTableTopRow: CommandAdapt['insertTableTopRow']
   public executeInsertTableBottomRow: CommandAdapt['insertTableBottomRow']
@@ -255,6 +257,14 @@ export class Command {
     this.executeRowMargin = this.wrap(
       'executeRowMargin',
       adapt.rowMargin.bind(adapt)
+    )
+    this.executeIncreaseIndent = this.wrap(
+      'executeIncreaseIndent',
+      adapt.increaseIndent.bind(adapt)
+    )
+    this.executeDecreaseIndent = this.wrap(
+      'executeDecreaseIndent',
+      adapt.decreaseIndent.bind(adapt)
     )
     // 表格、图片上传、超链接、搜索、打印、图片操作
     this.executeInsertTable = this.wrap(

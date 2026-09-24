@@ -5,7 +5,8 @@ import {
   EDITOR_ELEMENT_STYLE_ATTR,
   EDITOR_ROW_ATTR,
   LIST_CONTEXT_ATTR,
-  TABLE_CONTEXT_ATTR
+  TABLE_CONTEXT_ATTR,
+  TEXT_INDENT_STEP
 } from '../../dataset/constant/Element'
 import {
   titleOrderNumberMapping,
@@ -979,6 +980,34 @@ export class CommandAdapt {
       element.rowMargin = payload
     })
     // 光标定位
+    const isSetCursor = startIndex === endIndex
+    const curIndex = isSetCursor ? endIndex : startIndex
+    this.draw.render({ curIndex, isSetCursor })
+  }
+
+  public increaseIndent() {
+    this._setTextIndent(TEXT_INDENT_STEP)
+  }
+
+  public decreaseIndent() {
+    this._setTextIndent(-TEXT_INDENT_STEP)
+  }
+
+  private _setTextIndent(delta: number) {
+    const isReadonly = this.draw.isReadonly()
+    if (isReadonly) return
+    const { startIndex, endIndex } = this.range.getRange()
+    if (!~startIndex && !~endIndex) return
+    const paragraphElementList = this.range.getRangeParagraphElementList()
+    if (!paragraphElementList) return
+    paragraphElementList.forEach(element => {
+      const next = Math.max(0, (element.textIndent || 0) + delta)
+      if (next) {
+        element.textIndent = next
+      } else {
+        delete element.textIndent
+      }
+    })
     const isSetCursor = startIndex === endIndex
     const curIndex = isSetCursor ? endIndex : startIndex
     this.draw.render({ curIndex, isSetCursor })
