@@ -194,6 +194,9 @@ export class Previewer {
         if (this.curElement && !this.previewerDrawOption.dragDisable) {
           this.curElement.width = this.width
           this.curElement.height = this.height
+          // 用户手动改尺寸后清除设计尺寸，避免下次排版被旧基准覆盖
+          delete this.curElement.imgDesignWidth
+          delete this.curElement.imgDesignHeight
           this.draw.render({
             isSetCursor: true,
             curIndex: this.curPosition?.index

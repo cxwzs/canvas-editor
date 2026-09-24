@@ -1651,6 +1651,8 @@ export class CommandAdapt {
         img.height = height
         img.imgDisplay = ImageDisplay.BLOCK
         delete img.imgFloatPosition
+        delete img.imgDesignWidth
+        delete img.imgDesignHeight
         if (border) {
           img.imgBorder = true
           img.imgBorderColor = borderColor

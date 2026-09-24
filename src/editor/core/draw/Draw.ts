@@ -95,7 +95,11 @@ import {
   ControlIndentation
 } from '../../dataset/enum/Control'
 import { formatElementList } from '../../utils/element'
-import { shrinkColgroupToWidth } from '../../utils/table'
+import {
+  getColgroupWidth,
+  scaleColgroupToWidth,
+  shrinkColgroupToWidth
+} from '../../utils/table'
 import { WorkerManager } from '../worker/WorkerManager'
 import { Previewer } from './particle/previewer/Previewer'
 import { DateParticle } from './particle/date/DateParticle'
@@ -1656,9 +1660,14 @@ export class Draw {
   }
 
   public setPaperSize(width: number, height: number) {
+    const prevInnerWidth = this.getOriginalInnerWidth()
     this.options.width = width
     this.options.height = height
     this._updatePageSizes()
+    this._adaptElementSizeByInnerWidth(
+      prevInnerWidth,
+      this.getOriginalInnerWidth()
+    )
     this.render({
       isSubmitHistory: false,
       isSetCursor: false
@@ -1666,7 +1675,12 @@ export class Draw {
   }
 
   public setPaperDirection(payload: PaperDirection) {
+    const prevInnerWidth = this.getOriginalInnerWidth()
     this.options.paperDirection = payload
+    this._adaptElementSizeByInnerWidth(
+      prevInnerWidth,
+      this.getOriginalInnerWidth()
+    )
     this.render({
       isSubmitHistory: false,
       isSetCursor: false
@@ -1705,13 +1719,59 @@ export class Draw {
   }
 
   public setPaperMargin(payload: IMargin) {
+    const prevInnerWidth = this.getOriginalInnerWidth()
     this.options.margins = payload
     this.header.recovery()
     this.footer.recovery()
+    this._adaptElementSizeByInnerWidth(
+      prevInnerWidth,
+      this.getOriginalInnerWidth()
+    )
     this.render({
       isSubmitHistory: false,
       isSetCursor: false
     })
+  }
+
+  /**
+   * 纸张尺寸/页边距/方向变更导致正文宽度变化时，
+   * 按比例缩放表格列宽，避免仅能压缩无法随页宽恢复。
+   */
+  private _adaptElementSizeByInnerWidth(
+    prevInnerWidth: number,
+    nextInnerWidth: number
+  ) {
+    if (
+      !prevInnerWidth ||
+      !nextInnerWidth ||
+      Math.abs(prevInnerWidth - nextInnerWidth) < 0.5
+    ) {
+      return
+    }
+    const ratio = nextInnerWidth / prevInnerWidth
+    const adapt = (elementList: IElement[]) => {
+      for (let i = 0; i < elementList.length; i++) {
+        const element = elementList[i]
+        if (element.type === ElementType.TABLE && element.colgroup?.length) {
+          const totalWidth = getColgroupWidth(element.colgroup)
+          if (totalWidth > 0) {
+            scaleColgroupToWidth(element.colgroup, totalWidth * ratio)
+          }
+          const trList = element.trList || []
+          for (let t = 0; t < trList.length; t++) {
+            const tdList = trList[t].tdList
+            for (let d = 0; d < tdList.length; d++) {
+              adapt(tdList[d].value)
+            }
+          }
+        } else if (element.valueList?.length) {
+          adapt(element.valueList)
+        }
+      }
+    }
+    adapt(this.getHeaderElementList())
+    adapt(this.elementList)
+    adapt(this.getFooterElementList())
   }
 
   public getOriginValue(
@@ -2076,10 +2136,17 @@ export class Draw {
           metrics.height = 0
           metrics.boundingBoxDescent = 0
         } else {
-          const elementWidth = (element.width || 0) * scale
-          const elementHeight = (element.height || 0) * scale
+          // 以设计尺寸为基准做页宽自适应，避免压缩后无法随页宽恢复
+          const designWidth = element.imgDesignWidth ?? element.width ?? 0
+          const designHeight = element.imgDesignHeight ?? element.height ?? 0
+          const elementWidth = designWidth * scale
+          const elementHeight = designHeight * scale
           // 图片超出尺寸后自适应（图片大小大于可用宽度时）
           if (elementWidth > availableWidth && elementWidth > 0) {
+            if (element.imgDesignWidth == null && element.width != null) {
+              element.imgDesignWidth = element.width
+              element.imgDesignHeight = element.height
+            }
             const adaptiveHeight =
               (elementHeight * availableWidth) / elementWidth
             element.width = availableWidth / scale
@@ -2088,9 +2155,13 @@ export class Draw {
             metrics.height = adaptiveHeight
             metrics.boundingBoxDescent = adaptiveHeight
           } else {
-            metrics.width = elementWidth
-            metrics.height = elementHeight
-            metrics.boundingBoxDescent = elementHeight
+            if (element.imgDesignWidth != null) {
+              element.width = element.imgDesignWidth
+              element.height = element.imgDesignHeight
+            }
+            metrics.width = (element.width || 0) * scale
+            metrics.height = (element.height || 0) * scale
+            metrics.boundingBoxDescent = metrics.height
           }
           // 增加题注高度
           if (element.imgCaption?.value) {

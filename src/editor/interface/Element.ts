@@ -193,6 +193,10 @@ export interface IImageBasic {
   imgMaxHeight?: number
   /** 尺寸待图片加载后修正（不序列化） */
   imgSizePending?: boolean
+  /** 自适应压缩前的设计宽度（不序列化，页宽恢复后用于还原） */
+  imgDesignWidth?: number
+  /** 自适应压缩前的设计高度（不序列化，页宽恢复后用于还原） */
+  imgDesignHeight?: number
   /** 是否绘制图片边框 */
   imgBorder?: boolean
   /** 图片边框颜色 */
