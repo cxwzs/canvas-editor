@@ -1308,8 +1308,6 @@ export class CommandAdapt {
   }
 
   public addWatermark(payload: IWatermark) {
-    const isReadonly = this.draw.isReadonly()
-    if (isReadonly) return
     const options = this.draw.getOptions()
     const { color, size, opacity, font, gap, layer } = defaultWatermarkOption
     options.watermark.data = payload.data
@@ -1338,8 +1336,6 @@ export class CommandAdapt {
   }
 
   public deleteWatermark() {
-    const isReadonly = this.draw.isReadonly()
-    if (isReadonly) return
     const options = this.draw.getOptions()
     if (options.watermark && options.watermark.data) {
       options.watermark = { ...defaultWatermarkOption }
