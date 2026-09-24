@@ -28,7 +28,7 @@ describe('菜单-文本处理', () => {
 
       cy.get('@font')
         .find('li')
-        .eq(1)
+        .eq(5)
         .click()
         .then(() => {
           const data = editor.command.getValue().data.main

@@ -23,6 +23,22 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.22) transparent;
+}
+
+.image-picker-container::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.image-picker-container::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.22);
+  border-radius: 3px;
+}
+
+.image-picker-container::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .image-picker {
@@ -78,6 +94,21 @@
   flex-direction: column;
   gap: 8px;
   align-items: center;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.22) transparent;
+}
+
+.image-picker-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.image-picker-list::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.22);
+  border-radius: 3px;
+}
+
+.image-picker-list::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .image-picker-list__item {

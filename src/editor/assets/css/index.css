@@ -15,6 +15,44 @@
 @import './ruler/ruler.css';
 @import '../../core/toast/toast.css';
 
+/* 细滚动条：无轨道背景 */
+.ce-contextmenu-container,
+.ce-select-control-popup,
+.ce-date-container {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.22) transparent;
+}
+
+.ce-contextmenu-container::-webkit-scrollbar,
+.ce-select-control-popup::-webkit-scrollbar,
+.ce-date-container::-webkit-scrollbar,
+.ce-date-container ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.ce-contextmenu-container::-webkit-scrollbar-thumb,
+.ce-select-control-popup::-webkit-scrollbar-thumb,
+.ce-date-container::-webkit-scrollbar-thumb,
+.ce-date-container ::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.22);
+  border-radius: 3px;
+}
+
+.ce-contextmenu-container::-webkit-scrollbar-thumb:hover,
+.ce-select-control-popup::-webkit-scrollbar-thumb:hover,
+.ce-date-container::-webkit-scrollbar-thumb:hover,
+.ce-date-container ::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.38);
+}
+
+.ce-contextmenu-container::-webkit-scrollbar-track,
+.ce-select-control-popup::-webkit-scrollbar-track,
+.ce-date-container::-webkit-scrollbar-track,
+.ce-date-container ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 .ce-inputarea {
   width: 100px;
   height: 30px;
