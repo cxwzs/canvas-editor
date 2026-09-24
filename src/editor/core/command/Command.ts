@@ -86,6 +86,7 @@ export class Command {
   public executePaperDirection: CommandAdapt['paperDirection']
   public executePageDirection: CommandAdapt['pageDirection']
   public executeSetPaperMargin: CommandAdapt['setPaperMargin']
+  public executeSetPageNumber: CommandAdapt['setPageNumber']
   public executeSetMainBadge: CommandAdapt['setMainBadge']
   public executeSetAreaBadge: CommandAdapt['setAreaBadge']
   public executeInsertElementList: CommandAdapt['insertElementList']
@@ -147,6 +148,7 @@ export class Command {
   public getKeywordRangeList: CommandAdapt['getKeywordRangeList']
   public getKeywordContext: CommandAdapt['getKeywordContext']
   public getPaperMargin: CommandAdapt['getPaperMargin']
+  public getPageNumber: CommandAdapt['getPageNumber']
   public getColumns: CommandAdapt['getColumns']
   public getSearchNavigateInfo: CommandAdapt['getSearchNavigateInfo']
   public getLocale: CommandAdapt['getLocale']
@@ -448,6 +450,10 @@ export class Command {
       'executeSetPaperMargin',
       adapt.setPaperMargin.bind(adapt)
     )
+    this.executeSetPageNumber = this.wrap(
+      'executeSetPageNumber',
+      adapt.setPageNumber.bind(adapt)
+    )
     // 签章
     this.executeSetMainBadge = this.wrap(
       'executeSetMainBadge',
@@ -583,6 +589,7 @@ export class Command {
     this.getKeywordContext = adapt.getKeywordContext.bind(adapt)
     this.getCatalog = adapt.getCatalog.bind(adapt)
     this.getPaperMargin = adapt.getPaperMargin.bind(adapt)
+    this.getPageNumber = adapt.getPageNumber.bind(adapt)
     this.getColumns = adapt.getColumns.bind(adapt)
     this.getSearchNavigateInfo = adapt.getSearchNavigateInfo.bind(adapt)
     this.getLocale = adapt.getLocale.bind(adapt)

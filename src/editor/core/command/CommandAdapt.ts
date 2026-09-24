@@ -95,6 +95,7 @@ import {
   IGetTitleValueOption,
   IGetTitleValueResult
 } from '../../interface/Title'
+import { IPageNumber } from '../../interface/PageNumber'
 import { IWatermark } from '../../interface/Watermark'
 import {
   cloneProperty,
@@ -2099,6 +2100,22 @@ export class CommandAdapt {
 
   public setPaperMargin(payload: IMargin) {
     return this.draw.setPaperMargin(payload)
+  }
+
+  public setPageNumber(payload: IPageNumber) {
+    const options = this.draw.getOptions()
+    options.pageNumber = {
+      ...options.pageNumber,
+      ...payload
+    }
+    this.draw.render({
+      isSetCursor: false,
+      isSubmitHistory: false
+    })
+  }
+
+  public getPageNumber(): Required<IPageNumber> {
+    return { ...this.options.pageNumber }
   }
 
   public setMainBadge(payload: IBadge | null) {
