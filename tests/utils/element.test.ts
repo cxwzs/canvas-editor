@@ -711,6 +711,21 @@ describe('getElementListByHTML', () => {
     expect(result.some(el => el.partId === 'empty-1')).toBe(true)
   })
 
+  it('break-after: page 的空 div 解析为分页符', () => {
+    const html =
+      '<p>before</p><div style="break-after: page;"></div><p>after</p>'
+    const result = getElementListByHTML(html, { innerWidth: 500 })
+    const pageBreak = result.find(el => el.type === ElementType.PAGE_BREAK)
+    expect(pageBreak).toBeTruthy()
+    expect(pageBreak?.value).toBe('\n')
+    // 不应把分页符当成普通空段落（无 type 的 \\n）夹在中间
+    const pageBreakIndex = result.findIndex(
+      el => el.type === ElementType.PAGE_BREAK
+    )
+    expect(pageBreakIndex).toBeGreaterThan(-1)
+    expect(result[pageBreakIndex].type).toBe(ElementType.PAGE_BREAK)
+  })
+
   it('居中/右对齐外层 div 与段首 br 不叠出多余空段', () => {
     const html =
       '<div style="text-align: center;"><span partid="a"><br>111</span></div><div style="text-align: right;"><span partid="b"><br>222</span></div><span partid="c"><br>333</span>'

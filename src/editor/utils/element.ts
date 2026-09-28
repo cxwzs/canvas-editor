@@ -1929,6 +1929,20 @@ export function isHTMLElementDisabled(el: HTMLElement): boolean {
   return false
 }
 
+/** 是否为分页符节点（与 createDomFromElementList 导出的 break-after: page 对应） */
+export function isPageBreakHTMLElement(el: HTMLElement): boolean {
+  const { breakAfter, pageBreakAfter, breakBefore, pageBreakBefore } =
+    el.style
+  const after = breakAfter || pageBreakAfter
+  const before = breakBefore || pageBreakBefore
+  return (
+    after === 'page' ||
+    after === 'always' ||
+    before === 'page' ||
+    before === 'always'
+  )
+}
+
 /** 节点有效内容是否以 BR / 换行文本开头（跳过空白文本） */
 function isHTMLNodeStartWithBreak(node: Node | null): boolean {
   let current: Node | null = node
@@ -2127,6 +2141,15 @@ export function getElementListByHTML(
           elementList.push({
             value: '\n',
             type: ElementType.SEPARATOR
+          })
+        } else if (
+          node.nodeType === 1 &&
+          isPageBreakHTMLElement(node as HTMLElement)
+        ) {
+          // <div style="break-after: page;"></div> → PAGE_BREAK，避免被当成空段落
+          elementList.push({
+            value: '\n',
+            type: ElementType.PAGE_BREAK
           })
         } else if (node.nodeName === 'IMG') {
           const imgNode = node as HTMLImageElement
