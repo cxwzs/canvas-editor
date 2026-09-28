@@ -1559,6 +1559,12 @@ export class CommandAdapt {
     // 从后往前替换，避免索引偏移
     for (let r = runs.length - 1; r >= 0; r--) {
       const run = runs[r]
+      // 清除行首换行符的缩进/对齐，避免可用宽度变窄或两端对齐插空
+      const prev = elementList[run.start - 1]
+      if (prev?.value === ZERO) {
+        prev.rowFlex = RowFlex.LEFT
+        delete prev.textIndent
+      }
       const newList = this._buildImageAutoLayoutList(
         run.images,
         perRow,
@@ -1655,30 +1661,38 @@ export class CommandAdapt {
     borderColor: string,
     borderWidth: number
   ): IElement[] {
+    const { scale } = this.options
+    // 按缩放后整数像素均分，总宽精确占满行宽，图间无空隙
+    const availableWidthPx = Math.max(1, Math.floor(contentWidth * scale))
     const newList: IElement[] = []
     for (let rowStart = 0; rowStart < images.length; rowStart += perRow) {
       const rowImages = images.slice(rowStart, rowStart + perRow)
       const count = rowImages.length
-      const baseWidth = Math.floor(contentWidth / count)
+      const baseWidthPx = Math.floor(availableWidthPx / count)
       const first = rowImages[0]
-      const firstOriginWidth = first.width || baseWidth
-      const firstOriginHeight = first.height || baseWidth
-      // 高度借鉴当前行第一张图（按新宽度等比换算）
-      const firstWidth = count === 1 ? contentWidth : baseWidth
+      const firstWidthPx =
+        count === 1 ? availableWidthPx : baseWidthPx
+      const firstWidth = firstWidthPx / scale
+      const firstOriginWidth = first.width || firstWidth
+      const firstOriginHeight = first.height || firstWidth
+      // 高度借鉴当前行第一张图（按新宽度等比换算），同行统一
       const height =
         firstOriginWidth > 0
           ? (firstOriginHeight / firstOriginWidth) * firstWidth
           : firstOriginHeight
 
-      let usedWidth = 0
+      let usedWidthPx = 0
       for (let i = 0; i < rowImages.length; i++) {
         const img = rowImages[i]
-        const width =
-          i === count - 1 ? contentWidth - usedWidth : baseWidth
-        usedWidth += width
-        img.width = width
+        const widthPx =
+          i === count - 1 ? availableWidthPx - usedWidthPx : baseWidthPx
+        usedWidthPx += widthPx
+        img.width = widthPx / scale
         img.height = height
+        // 嵌入型并排；左对齐避免两端对齐把剩余宽度插到图之间
         img.imgDisplay = ImageDisplay.BLOCK
+        img.rowFlex = RowFlex.LEFT
+        delete img.textIndent
         delete img.imgFloatPosition
         delete img.imgDesignWidth
         delete img.imgDesignHeight
