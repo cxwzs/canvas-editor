@@ -1138,6 +1138,31 @@ export function zipElementList(
 }
 
 export function convertTextAlignToRowFlex(node: HTMLElement) {
+  // Word/WPS 等导出 text-align:both；部分环境 style.textAlign / computed 会丢掉
+  let el: HTMLElement | null = node
+  while (el) {
+    const inline =
+      el.style?.textAlign ||
+      el.getAttribute('style')?.match(
+        /(?:^|;)\s*text-align\s*:\s*([^;]+)/i
+      )?.[1]?.trim()
+    if (inline === 'both' || inline === 'justify') {
+      return RowFlex.ALIGNMENT
+    }
+    if (inline === 'justify-all') {
+      return RowFlex.JUSTIFY
+    }
+    if (inline === 'center') {
+      return RowFlex.CENTER
+    }
+    if (inline === 'right' || inline === 'end') {
+      return RowFlex.RIGHT
+    }
+    if (inline === 'left' || inline === 'start') {
+      return RowFlex.LEFT
+    }
+    el = el.parentElement
+  }
   const textAlign = window.getComputedStyle(node).textAlign
   switch (textAlign) {
     case 'left':
@@ -1148,6 +1173,7 @@ export function convertTextAlignToRowFlex(node: HTMLElement) {
     case 'right':
     case 'end':
       return RowFlex.RIGHT
+    case 'both':
     case 'justify':
       return RowFlex.ALIGNMENT
     case 'justify-all':
@@ -1476,7 +1502,15 @@ export function groupElementListByRowFlex(
   })
   for (let e = 1; e < elementList.length; e++) {
     const element = elementList[e]
-    const rowFlex = element.rowFlex || null
+    // 纯换行不打断分组，避免对齐段落被拆成多个 div 导致回显多换行
+    const isBreakOnly =
+      !element.type &&
+      (element.value === '\n' ||
+        element.value === '\r\n' ||
+        element.value === ZERO)
+    const rowFlex = isBreakOnly
+      ? currentRowFlex
+      : element.rowFlex || null
     // 行布局相同&非块元素时追加数据，否则新增分组
     if (
       currentRowFlex === rowFlex &&
@@ -2005,6 +2039,51 @@ export function isPageBreakHTMLElement(el: HTMLElement): boolean {
   )
 }
 
+/** 读取节点 text-align（兼容 style 属性中的 both） */
+function getHTMLTextAlignValue(el: HTMLElement): string {
+  const fromStyle =
+    el.style?.textAlign ||
+    el.getAttribute('style')?.match(
+      /(?:^|;)\s*text-align\s*:\s*([^;]+)/i
+    )?.[1]?.trim()
+  if (fromStyle) {
+    if (fromStyle === 'both') return 'justify'
+    return fromStyle
+  }
+  return window.getComputedStyle(el).textAlign || ''
+}
+
+/**
+ * createDomFromElementList 为对齐生成的布局 div（非语义段落）。
+ * 相同对齐的连续布局 div 在回显时应视为同一段落内的样式片段，不能补换行。
+ */
+function isAlignmentLayoutDiv(el: HTMLElement): boolean {
+  if (el.nodeName !== 'DIV') return false
+  if (isPageBreakHTMLElement(el)) return false
+  if (getAreaIdFromHTMLElement(el)) return false
+  const styleAttr = el.getAttribute('style') || ''
+  const hasTextAlign =
+    !!el.style.textAlign || /(?:^|;)\s*text-align\s*:/i.test(styleAttr)
+  const hasFlex =
+    el.style.display === 'flex' || /(?:^|;)\s*display\s*:\s*flex/i.test(styleAttr)
+  return hasTextAlign || hasFlex
+}
+
+/**
+ * 相同对齐的布局 wrapper 之间不补段落换行（避免「品牌实力」等被拆成一字一行）。
+ * 真正的段分隔依赖内容里的 <br>，或对齐发生变化。
+ */
+function shouldSkipAlignmentLayoutBreak(
+  htmlEl: HTMLElement,
+  nextSibling: Node | null
+): boolean {
+  if (!isAlignmentLayoutDiv(htmlEl)) return false
+  if (!nextSibling || nextSibling.nodeType !== 1) return false
+  const nextEl = nextSibling as HTMLElement
+  if (!isAlignmentLayoutDiv(nextEl)) return false
+  return getHTMLTextAlignValue(htmlEl) === getHTMLTextAlignValue(nextEl)
+}
+
 /** 节点有效内容是否以 BR / 换行文本开头（跳过空白文本） */
 function isHTMLNodeStartWithBreak(node: Node | null): boolean {
   let current: Node | null = node
@@ -2029,6 +2108,26 @@ function isHTMLNodeStartWithBreak(node: Node | null): boolean {
 function isElementListEndWithBreak(list: IElement[]): boolean {
   const last = list[list.length - 1]
   return !!last && (last.value === '\n' || last.value === '\r\n')
+}
+
+/** 从块级 HTML 节点提取段落级样式，用于补换行时继承对齐/缩进/行高 */
+function getBlockParagraphStyle(
+  htmlEl: HTMLElement
+): Pick<IElement, 'rowFlex' | 'textIndent' | 'rowMargin'> {
+  const style: Pick<IElement, 'rowFlex' | 'textIndent' | 'rowMargin'> = {}
+  const rowFlex = convertTextAlignToRowFlex(htmlEl)
+  if (rowFlex !== RowFlex.LEFT) {
+    style.rowFlex = rowFlex
+  }
+  const textIndent = convertTextIndentToEm(htmlEl)
+  if (textIndent) {
+    style.textIndent = textIndent
+  }
+  const rowMargin = convertLineHeightToRowMargin(htmlEl)
+  if (rowMargin) {
+    style.rowMargin = rowMargin
+  }
+  return style
 }
 
 export function getElementListByHTML(
@@ -2361,15 +2460,23 @@ export function getElementListByHTML(
             const display = window.getComputedStyle(htmlEl).display
             if (display === 'block') {
               const producedNothing = beforeLen === elementList.length
-              // 空块级保留为空段落；非空时仅在尚未换行、下一段也不以 <br> 开头时补换行
+              const skipLayoutBreak = shouldSkipAlignmentLayoutBreak(
+                htmlEl,
+                childNodes[n + 1]
+              )
+              // 空块级保留为空段落
+              // 相同对齐的布局 div（createDom 产物）之间不补换行，段分隔靠内部 <br>
+              // 其余块级在尚未换行、下一段也不以 <br> 开头时补换行
               if (
                 producedNothing ||
-                (!/(\n|\r\n)$/.test(htmlEl.textContent!) &&
+                (!skipLayoutBreak &&
+                  !/(\n|\r\n)$/.test(htmlEl.textContent!) &&
                   !isElementListEndWithBreak(elementList) &&
                   !isHTMLNodeStartWithBreak(childNodes[n + 1]))
               ) {
                 elementList.push({
                   value: '\n',
+                  ...getBlockParagraphStyle(htmlEl),
                   ...(partId ? { partId } : {})
                 })
               }
@@ -2378,6 +2485,7 @@ export function getElementListByHTML(
             // 空块级节点仅有 partid 时也需保留，例如 <p partid="x"></p>
             elementList.push({
               value: '\n',
+              ...getBlockParagraphStyle(htmlEl!),
               partId
             })
           }

@@ -770,6 +770,57 @@ describe('getElementListByHTML', () => {
     const joined = result.map(el => el.value).join('')
     expect(joined).toBe('111\n\n333')
   })
+
+  it('text-align:both 解析为两端对齐', () => {
+    const html = '<p style="text-align:both;">hello</p>'
+    const result = getElementListByHTML(html, { innerWidth: 500 })
+    const text = result.find(el => el.value?.includes('hello'))
+    expect(text?.rowFlex).toBe(RowFlex.ALIGNMENT)
+  })
+
+  it('对齐段落导出不应逐段包 div', () => {
+    const html =
+      '<p style="text-align:justify;">title</p>' +
+      '<p style="text-align:justify;text-indent:2em;">addr</p>' +
+      '<p style="text-align:justify;text-indent:2em;">body</p>'
+    const parsed = getElementListByHTML(html, { innerWidth: 500 })
+    // 段间换行应继承对齐，避免 group 被拆开
+    const breaks = parsed.filter(el => el.value === '\n')
+    expect(breaks.length).toBeGreaterThan(0)
+    expect(breaks.every(el => el.rowFlex === RowFlex.ALIGNMENT)).toBe(true)
+
+    const dom = createDomFromElementList(parsed)
+    // 相同对齐应合并为一个布局容器，而不是每个标签一个 div
+    const layoutDivs = Array.from(dom.children).filter(
+      child =>
+        child.nodeName === 'DIV' &&
+        (child as HTMLElement).style.textAlign === 'justify'
+    )
+    expect(layoutDivs.length).toBe(1)
+    expect(dom.children.length).toBe(1)
+  })
+
+  it('相同对齐的连续布局 div 回显时合并为同一段落', () => {
+    // 模拟 createDomFromElementList 把同一段样式片段拆成多个 div 的产物
+    const html =
+      '<div style="text-align: justify;"><span style="font-weight: 600;">公司概况：</span></div>' +
+      '<div style="text-align: justify;"><span>许继电气股份有限公司</span></div>' +
+      '<div style="text-align: justify;"><span style="color: rgb(255, 0, 0); font-weight: 600;">整体解决方案能力</span></div>' +
+      '<div style="text-align: justify;"><span>。</span></div>' +
+      '<div style="text-align: justify;"><span><br></span></div>' +
+      '<div style="text-align: justify;"><span style="font-weight: 600;">品牌实力。</span></div>' +
+      '<div style="text-align: justify;"><span>许继电气是我国</span></div>'
+    const result = getElementListByHTML(html, { innerWidth: 500 })
+    const joined = result.map(el => el.value).join('')
+    // 前四个样式片段应连成一段，不应被拆成多行
+    expect(joined).toContain('公司概况：许继电气股份有限公司整体解决方案能力。')
+    expect(joined).toContain('品牌实力。许继电气是我国')
+    // <br> 处分段
+    expect(joined).toMatch(/。\n品牌实力/)
+    // 不应把每个 span 都拆成独立空段
+    const onlyBreaks = result.filter(el => el.value === '\n')
+    expect(onlyBreaks.length).toBe(1)
+  })
 })
 
 describe('partId round-trip', () => {
