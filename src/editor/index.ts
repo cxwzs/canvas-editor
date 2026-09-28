@@ -3,6 +3,11 @@ import { version } from '../../package.json'
 import { IEditorData, IEditorOption, IEditorResult } from './interface/Editor'
 import { IFileUpload, IFileUploadOptions } from './interface/File'
 import { IElement } from './interface/Element'
+import {
+  IFooterBarOption,
+  IMenuOption,
+  IMenuUploadOption
+} from './interface/Menu'
 import { Draw } from './core/draw/Draw'
 import { Command } from './core/command/Command'
 import { CommandAdapt } from './core/command/CommandAdapt'
@@ -253,5 +258,8 @@ export type {
   IRange,
   IRangeStyle,
   IBadge,
-  IGetElementListByHTMLOption
+  IGetElementListByHTMLOption,
+  IMenuOption,
+  IMenuUploadOption,
+  IFooterBarOption
 }

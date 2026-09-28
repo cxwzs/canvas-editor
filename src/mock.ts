@@ -739,7 +739,15 @@ export const options: IEditorOption = {
     date: false,
     block: false,
     print: false,
-    codeblock: false
+    codeblock: false,
+    pdf: {
+      accept: '.pdf',
+      maxSize: 20 * 1024 * 1024 // 20MB
+    },
+    image: {
+      accept: '.png, .jpg, .jpeg',
+      maxSize: 5 * 1024 * 1024 // 5MB
+    }
   },
   footerBar: {
     catalog: false,

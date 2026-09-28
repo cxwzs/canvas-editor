@@ -203,6 +203,11 @@ interface IFooterBarOption {
 // false: hide toolbar; object: control button visibility (all default true)
 type MenuOption = false | IMenuOption
 
+interface IMenuUploadOption {
+  accept?: string // Allowed file types, same as input[accept]
+  maxSize?: number // Max file size in bytes
+}
+
 interface IMenuOption {
   undo?: boolean // Undo. default: true
   redo?: boolean // Redo. default: true
@@ -229,7 +234,9 @@ interface IMenuOption {
   rowMargin?: boolean // Line spacing. default: true
   list?: boolean // List. default: true
   table?: boolean // Table. default: true
-  image?: boolean // Image. default: true
+  // true / object shows the button; false hides it; object can set accept / maxSize
+  image?: boolean | IMenuUploadOption // Image. default: true
+  pdf?: boolean | IMenuUploadOption // PDF. default: true
   hyperlink?: boolean // Hyperlink. default: true
   separator?: boolean // Separator. default: true
   watermark?: boolean // Watermark. default: true

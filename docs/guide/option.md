@@ -204,6 +204,11 @@ interface IFooterBarOption {
 // false：不渲染菜单栏；对象：按字段控制按钮显示（默认均为 true）
 type MenuOption = false | IMenuOption
 
+interface IMenuUploadOption {
+  accept?: string // 允许的文件类型，同 input[accept]
+  maxSize?: number // 单文件大小上限（字节）
+}
+
 interface IMenuOption {
   undo?: boolean // 撤销。默认：true
   redo?: boolean // 重做。默认：true
@@ -230,7 +235,9 @@ interface IMenuOption {
   rowMargin?: boolean // 行间距。默认：true
   list?: boolean // 列表。默认：true
   table?: boolean // 表格。默认：true
-  image?: boolean // 图片。默认：true
+  // true / 对象显示，false 隐藏；对象可配置 accept、maxSize
+  image?: boolean | IMenuUploadOption // 图片。默认：true
+  pdf?: boolean | IMenuUploadOption // PDF。默认：true
   hyperlink?: boolean // 超链接。默认：true
   separator?: boolean // 分割线。默认：true
   watermark?: boolean // 水印。默认：true

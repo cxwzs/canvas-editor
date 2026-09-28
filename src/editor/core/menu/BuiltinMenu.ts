@@ -17,9 +17,18 @@ import { RowFlex } from '../../dataset/enum/Row'
 import { TextDecorationStyle } from '../../dataset/enum/Text'
 import { TitleLevel } from '../../dataset/enum/Title'
 import { debounce, nextTick, splitText } from '../../utils'
+import {
+  filterFilesByUploadLimit,
+  formatFileSize,
+  resolveMenuUploadOption
+} from '../../utils/file'
 import { pdfFileToImageFiles } from '../../utils/pdf'
 import { IRangeStyle } from '../../interface/Listener'
-import type { IFooterBarOption, IMenuOption } from '../../interface/Menu'
+import type {
+  IFooterBarOption,
+  IMenuOption,
+  IMenuUploadOption
+} from '../../interface/Menu'
 import { showToast } from '../toast/Toast'
 import builtinMenuTemplate from './template.html?raw'
 import './menu.css'
@@ -701,8 +710,62 @@ export class BuiltinMenu {
     recoveryTable()
   }
 
+  const DEFAULT_IMAGE_ACCEPT = '.png, .jpg, .jpeg'
+  const DEFAULT_PDF_ACCEPT = '.pdf'
+
+  const toastInvalidUpload = (
+    container: HTMLElement,
+    option: IMenuUploadOption,
+    reason: 'type' | 'size'
+  ) => {
+    if (reason === 'type') {
+      showToast(
+        container,
+        (
+          editor.command.executeTranslate('toast.fileTypeInvalid') ||
+          '不支持的文件类型，请选择：{accept}'
+        ).replace('{accept}', option.accept || '')
+      )
+      return
+    }
+    if (option.maxSize != null) {
+      showToast(
+        container,
+        (
+          editor.command.executeTranslate('toast.fileSizeExceeded') ||
+          '文件大小不能超过 {maxSize}'
+        ).replace('{maxSize}', formatFileSize(option.maxSize))
+      )
+    }
+  }
+
+  /** 配置了 accept / maxSize 时，写入图标 title 提示限制 */
+  const setUploadIconTitle = (
+    itemDom: HTMLElement,
+    baseTitle: string,
+    option: boolean | IMenuUploadOption
+  ) => {
+    if (typeof option !== 'object' || !option) return
+    const icon = itemDom.querySelector('i')
+    if (!icon) return
+    const hints: string[] = []
+    if (option.accept) hints.push(option.accept)
+    if (option.maxSize != null && option.maxSize > 0) {
+      hints.push(`不超过 ${formatFileSize(option.maxSize)}`)
+    }
+    if (!hints.length) return
+    icon.setAttribute('title', `${baseTitle}（${hints.join('，')}）`)
+  }
+
   const imageDom = q('.menu-item__image')
   const imageFileDom = q('#image') as HTMLInputElement
+  const menuOption = editor.command.getOptions().menu
+  const rawImageOption = menuOption === false ? true : menuOption.image
+  const imageUploadOption = resolveMenuUploadOption(rawImageOption)
+  const imageAccept =
+    (imageUploadOption || {}).accept || DEFAULT_IMAGE_ACCEPT
+  imageFileDom.accept = imageAccept
+  setUploadIconTitle(imageDom, '图片', rawImageOption)
   imageDom.onclick = function () {
     imageFileDom.click()
   }
@@ -710,17 +773,35 @@ export class BuiltinMenu {
     const files = Array.from(imageFileDom.files || [])
     imageFileDom.value = ''
     if (!files.length) return
+    const uploadOption: IMenuUploadOption = {
+      accept: imageAccept,
+      maxSize:
+        imageUploadOption === false ? undefined : imageUploadOption.maxSize
+    }
+    const filtered = filterFilesByUploadLimit(files, uploadOption)
+    const toastContainer = editor.command.getContainer()
+    if (filtered.invalidType.length) {
+      toastInvalidUpload(toastContainer, uploadOption, 'type')
+    } else if (filtered.invalidSize.length) {
+      toastInvalidUpload(toastContainer, uploadOption, 'size')
+    }
+    if (!filtered.valid.length) return
     const onFileUpload = editor.command.getOptions().onFileUpload
     // 打开弹窗前缓存选区，避免确认插入时选区失效导致不落内容
     const cachedRange = editor.command.getRange()
     // 弹窗列表预览/裁剪；未配置 onFileUpload 时确认后按 base64 插入
     new ImagePicker({
-      files,
+      files: filtered.valid,
       onFileUpload,
-      toastContainer: editor.command.getContainer(),
+      accept: uploadOption.accept,
+      maxSize: uploadOption.maxSize,
+      toastContainer,
       toastMessage:
         editor.command.executeTranslate('toast.imageProcessing') ||
         '正在处理图片，请稍候…',
+      onInvalidFile(reason) {
+        toastInvalidUpload(toastContainer, uploadOption, reason)
+      },
       onConfirm(payload) {
         if (~cachedRange.startIndex && ~cachedRange.endIndex) {
           editor.command.executeReplaceRange(cachedRange)
@@ -738,6 +819,11 @@ export class BuiltinMenu {
 
   const pdfDom = q('.menu-item__pdf')
   const pdfFileDom = q('#pdf') as HTMLInputElement
+  const rawPdfOption = menuOption === false ? true : menuOption.pdf
+  const pdfUploadOption = resolveMenuUploadOption(rawPdfOption)
+  const pdfAccept = (pdfUploadOption || {}).accept || DEFAULT_PDF_ACCEPT
+  pdfFileDom.accept = pdfAccept
+  setUploadIconTitle(pdfDom, 'PDF', rawPdfOption)
   pdfDom.onclick = function () {
     pdfFileDom.click()
   }
@@ -746,6 +832,19 @@ export class BuiltinMenu {
     pdfFileDom.value = ''
     if (!file) return
     const toastContainer = editor.command.getContainer()
+    const uploadOption: IMenuUploadOption = {
+      accept: pdfAccept,
+      maxSize: pdfUploadOption === false ? undefined : pdfUploadOption.maxSize
+    }
+    const filtered = filterFilesByUploadLimit([file], uploadOption)
+    if (filtered.invalidType.length) {
+      toastInvalidUpload(toastContainer, uploadOption, 'type')
+      return
+    }
+    if (filtered.invalidSize.length) {
+      toastInvalidUpload(toastContainer, uploadOption, 'size')
+      return
+    }
     const convertingMsg =
       editor.command.executeTranslate('toast.pdfConverting') ||
       '正在转换 PDF，请稍候…'

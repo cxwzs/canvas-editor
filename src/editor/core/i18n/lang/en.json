@@ -114,7 +114,9 @@
     "imageAutoLayout": "Arranging images, please wait…",
     "imageProcessing": "Processing images, please wait…",
     "pdfConverting": "Converting PDF, please wait…",
-    "pdfConvertFailed": "PDF conversion failed, please retry"
+    "pdfConvertFailed": "PDF conversion failed, please retry",
+    "fileTypeInvalid": "Unsupported file type. Please choose: {accept}",
+    "fileSizeExceeded": "File size cannot exceed {maxSize}"
   },
   "trace": {
     "insert": "Inserted",

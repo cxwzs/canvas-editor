@@ -1,6 +1,7 @@
 import { EditorComponent } from '../../editor/dataset/enum/Editor'
 import { EDITOR_COMPONENT } from '../../editor/dataset/constant/Editor'
 import type { IFileUpload } from '../../editor/interface/File'
+import { filterFilesByUploadLimit } from '../../editor/utils/file'
 import {
   IToastHandle,
   showToast
@@ -23,10 +24,16 @@ export interface IImagePickerOptions {
   tip?: string
   /** 是否允许继续添加图片，默认 true */
   allowAdd?: boolean
+  /** 添加图片时的 accept，默认 .png,.jpg,.jpeg,.svg,.gif */
+  accept?: string
+  /** 添加图片时的单文件大小上限（字节） */
+  maxSize?: number
   /** Toast 挂载容器；未传时挂到弹窗宿主节点 */
   toastContainer?: HTMLElement
   /** 确认处理中的 Toast 文案 */
   toastMessage?: string
+  /** 继续添加时校验失败回调 */
+  onInvalidFile?: (reason: 'type' | 'size') => void
   onClose?: () => void
   onCancel?: () => void
   onConfirm?: (payload: IImagePickerResult[]) => void
@@ -146,14 +153,25 @@ export class ImagePicker {
 
     const addInput = document.createElement('input')
     addInput.type = 'file'
-    addInput.accept = '.png, .jpg, .jpeg, .svg, .gif'
+    addInput.accept =
+      this.options.accept || '.png, .jpg, .jpeg, .svg, .gif'
     addInput.multiple = true
     addInput.hidden = true
     addInput.onchange = () => {
       const files = Array.from(addInput.files || [])
       addInput.value = ''
       if (!files.length) return
-      void this._appendFiles(files)
+      const filtered = filterFilesByUploadLimit(files, {
+        accept: this.options.accept || '.png, .jpg, .jpeg, .svg, .gif',
+        maxSize: this.options.maxSize
+      })
+      if (filtered.invalidType.length) {
+        this.options.onInvalidFile?.('type')
+      } else if (filtered.invalidSize.length) {
+        this.options.onInvalidFile?.('size')
+      }
+      if (!filtered.valid.length) return
+      void this._appendFiles(filtered.valid)
     }
 
     const crop = document.createElement('div')

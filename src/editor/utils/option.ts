@@ -44,7 +44,7 @@ import { IFooter } from '../interface/Footer'
 import { IGroup } from '../interface/Group'
 import { IHeader } from '../interface/Header'
 import { ILabelOption } from '../interface/Label'
-import { IFooterBarOption, IMenuOption } from '../interface/Menu'
+import { IFooterBarOption, IMenuOption, IMenuUploadOption } from '../interface/Menu'
 import { IImgCaptionOption, IListOption } from '../interface/Element'
 import { ILineBreakOption } from '../interface/LineBreak'
 import { IPageBreak } from '../interface/PageBreak'
@@ -76,6 +76,29 @@ import { defaultWhiteSpaceOption } from '../dataset/constant/WhiteSpace'
 import { defaultTraceOption } from '../dataset/constant/Trace'
 import { defaultRulerOption } from '../dataset/constant/Ruler'
 
+const DEFAULT_IMAGE_UPLOAD_OPTION: Required<IMenuUploadOption> = {
+  accept: '.png, .jpg, .jpeg',
+  maxSize: 0
+}
+
+const DEFAULT_PDF_UPLOAD_OPTION: Required<IMenuUploadOption> = {
+  accept: '.pdf',
+  maxSize: 0
+}
+
+/** true 保持显示；对象补全 accept / maxSize（0 表示不限大小） */
+function mergeMenuUploadOption(
+  value: boolean | IMenuUploadOption | undefined,
+  defaults: Required<IMenuUploadOption>
+): boolean | Required<IMenuUploadOption> {
+  if (value === false) return false
+  if (value === true || value == null) return true
+  return {
+    accept: value.accept ?? defaults.accept,
+    maxSize: value.maxSize ?? defaults.maxSize
+  }
+}
+
 export function mergeOption(
   options: IEditorOption = {}
 ): DeepRequired<IEditorOption> {
@@ -98,12 +121,20 @@ export function mergeOption(
           ...defaultFooterBarOption,
           ...options.footerBar
         }
-  const menuOptions: false | Required<IMenuOption> =
+  const menuOptions: false | DeepRequired<IMenuOption> =
     options.menu === false
       ? false
       : {
           ...defaultMenuOption,
-          ...options.menu
+          ...options.menu,
+          image: mergeMenuUploadOption(
+            options.menu?.image,
+            DEFAULT_IMAGE_UPLOAD_OPTION
+          ),
+          pdf: mergeMenuUploadOption(
+            options.menu?.pdf,
+            DEFAULT_PDF_UPLOAD_OPTION
+          )
         }
   const pageNumberOptions: Required<IPageNumber> = {
     ...defaultPageNumberOption,
