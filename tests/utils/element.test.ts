@@ -726,6 +726,16 @@ describe('getElementListByHTML', () => {
     expect(result[pageBreakIndex].type).toBe(ElementType.PAGE_BREAK)
   })
 
+  it('style line-height 解析为 rowMargin', () => {
+    const html =
+      '<p style="line-height: 1.75;">一、竞标函</p><p style="text-indent:2em;">无行高</p>'
+    const result = getElementListByHTML(html, { innerWidth: 500 })
+    const withLineHeight = result.find(el => el.value?.includes('竞标函'))
+    const withoutLineHeight = result.find(el => el.value?.includes('无行高'))
+    expect(withLineHeight?.rowMargin).toBe(1.75)
+    expect(withoutLineHeight?.rowMargin).toBeUndefined()
+  })
+
   it('居中/右对齐外层 div 与段首 br 不叠出多余空段', () => {
     const html =
       '<div style="text-align: center;"><span partid="a"><br>111</span></div><div style="text-align: right;"><span partid="b"><br>222</span></div><span partid="c"><br>333</span>'

@@ -1212,6 +1212,63 @@ export function convertTextIndentToEm(node: HTMLElement): number | undefined {
   return undefined
 }
 
+/** 解析 CSS line-height 为编辑器 rowMargin（无单位倍数） */
+function parseLineHeightToRowMargin(
+  value: string,
+  el: HTMLElement
+): number | undefined {
+  const trimmed = value.trim()
+  if (
+    !trimmed ||
+    trimmed === 'normal' ||
+    trimmed === 'inherit' ||
+    trimmed === 'initial' ||
+    trimmed === 'unset'
+  ) {
+    return undefined
+  }
+  // 无单位倍数：1.75（与 createDomFromElementList 导出一致）
+  if (/^[\d.]+$/.test(trimmed)) {
+    const n = parseFloat(trimmed)
+    return n > 0 ? n : undefined
+  }
+  if (trimmed.endsWith('%')) {
+    const n = parseFloat(trimmed) / 100
+    return n > 0 ? n : undefined
+  }
+  if (trimmed.endsWith('em')) {
+    const n = parseFloat(trimmed)
+    return n > 0 ? n : undefined
+  }
+  if (trimmed.endsWith('px')) {
+    const px = parseFloat(trimmed)
+    const fontSize =
+      parseFloat(window.getComputedStyle(el).fontSize) || 16
+    if (px > 0 && fontSize > 0) {
+      return Math.round((px / fontSize) * 100) / 100
+    }
+  }
+  return undefined
+}
+
+/**
+ * 从节点读取显式 line-height，转为 rowMargin。
+ * 仅认 inline style，避免把浏览器默认 normal 误当成行高。
+ */
+export function convertLineHeightToRowMargin(
+  node: HTMLElement
+): number | undefined {
+  let el: HTMLElement | null = node
+  while (el) {
+    const inline = el.style.lineHeight
+    if (inline) {
+      return parseLineHeightToRowMargin(inline, el)
+    }
+    el = el.parentElement
+  }
+  return undefined
+}
+
 export function isTextLikeElement(element: IElement): boolean {
   return !element.type || TEXTLIKE_ELEMENT_TYPE.includes(element.type)
 }
@@ -1733,6 +1790,11 @@ export function convertTextNodeToElement(
   const textIndent = convertTextIndentToEm(anchorNode)
   if (textIndent) {
     element.textIndent = textIndent
+  }
+  // 行高（CSS line-height → rowMargin）
+  const rowMargin = convertLineHeightToRowMargin(anchorNode)
+  if (rowMargin) {
+    element.rowMargin = rowMargin
   }
   // 业务片段 id（标签自身或其祖先上的 partid）
   const partId = getPartIdFromClosestHTMLElement(anchorNode)
