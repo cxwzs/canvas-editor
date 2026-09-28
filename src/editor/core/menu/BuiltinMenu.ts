@@ -848,9 +848,20 @@ export class BuiltinMenu {
     const convertingMsg =
       editor.command.executeTranslate('toast.pdfConverting') ||
       '正在转换 PDF，请稍候…'
+    const convertingProgressTpl =
+      editor.command.executeTranslate('toast.pdfConvertingProgress') ||
+      '正在转换 PDF（{current}/{total}）…'
     const toast = showToast(toastContainer, convertingMsg, { duration: 0 })
     try {
-      const files = await pdfFileToImageFiles(file)
+      const files = await pdfFileToImageFiles(file, {
+        onProgress: ({ current, total }) => {
+          toast.update(
+            convertingProgressTpl
+              .replace('{current}', String(current))
+              .replace('{total}', String(total))
+          )
+        }
+      })
       toast.close()
       if (!files.length) return
       const onFileUpload = editor.command.getOptions().onFileUpload

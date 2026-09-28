@@ -114,6 +114,7 @@
     "imageAutoLayout": "正在排版图片，请稍候…",
     "imageProcessing": "正在处理图片，请稍候…",
     "pdfConverting": "正在转换 PDF，请稍候…",
+    "pdfConvertingProgress": "正在转换 PDF（{current}/{total}）…",
     "pdfConvertFailed": "PDF 转换失败，请重试",
     "fileTypeInvalid": "不支持的文件类型，请选择：{accept}",
     "fileSizeExceeded": "文件大小不能超过 {maxSize}"

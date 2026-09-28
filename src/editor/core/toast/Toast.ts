@@ -3,6 +3,7 @@ import { EditorComponent } from '../../dataset/enum/Editor'
 import './toast.css'
 
 export interface IToastHandle {
+  update: (message: string) => void
   close: () => void
 }
 
@@ -40,6 +41,10 @@ export function showToast(
 
   let closed = false
   let timer: number | null = null
+  const update = (nextMessage: string) => {
+    if (closed) return
+    text.textContent = nextMessage
+  }
   const close = () => {
     if (closed) return
     closed = true
@@ -55,5 +60,5 @@ export function showToast(
     timer = window.setTimeout(close, duration)
   }
 
-  return { close }
+  return { update, close }
 }

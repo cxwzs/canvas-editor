@@ -114,6 +114,7 @@
     "imageAutoLayout": "Arranging images, please wait…",
     "imageProcessing": "Processing images, please wait…",
     "pdfConverting": "Converting PDF, please wait…",
+    "pdfConvertingProgress": "Converting PDF ({current}/{total})…",
     "pdfConvertFailed": "PDF conversion failed, please retry",
     "fileTypeInvalid": "Unsupported file type. Please choose: {accept}",
     "fileSizeExceeded": "File size cannot exceed {maxSize}"
