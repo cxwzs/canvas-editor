@@ -323,6 +323,12 @@ export class BuiltinMenu {
     const format = li.dataset.format
     if (!format) return
     quickFormatOptionDom.classList.remove('visible')
+    if (format === 'tableAutoWidth') {
+      editor.command.executeTableAutoFitToPage({
+        scope: 'selectionOrAll'
+      })
+      return
+    }
     if (format === 'imageAutoLayout') {
       new Dialog({
         title: '自动调整图片布局',

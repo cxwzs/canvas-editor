@@ -1022,19 +1022,73 @@ export class TableOperate {
     this.tableTool.render()
   }
 
-  public tableAutoFitToPage() {
-    const positionContext = this.position.getPositionContext()
-    if (!positionContext.isTable) return
-    const { index } = positionContext
-    const originalElementList = this.draw.getOriginalElementList()
-    const element = originalElementList[index!]
-    if (element?.type !== ElementType.TABLE) return
+  private _autoFitTableToPage(element: IElement) {
+    if (element.type !== ElementType.TABLE || !element.colgroup) return
     // 表格总宽等比缩放（放大或缩小）至页面内容区宽度
-    scaleColgroupToWidth(element.colgroup!, this.draw.getOriginalInnerWidth())
+    scaleColgroupToWidth(element.colgroup, this.draw.getOriginalInnerWidth())
     element.translateX = 0
-    const { endIndex } = this.range.getRange()
+  }
+
+  private _collectTablesInRange(
+    elementList: IElement[],
+    rangeStart: number,
+    rangeEnd: number
+  ): IElement[] {
+    const tables: IElement[] = []
+    for (let i = rangeStart; i < rangeEnd; i++) {
+      const element = elementList[i]
+      if (element?.type === ElementType.TABLE) {
+        tables.push(element)
+      }
+    }
+    return tables
+  }
+
+  public tableAutoFitToPage(payload?: {
+    scope?: 'current' | 'selectionOrAll'
+  }) {
+    const scope = payload?.scope || 'current'
+    if (scope === 'current') {
+      const positionContext = this.position.getPositionContext()
+      if (!positionContext.isTable) return
+      const { index } = positionContext
+      const originalElementList = this.draw.getOriginalElementList()
+      const element = originalElementList[index!]
+      if (element?.type !== ElementType.TABLE) return
+      this._autoFitTableToPage(element)
+      const { endIndex } = this.range.getRange()
+      this.draw.render({ curIndex: endIndex })
+      this.tableTool.render()
+      return
+    }
+    // selectionOrAll：有选区则处理选区内表格，无选区则处理全文表格
+    const { startIndex, endIndex, isCrossRowCol } = this.range.getRange()
+    const hasSelection = startIndex !== endIndex || !!isCrossRowCol
+    let tables: IElement[] = []
+    if (hasSelection) {
+      if (isCrossRowCol) {
+        const tableElement = this.range.getRangeTableElement()
+        if (tableElement) tables.push(tableElement)
+      }
+      const elementList = this.draw.getElementList()
+      const rangeStart =
+        elementList[startIndex]?.value === ZERO ? startIndex : startIndex + 1
+      const rangeEnd = endIndex + 1
+      tables = tables.concat(
+        this._collectTablesInRange(elementList, rangeStart, rangeEnd)
+      )
+    } else {
+      const elementList = this.draw.getOriginalMainElementList()
+      tables = this._collectTablesInRange(elementList, 0, elementList.length)
+    }
+    if (!tables.length) return
+    for (let t = 0; t < tables.length; t++) {
+      this._autoFitTableToPage(tables[t])
+    }
     this.draw.render({ curIndex: endIndex })
-    this.tableTool.render()
+    if (this.position.getPositionContext().isTable) {
+      this.tableTool.render()
+    }
   }
 
   public tableSelectAll() {

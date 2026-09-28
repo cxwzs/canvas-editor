@@ -1129,10 +1129,12 @@ export class CommandAdapt {
     this.tableOperate.tableAutoFitToContent()
   }
 
-  public tableAutoFitToPage() {
+  public tableAutoFitToPage(payload?: {
+    scope?: 'current' | 'selectionOrAll'
+  }) {
     const isReadonly = this.draw.isReadonly()
     if (isReadonly) return
-    this.tableOperate.tableAutoFitToPage()
+    this.tableOperate.tableAutoFitToPage(payload)
   }
 
   public tableSelectAll() {
