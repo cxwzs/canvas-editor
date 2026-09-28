@@ -17,6 +17,7 @@ import { RowFlex } from '../../dataset/enum/Row'
 import { TextDecorationStyle } from '../../dataset/enum/Text'
 import { TitleLevel } from '../../dataset/enum/Title'
 import { debounce, nextTick, splitText } from '../../utils'
+import { flattenCatalogOptions } from '../../utils/catalog'
 import {
   filterFilesByUploadLimit,
   formatFileSize,
@@ -401,6 +402,52 @@ export class BuiltinMenu {
           })
         }
       })
+      return
+    }
+    if (format === 'crossReference') {
+      void (async () => {
+        const catalog = await editor.command.getCatalog()
+        if (!catalog?.length) {
+          showToast(
+            editor.command.getContainer(),
+            '当前文档暂无目录，请先设置标题'
+          )
+          return
+        }
+        const catalogOptions = flattenCatalogOptions(catalog)
+        const nameMap = new Map(
+          catalogOptions.map(item => [item.value, item.name])
+        )
+        new Dialog({
+          title: '交叉引用',
+          data: [
+            {
+              type: 'select',
+              label: '目录',
+              name: 'catalogId',
+              required: true,
+              value: catalogOptions[0].value,
+              options: catalogOptions.map(({ label, value }) => ({
+                label,
+                value
+              }))
+            }
+          ],
+          onConfirm: payload => {
+            const catalogId = payload.find(p => p.name === 'catalogId')?.value
+            if (!catalogId) return
+            const name = nameMap.get(catalogId)
+            if (!name) return
+            editor.command.executeHyperlink({
+              url: `#${catalogId}`,
+              valueList: splitText(name).map(n => ({
+                value: n,
+                size: 16
+              }))
+            })
+          }
+        })
+      })()
       return
     }
     console.log('quickFormat:', format)

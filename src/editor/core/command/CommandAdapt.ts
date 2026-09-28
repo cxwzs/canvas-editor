@@ -84,7 +84,7 @@ import {
   ITableInfoByEvent
 } from '../../interface/Event'
 import { IMargin } from '../../interface/Margin'
-import { ILocationPosition, IPositionContext } from '../../interface/Position'
+import { ILocationPosition } from '../../interface/Position'
 import { IRange, RangeContext, RangeRect } from '../../interface/Range'
 import {
   IReplaceOption,
@@ -104,8 +104,10 @@ import {
   downloadFile,
   getUUID,
   isNumber,
-  isObjectEqual
+  isObjectEqual,
+  splitText
 } from '../../utils'
+import { locationCatalogByTitleId } from '../../utils/catalog'
 import { getParagraphNo } from '../../utils/paragraph'
 import {
   createDomFromElementList,
@@ -1197,6 +1199,21 @@ export class CommandAdapt {
     return [leftIndex, rightIndex]
   }
 
+  public getHyperlinkInfo(): { url: string; text: string } | null {
+    const hyperRange = this.getHyperlinkRange()
+    if (!hyperRange) return null
+    const elementList = this.draw.getElementList()
+    const [leftIndex, rightIndex] = hyperRange
+    const text = elementList
+      .slice(leftIndex, rightIndex + 1)
+      .map(element => element.value)
+      .join('')
+    return {
+      url: elementList[leftIndex].url || '',
+      text
+    }
+  }
+
   public deleteHyperlink() {
     const isDisabled = this.draw.isReadonly() || this.draw.isDisabled()
     if (isDisabled) return
@@ -1245,18 +1262,51 @@ export class CommandAdapt {
     })
   }
 
-  public editHyperlink(payload: string) {
+  public editHyperlink(payload: string | { url: string; name?: string }) {
     const isDisabled = this.draw.isReadonly() || this.draw.isDisabled()
     if (isDisabled) return
+    const url = typeof payload === 'string' ? payload : payload.url
+    const name = typeof payload === 'string' ? undefined : payload.name
+    if (!url) return
     // 获取超链接索引
     const hyperRange = this.getHyperlinkRange()
     if (!hyperRange) return
     const elementList = this.draw.getElementList()
     const [leftIndex, rightIndex] = hyperRange
-    // 替换url
+    const startElement = elementList[leftIndex]
+    const currentText = elementList
+      .slice(leftIndex, rightIndex + 1)
+      .map(element => element.value)
+      .join('')
+    // 文本变更时替换整个超链接
+    if (name !== undefined && name !== currentText) {
+      const hyperlinkId = startElement.hyperlinkId
+      this.draw.deleteElementList(
+        elementList,
+        leftIndex,
+        rightIndex - leftIndex + 1
+      )
+      this.draw.getHyperlinkParticle().clearHyperlinkPopup()
+      const newIndex = leftIndex - 1
+      this.range.setRange(newIndex, newIndex)
+      this.insertElementList([
+        {
+          type: ElementType.HYPERLINK,
+          value: '',
+          valueList: splitText(name).map(n => ({
+            value: n,
+            size: startElement.size
+          })),
+          url,
+          hyperlinkId
+        }
+      ])
+      return
+    }
+    // 仅替换 url
     for (let i = leftIndex; i <= rightIndex; i++) {
       const element = elementList[i]
-      element.url = payload
+      element.url = url
     }
     this.draw.getHyperlinkParticle().clearHyperlinkPopup()
     // 重置画布
@@ -2473,93 +2523,7 @@ export class CommandAdapt {
   }
 
   public locationCatalog(titleId: string) {
-    const elementList = this.draw.getOriginalElementList()
-
-    function getPosition(
-      elementList: IElement[],
-      titleId: string
-    ): (IRange & IPositionContext) | null {
-      for (let e = 0; e < elementList.length; e++) {
-        const element = elementList[e]
-        if (element.type === ElementType.TABLE) {
-          const trList = element.trList!
-          for (let r = 0; r < trList.length; r++) {
-            const tr = trList[r]
-            for (let d = 0; d < tr.tdList.length; d++) {
-              const td = tr.tdList[d]
-              const range = getPosition(td.value, titleId)
-              if (range) {
-                return {
-                  ...range,
-                  isTable: true,
-                  index: e,
-                  trIndex: r,
-                  tdIndex: d,
-                  tdId: td.id,
-                  trId: tr.id,
-                  tableId: element.id
-                }
-              }
-            }
-          }
-        }
-        // 找到标题末尾
-        if (element.titleId === titleId) {
-          let newIndex = e
-          while (newIndex < elementList.length) {
-            if (elementList[newIndex + 1]?.titleId !== titleId) {
-              return {
-                isTable: false,
-                startIndex: newIndex,
-                endIndex: newIndex
-              }
-            }
-            newIndex++
-          }
-        }
-      }
-      return null
-    }
-
-    const context = getPosition(elementList, titleId)
-    if (!context) return
-    const {
-      isTable,
-      index,
-      startTdIndex,
-      endTdIndex,
-      startTrIndex,
-      endTrIndex,
-      trIndex,
-      tdIndex,
-      tdId,
-      trId,
-      tableId,
-      endIndex
-    } = context
-    this.position.setPositionContext({
-      isTable,
-      index,
-      trIndex,
-      tdIndex,
-      tdId,
-      trId,
-      tableId
-    })
-    this.range.setRange(
-      endIndex,
-      endIndex,
-      tableId,
-      startTdIndex,
-      endTdIndex,
-      startTrIndex,
-      endTrIndex
-    )
-    this.draw.render({
-      curIndex: endIndex,
-      isCompute: false,
-      isSubmitHistory: false
-    })
+    locationCatalogByTitleId(this.draw, titleId)
   }
 
   public wordTool() {

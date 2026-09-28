@@ -58,6 +58,7 @@ import { IRowElement } from '../interface/Row'
 import { ITd } from '../interface/table/Td'
 import { ITr } from '../interface/table/Tr'
 import { mergeOption } from './option'
+import { normalizeHyperlinkUrl } from './catalog'
 
 export function isElementTraceDeleted(element: IElement): boolean {
   const records = element.trace
@@ -847,7 +848,20 @@ export function zipElementList(
       continue
     }
     // 优先处理虚拟元素，后表格、超链接、日期、控件特殊处理
-    if (element.areaId) {
+    // 已归类的 AREA / TITLE 直接保留结构，避免二次压缩被拆开
+    if (element.type === ElementType.AREA && element.valueList) {
+      const pickElement = pickElementAttr(element, { extraPickAttrs })
+      pickElement.valueList = zipElementList(element.valueList, options)
+      zipElementListData.push(pickElement)
+      e++
+      continue
+    } else if (element.type === ElementType.TITLE && element.valueList) {
+      const pickElement = pickElementAttr(element, { extraPickAttrs })
+      pickElement.valueList = zipElementList(element.valueList, options)
+      zipElementListData.push(pickElement)
+      e++
+      continue
+    } else if (element.areaId) {
       const areaId = element.areaId
       const area = element.area
       // 收集并压缩数据
@@ -1446,7 +1460,8 @@ export function convertElementToDom(
       element.rowMargin ?? options.defaultRowMargin
     ).toString()
   }
-  dom.innerText = element.value.replace(new RegExp(`${ZERO}`, 'g'), '\n')
+  // 使用 textContent：jsdom 下 innerText 赋值无效，且导出不依赖布局可见性
+  dom.textContent = element.value.replace(new RegExp(`${ZERO}`, 'g'), '\n')
   return dom
 }
 
@@ -1545,6 +1560,34 @@ export function createDomFromElementList(
     const clipboardDom = document.createElement('div')
     for (let e = 0; e < payload.length; e++) {
       const element = payload[e]
+      // 构造区域（paraId / data-title / data-disabled）
+      if (element.type === ElementType.AREA) {
+        const areaDom = document.createElement('div')
+        if (element.areaId) {
+          areaDom.setAttribute('paraId', element.areaId)
+        }
+        if (element.area?.mode === AreaMode.READONLY) {
+          areaDom.setAttribute('data-disabled', 'true')
+        }
+        let valueList = element.valueList ? deepClone(element.valueList) : []
+        // 区域首部禁用标题还原为 data-title，避免与正文重复
+        const first = valueList[0]
+        if (first?.type === ElementType.TITLE && first.title?.disabled) {
+          const titleText = (first.valueList || [])
+            .map(v => v.value || '')
+            .join('')
+            .replace(/^\n+|\n+$/g, '')
+            .replace(new RegExp(ZERO, 'g'), '')
+          if (titleText) {
+            areaDom.setAttribute('data-title', titleText)
+          }
+          valueList = valueList.slice(1)
+        }
+        const childDom = createDomFromElementList(valueList, options)
+        areaDom.innerHTML = childDom.innerHTML
+        clipboardDom.append(areaDom)
+        continue
+      }
       // 构造表格
       if (element.type === ElementType.TABLE) {
         const tableDom: HTMLTableElement = document.createElement('table')
@@ -1610,15 +1653,19 @@ export function createDomFromElementList(
         clipboardDom.append(tableDom)
       } else if (element.type === ElementType.HYPERLINK) {
         const a = document.createElement('a')
-        a.innerText = element.valueList!.map(v => v.value).join('')
+        a.textContent = element.valueList!.map(v => v.value).join('')
         if (element.url) {
-          a.href = element.url
+          // 使用 setAttribute 保留原始 #id，避免被解析成当前域名
+          a.setAttribute('href', element.url)
         }
         clipboardDom.append(a)
       } else if (element.type === ElementType.TITLE) {
         const h = document.createElement(
           `h${titleOrderNumberMapping[element.level!]}`
         )
+        if (element.titleId) {
+          h.id = element.titleId
+        }
         if (element.title?.disabled) {
           h.setAttribute('data-disabled', 'true')
         }
@@ -1739,15 +1786,19 @@ export function createDomFromElementList(
         if (payload[e - 1]?.type === ElementType.TITLE) {
           text = text.replace(/^\n/, '')
         }
-        dom.innerText = text.replace(new RegExp(`${ZERO}`, 'g'), '\n')
+        dom.textContent = text.replace(new RegExp(`${ZERO}`, 'g'), '\n')
         clipboardDom.append(dom)
       }
     }
     return clipboardDom
   }
+  // 先按 area 归类，导出时保留 paraId / data-title
+  const classifiedList = zipElementList(elementList, {
+    isClassifyArea: true
+  })
   // 按行布局分类创建dom
   const clipboardDom = document.createElement('div')
-  const groupElementList = groupElementListByRowFlex(elementList)
+  const groupElementList = groupElementListByRowFlex(classifiedList)
   for (let g = 0; g < groupElementList.length; g++) {
     const elementGroupRowFlex = groupElementList[g]
     // 行布局样式设置
@@ -2160,12 +2211,14 @@ export function getElementListByHTML(
           const areaId = getAreaIdFromHTMLElement(areaNode)!
           const valueList = getElementListByHTML(areaNode.innerHTML, options)
           // data-title：作为区域不可编辑标题插入到内容最前（自带换行，独占一行）
+          // titleId 采用 paraId（areaId），保证与分块一一对应且不重复
           const areaTitle = areaNode.getAttribute('data-title')?.trim()
           if (areaTitle) {
             valueList.unshift({
               value: '',
               type: ElementType.TITLE,
               level: TitleLevel.FIRST,
+              titleId: areaId,
               title: {
                 disabled: true,
                 deletable: false
@@ -2193,6 +2246,9 @@ export function getElementListByHTML(
           const aElement = node as HTMLLinkElement
           const value = aElement.innerText
           if (value) {
+            // getAttribute 保留原始 href（如 #id），避免 .href 拼接当前域名
+            const rawHref =
+              aElement.getAttribute('href') || aElement.href || ''
             elementList.push({
               type: ElementType.HYPERLINK,
               value: '',
@@ -2201,7 +2257,7 @@ export function getElementListByHTML(
                   value
                 }
               ],
-              url: aElement.href
+              url: normalizeHyperlinkUrl(rawHref)
             })
           }
         } else if (/H[1-6]/.test(node.nodeName)) {
@@ -2215,6 +2271,11 @@ export function getElementListByHTML(
             type: ElementType.TITLE,
             level: titleNodeNameMapping[node.nodeName],
             valueList
+          }
+          // 标题 id 回显：优先使用标签 id
+          const titleId = hElement.id?.trim()
+          if (titleId) {
+            titleElement.titleId = titleId
           }
           // data-disabled / data-editable=false：标题不可编辑、删除
           if (isHTMLElementDisabled(hElement)) {

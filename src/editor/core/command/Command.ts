@@ -132,6 +132,7 @@ export class Command {
   public executeFocus: CommandAdapt['focus']
   public executeComputeElementListHeight: CommandAdapt['computeElementListHeight']
   public getCatalog: CommandAdapt['getCatalog']
+  public getHyperlinkInfo: CommandAdapt['getHyperlinkInfo']
   public getImage: CommandAdapt['getImage']
   public getOptions: CommandAdapt['getOptions']
   public getValue: CommandAdapt['getValue']
@@ -598,6 +599,7 @@ export class Command {
     this.getKeywordRangeList = adapt.getKeywordRangeList.bind(adapt)
     this.getKeywordContext = adapt.getKeywordContext.bind(adapt)
     this.getCatalog = adapt.getCatalog.bind(adapt)
+    this.getHyperlinkInfo = adapt.getHyperlinkInfo.bind(adapt)
     this.getPaperMargin = adapt.getPaperMargin.bind(adapt)
     this.getPageNumber = adapt.getPageNumber.bind(adapt)
     this.getColumns = adapt.getColumns.bind(adapt)

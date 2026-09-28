@@ -3,6 +3,11 @@ import { EDITOR_PREFIX } from '../../../dataset/constant/Editor'
 import { IEditorOption } from '../../../interface/Editor'
 import { IElementPosition } from '../../../interface/Element'
 import { IRowElement } from '../../../interface/Row'
+import {
+  getAnchorTitleId,
+  isAnchorHyperlink,
+  locationCatalogByTitleId
+} from '../../../utils/catalog'
 import { Draw } from '../Draw'
 
 export class HyperlinkParticle {
@@ -28,6 +33,14 @@ export class HyperlinkParticle {
     const hyperlinkDom = document.createElement('a')
     hyperlinkDom.target = '_blank'
     hyperlinkDom.rel = 'noopener'
+    hyperlinkDom.onclick = evt => {
+      const url = hyperlinkDom.getAttribute('href') || ''
+      if (isAnchorHyperlink(url)) {
+        evt.preventDefault()
+        locationCatalogByTitleId(this.draw, getAnchorTitleId(url))
+        this.clearHyperlinkPopup()
+      }
+    }
     hyperlinkPopupContainer.append(hyperlinkDom)
     this.container.append(hyperlinkPopupContainer)
     return { hyperlinkPopupContainer, hyperlinkDom }
@@ -50,6 +63,12 @@ export class HyperlinkParticle {
     this.hyperlinkDom.href = url
     this.hyperlinkDom.title = url
     this.hyperlinkDom.innerText = url
+    // 交叉引用锚点不新开页签
+    if (isAnchorHyperlink(url)) {
+      this.hyperlinkDom.removeAttribute('target')
+    } else {
+      this.hyperlinkDom.target = '_blank'
+    }
   }
 
   public clearHyperlinkPopup() {
@@ -57,7 +76,13 @@ export class HyperlinkParticle {
   }
 
   public openHyperlink(element: IElement) {
-    const newTab = window.open(element.url, '_blank')
+    const url = element.url || ''
+    // 交叉引用：#titleId → 定位到对应目录标题，不影响普通超链接
+    if (isAnchorHyperlink(url)) {
+      locationCatalogByTitleId(this.draw, getAnchorTitleId(url))
+      return
+    }
+    const newTab = window.open(url, '_blank')
     if (newTab) {
       newTab.opener = null
     }

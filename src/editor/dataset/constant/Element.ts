@@ -91,6 +91,7 @@ export const EDITOR_ELEMENT_ZIP_ATTR: Array<keyof IElement> = [
   'block',
   'level',
   'title',
+  'titleId',
   'listType',
   'listStyle',
   'listWrap',
@@ -197,7 +198,8 @@ export const BLOCK_ELEMENT_TYPE: ElementType[] = [
   ElementType.BLOCK,
   ElementType.PAGE_BREAK,
   ElementType.SEPARATOR,
-  ElementType.TABLE
+  ElementType.TABLE,
+  ElementType.AREA
 ]
 
 export const INLINE_NODE_NAME: string[] = ['HR', 'TABLE', 'UL', 'OL']

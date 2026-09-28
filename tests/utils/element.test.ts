@@ -628,6 +628,56 @@ describe('createDomFromElementList', () => {
     expect(dom).toBeTruthy()
     expect(dom.tagName).toBe('DIV')
   })
+
+  it('标题导出时带出 id（titleId）', () => {
+    const list: IElement[] = [
+      {
+        type: ElementType.TITLE,
+        value: '',
+        level: TitleLevel.FIRST,
+        titleId: 'title-abc',
+        valueList: [{ value: '章节一' }]
+      }
+    ]
+    const dom = createDomFromElementList(list)
+    const h1 = dom.querySelector('h1')
+    expect(h1?.id).toBe('title-abc')
+    expect(h1?.textContent).toContain('章节一')
+  })
+
+  it('区域导出时带出 paraId 与 data-title', () => {
+    const html =
+      '<div paraId="para-title" data-disabled="true" data-title="章节标题"><p>body text</p></div>'
+    const parsed = getElementListByHTML(html, { innerWidth: 500 })
+    const dom = createDomFromElementList(parsed)
+    const areaDom = dom.querySelector('[paraId="para-title"]') as HTMLElement
+    expect(areaDom).toBeTruthy()
+    expect(areaDom.getAttribute('data-title')).toBe('章节标题')
+    expect(areaDom.getAttribute('data-disabled')).toBe('true')
+    expect(areaDom.textContent).toContain('body text')
+    expect(areaDom.querySelector('h1')).toBeNull()
+  })
+})
+
+describe('titleId round-trip', () => {
+  it('getValue zip 保留 titleId', () => {
+    const list: IElement[] = [
+      {
+        value: '标题',
+        titleId: 't-1',
+        level: TitleLevel.FIRST
+      },
+      {
+        value: '\n',
+        titleId: 't-1',
+        level: TitleLevel.FIRST
+      },
+      { value: '正文' }
+    ]
+    const zipped = zipElementList(list, { isClassifyArea: true })
+    const title = zipped.find(el => el.type === ElementType.TITLE)
+    expect(title?.titleId).toBe('t-1')
+  })
 })
 
 describe('getElementListByHTML', () => {
@@ -668,11 +718,19 @@ describe('getElementListByHTML', () => {
     expect(area?.area?.mode).toBe(AreaMode.EDIT)
     const title = area?.valueList?.[0]
     expect(title?.type).toBe(ElementType.TITLE)
+    expect(title?.titleId).toBe('para-title')
     expect(title?.title?.disabled).toBe(true)
     expect(title?.title?.deletable).toBe(false)
     expect(title?.valueList?.[0]?.value).toBe('章节标题')
     // 标题自带换行，保证独占一行
     expect(title?.valueList?.[1]?.value).toBe('\n')
+  })
+
+  it('h1 带 id 时解析为 titleId', () => {
+    const html = '<h1 id="title-1">锁定标题</h1><p>body</p>'
+    const result = getElementListByHTML(html, { innerWidth: 500 })
+    const title = result.find(el => el.type === ElementType.TITLE)
+    expect(title?.titleId).toBe('title-1')
   })
 
   it('h1 data-disabled 解析为禁用标题', () => {
