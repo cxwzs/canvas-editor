@@ -17,6 +17,12 @@ export interface IImagePickerResult {
 export interface IImagePickerOptions {
   files: File[]
   onFileUpload?: IFileUpload | null
+  /** 弹窗标题，默认「图片」 */
+  title?: string
+  /** 裁剪区提示文案 */
+  tip?: string
+  /** 是否允许继续添加图片，默认 true */
+  allowAdd?: boolean
   /** Toast 挂载容器；未传时挂到弹窗宿主节点 */
   toastContainer?: HTMLElement
   /** 确认处理中的 Toast 文案 */
@@ -121,7 +127,9 @@ export class ImagePicker {
     const title = document.createElement('div')
     title.classList.add('image-picker-title')
     const titleSpan = document.createElement('span')
-    titleSpan.append(document.createTextNode('图片'))
+    titleSpan.append(
+      document.createTextNode(this.options.title || '图片')
+    )
     const titleClose = document.createElement('i')
     titleClose.onclick = () => {
       onClose?.()
@@ -178,7 +186,12 @@ export class ImagePicker {
     stageEl.append(imageEl, maskSvg, boxEl)
     const tip = document.createElement('div')
     tip.classList.add('image-picker-crop__tip')
-    tip.append(document.createTextNode('拖动裁剪框调整区域，可切换左侧列表或继续添加图片'))
+    const tipText =
+      this.options.tip ||
+      (this.options.allowAdd === false
+        ? '拖动裁剪框调整区域，可切换左侧列表预览每一页'
+        : '拖动裁剪框调整区域，可切换左侧列表或继续添加图片')
+    tip.append(document.createTextNode(tipText))
     crop.append(stageEl, tip)
     body.append(listEl, crop)
     picker.append(body, addInput)
@@ -359,15 +372,17 @@ export class ImagePicker {
       el.onclick = () => this._setActive(item.id)
       this.listEl.append(el)
     })
-    const addBtn = document.createElement('div')
-    addBtn.classList.add('image-picker-list__add')
-    addBtn.title = '添加图片'
-    addBtn.append(document.createTextNode('+'))
-    addBtn.onclick = () => {
-      if (this.submitting) return
-      this.addInput.click()
+    if (this.options.allowAdd !== false) {
+      const addBtn = document.createElement('div')
+      addBtn.classList.add('image-picker-list__add')
+      addBtn.title = '添加图片'
+      addBtn.append(document.createTextNode('+'))
+      addBtn.onclick = () => {
+        if (this.submitting) return
+        this.addInput.click()
+      }
+      this.listEl.append(addBtn)
     }
-    this.listEl.append(addBtn)
     this.confirmBtn.disabled = this.submitting || !this.items.length
   }
 

@@ -705,9 +705,9 @@ export const commentList: IComment[] = [
 
 export const options: IEditorOption = {
   pageVirtualScroll: true, // 是否启用虚拟滚动
-  margins: [75.58, 75.58, 75.58, 75.58],
-  width: 793.69,
-  height: 1122.52,
+  margins: [75, 75, 75, 75],
+  width: 793,
+  height: 1122,
   trace: {
     author: '游客1'
   },
@@ -728,7 +728,8 @@ export const options: IEditorOption = {
   zone: {
     tipDisabled: false
   },
-  maskMargin: [0, 0, 0, 0], // 预览模式无菜单栏/底栏覆盖
+  defaultFont: '微软雅黑',
+  maskMargin: [60, 0, 30, 0], // 菜单栏高度60，底部工具栏30为遮盖层
   menu: {
     watermark: false,
     pageBreak: false,

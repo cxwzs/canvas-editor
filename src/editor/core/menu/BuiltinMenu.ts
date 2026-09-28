@@ -17,6 +17,7 @@ import { RowFlex } from '../../dataset/enum/Row'
 import { TextDecorationStyle } from '../../dataset/enum/Text'
 import { TitleLevel } from '../../dataset/enum/Title'
 import { debounce, nextTick, splitText } from '../../utils'
+import { pdfFileToImageFiles } from '../../utils/pdf'
 import { IRangeStyle } from '../../interface/Listener'
 import type { IFooterBarOption, IMenuOption } from '../../interface/Menu'
 import { showToast } from '../toast/Toast'
@@ -63,6 +64,7 @@ const MENU_ITEM_SELECTORS: MenuSelectorMap = {
   list: '.menu-item__list',
   table: ['.menu-item__table', '.menu-item__table__collapse'],
   image: '.menu-item__image',
+  pdf: '.menu-item__pdf',
   hyperlink: '.menu-item__hyperlink',
   separator: '.menu-item__separator',
   watermark: '.menu-item__watermark',
@@ -732,6 +734,71 @@ export class BuiltinMenu {
         })
       }
     })
+  }
+
+  const pdfDom = q('.menu-item__pdf')
+  const pdfFileDom = q('#pdf') as HTMLInputElement
+  pdfDom.onclick = function () {
+    pdfFileDom.click()
+  }
+  pdfFileDom.onchange = async function () {
+    const file = pdfFileDom.files?.[0]
+    pdfFileDom.value = ''
+    if (!file) return
+    const toastContainer = editor.command.getContainer()
+    const convertingMsg =
+      editor.command.executeTranslate('toast.pdfConverting') ||
+      '正在转换 PDF，请稍候…'
+    const toast = showToast(toastContainer, convertingMsg, { duration: 0 })
+    try {
+      const files = await pdfFileToImageFiles(file)
+      toast.close()
+      if (!files.length) return
+      const onFileUpload = editor.command.getOptions().onFileUpload
+      const cachedRange = editor.command.getRange()
+      // 页图预览/裁剪/上传与图片菜单共用 ImagePicker
+      new ImagePicker({
+        files,
+        onFileUpload,
+        title: 'PDF',
+        allowAdd: false,
+        tip: '拖动裁剪框调整区域，可切换左侧列表预览每一页',
+        toastContainer,
+        toastMessage:
+          editor.command.executeTranslate('toast.imageProcessing') ||
+          '正在处理图片，请稍候…',
+        onConfirm(payload) {
+          if (~cachedRange.startIndex && ~cachedRange.endIndex) {
+            editor.command.executeReplaceRange(cachedRange)
+          }
+          const { width: pageWidth, margins } = editor.command.getOptions()
+          const contentWidth = pageWidth - margins[1] - margins[3]
+          payload.forEach(item => {
+            let width = item.width
+            let height = item.height
+            // 页图宽度超出正文区时等比缩小，避免撑破页面
+            if (width > contentWidth) {
+              const ratio = contentWidth / width
+              width = contentWidth
+              height = height * ratio
+            }
+            editor.command.executeImage({
+              value: item.value,
+              width,
+              height
+            })
+          })
+        }
+      })
+    } catch (error) {
+      toast.close()
+      showToast(
+        toastContainer,
+        editor.command.executeTranslate('toast.pdfConvertFailed') ||
+          'PDF 转换失败，请重试'
+      )
+      console.error(error)
+    }
   }
 
   const hyperlinkDom = q(

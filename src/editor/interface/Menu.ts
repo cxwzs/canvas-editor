@@ -28,6 +28,7 @@ export interface IMenuOption {
   list?: boolean
   table?: boolean
   image?: boolean
+  pdf?: boolean
   hyperlink?: boolean
   separator?: boolean
   watermark?: boolean

@@ -23,10 +23,13 @@ export const defaultMenuOption: Readonly<Required<IMenuOption>> = {
   right: true,
   alignment: true,
   justify: true,
+  increaseIndent: true,
+  decreaseIndent: true,
   rowMargin: true,
   list: true,
   table: true,
   image: true,
+  pdf: true,
   hyperlink: true,
   separator: true,
   watermark: true,
@@ -39,7 +42,8 @@ export const defaultMenuOption: Readonly<Required<IMenuOption>> = {
   date: true,
   block: true,
   search: true,
-  print: true
+  print: true,
+  quickFormat: true
 }
 
 export const defaultFooterBarOption: Readonly<Required<IFooterBarOption>> = {

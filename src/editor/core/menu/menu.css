@@ -405,6 +405,14 @@
   display: none;
 }
 
+.menu-item__pdf i {
+  background-image: url('../../../assets/images/pdf.svg');
+}
+
+.menu-item__pdf input {
+  display: none;
+}
+
 .menu-item__table {
   position: relative;
 }

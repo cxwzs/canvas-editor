@@ -112,7 +112,9 @@
   "toast": {
     "pasting": "正在粘贴，请稍候…",
     "imageAutoLayout": "正在排版图片，请稍候…",
-    "imageProcessing": "正在处理图片，请稍候…"
+    "imageProcessing": "正在处理图片，请稍候…",
+    "pdfConverting": "正在转换 PDF，请稍候…",
+    "pdfConvertFailed": "PDF 转换失败，请重试"
   },
   "trace": {
     "insert": "新增内容",
