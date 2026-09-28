@@ -1756,11 +1756,11 @@ export function createDomFromElementList(
       elementGroupRowFlex.rowFlex === RowFlex.LEFT
     const firstElement = elementGroupRowFlex.data[0]
     const textIndent = firstElement?.textIndent
-    // 块元素使用flex否则使用text-align
-    const rowFlexDom = document.createElement('div')
+    // 用 span 作对齐容器，避免 div 在 Word 中产生换行
+    const rowFlexDom = document.createElement('span')
     if (!isDefaultRowFlex) {
       if (getIsBlockElement(firstElement)) {
-        rowFlexDom.style.display = 'flex'
+        rowFlexDom.style.display = 'inline-flex'
         rowFlexDom.style.justifyContent = convertRowFlexToJustifyContent(
           firstElement.rowFlex!
         )
@@ -2054,18 +2054,20 @@ function getHTMLTextAlignValue(el: HTMLElement): string {
 }
 
 /**
- * createDomFromElementList 为对齐生成的布局 div（非语义段落）。
- * 相同对齐的连续布局 div 在回显时应视为同一段落内的样式片段，不能补换行。
+ * createDomFromElementList 为对齐生成的布局容器（历史为 div，现为 span）。
+ * 相同对齐的连续布局节点在回显时应视为同一段落内的样式片段，不能补换行。
  */
-function isAlignmentLayoutDiv(el: HTMLElement): boolean {
-  if (el.nodeName !== 'DIV') return false
+function isAlignmentLayoutElement(el: HTMLElement): boolean {
+  if (el.nodeName !== 'DIV' && el.nodeName !== 'SPAN') return false
   if (isPageBreakHTMLElement(el)) return false
   if (getAreaIdFromHTMLElement(el)) return false
   const styleAttr = el.getAttribute('style') || ''
   const hasTextAlign =
     !!el.style.textAlign || /(?:^|;)\s*text-align\s*:/i.test(styleAttr)
   const hasFlex =
-    el.style.display === 'flex' || /(?:^|;)\s*display\s*:\s*flex/i.test(styleAttr)
+    el.style.display === 'flex' ||
+    el.style.display === 'inline-flex' ||
+    /(?:^|;)\s*display\s*:\s*(inline-)?flex/i.test(styleAttr)
   return hasTextAlign || hasFlex
 }
 
@@ -2077,10 +2079,10 @@ function shouldSkipAlignmentLayoutBreak(
   htmlEl: HTMLElement,
   nextSibling: Node | null
 ): boolean {
-  if (!isAlignmentLayoutDiv(htmlEl)) return false
+  if (!isAlignmentLayoutElement(htmlEl)) return false
   if (!nextSibling || nextSibling.nodeType !== 1) return false
   const nextEl = nextSibling as HTMLElement
-  if (!isAlignmentLayoutDiv(nextEl)) return false
+  if (!isAlignmentLayoutElement(nextEl)) return false
   return getHTMLTextAlignValue(htmlEl) === getHTMLTextAlignValue(nextEl)
 }
 
