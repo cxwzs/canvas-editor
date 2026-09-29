@@ -1,5 +1,5 @@
 import { IEditorOption } from '../../interface/Editor'
-import { debounce } from '../../utils'
+import { debounce, resolveScrollContainer } from '../../utils'
 import { Draw } from '../draw/Draw'
 
 export interface IElementVisibleInfo {
@@ -22,19 +22,18 @@ export class ScrollObserver {
     this.options = draw.getOptions()
     this.scrollContainer = this.getScrollContainer()
     this.rafId = null
-    // 监听滚轮
+    // 初始化时同步一次可视页（弹窗/多实例下 window.scrollY 可能非 0，不能作为跳过条件）
     setTimeout(() => {
-      if (!window.scrollY) {
-        this._observer()
-      }
+      this._observer()
     })
     this._addEvent()
   }
 
   public getScrollContainer(): Element | Document {
-    return this.options.scrollContainerSelector
-      ? document.querySelector(this.options.scrollContainerSelector) || document
-      : document
+    return resolveScrollContainer(
+      this.options.scrollContainerSelector,
+      this.draw.getContainer()
+    )
   }
 
   private _addEvent() {

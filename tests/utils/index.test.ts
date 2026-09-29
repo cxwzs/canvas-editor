@@ -25,7 +25,8 @@ import {
   findParent,
   isObjectEqual,
   isNonValue,
-  deleteProperty
+  deleteProperty,
+  resolveScrollContainer
 } from '@/editor/utils'
 
 describe('debounce', () => {
@@ -454,6 +455,58 @@ describe('threeClick', () => {
   it('TODO: 需要真实浏览器事件序列，跳过详细测试', () => {
     // threeClick 依赖 300ms 内的三次点击，jsdom 中难以模拟真实时间
     expect(true).toBe(true)
+  })
+})
+
+describe('resolveScrollContainer', () => {
+  it('无选择器时返回 document', () => {
+    const editor = document.createElement('div')
+    expect(resolveScrollContainer(undefined, editor)).toBe(document)
+  })
+
+  it('编辑器根节点自身匹配选择器时返回自身', () => {
+    const editor = document.createElement('div')
+    editor.className = 'ce-has-builtin-menu'
+    document.body.appendChild(editor)
+    expect(resolveScrollContainer('.ce-has-builtin-menu', editor)).toBe(editor)
+    editor.remove()
+  })
+
+  it('多实例时各自绑定到自己的根节点，不命中第一个编辑器', () => {
+    const editorA = document.createElement('div')
+    editorA.className = 'ce-has-builtin-menu'
+    const editorB = document.createElement('div')
+    editorB.className = 'ce-has-builtin-menu'
+    document.body.append(editorA, editorB)
+    expect(resolveScrollContainer('.ce-has-builtin-menu', editorA)).toBe(
+      editorA
+    )
+    expect(resolveScrollContainer('.ce-has-builtin-menu', editorB)).toBe(
+      editorB
+    )
+    editorA.remove()
+    editorB.remove()
+  })
+
+  it('优先返回编辑器内的子滚动容器', () => {
+    const editor = document.createElement('div')
+    const child = document.createElement('div')
+    child.className = 'scroll-area'
+    editor.appendChild(child)
+    document.body.appendChild(editor)
+    expect(resolveScrollContainer('.scroll-area', editor)).toBe(child)
+    editor.remove()
+  })
+
+  it('弹窗场景下可解析到包含编辑器的祖先滚动容器', () => {
+    const modal = document.createElement('div')
+    modal.className = 'modal-body'
+    const editor = document.createElement('div')
+    editor.className = 'ce-has-builtin-menu'
+    modal.appendChild(editor)
+    document.body.appendChild(modal)
+    expect(resolveScrollContainer('.modal-body', editor)).toBe(modal)
+    modal.remove()
   })
 })
 

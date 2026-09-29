@@ -1,4 +1,5 @@
 import { MoveDirection } from '../../dataset/enum/Observer'
+import { resolveScrollContainer } from '../../utils'
 import { Draw } from '../draw/Draw'
 import { RangeManager } from '../range/RangeManager'
 
@@ -28,9 +29,10 @@ export class SelectionObserver {
     // 优先使用配置的滚动容器dom
     this.pageContainer = draw.getPageContainer()
     const { scrollContainerSelector } = draw.getOptions()
-    this.selectionContainer = scrollContainerSelector
-      ? document.querySelector(scrollContainerSelector) || document
-      : document
+    this.selectionContainer = resolveScrollContainer(
+      scrollContainerSelector,
+      draw.getContainer()
+    )
     this.requestAnimationFrameId = null
     this.isMousedown = false
     this.isMoving = false

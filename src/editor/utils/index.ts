@@ -1,6 +1,35 @@
 import { UNICODE_SYMBOL_REG } from '../dataset/constant/Regular'
 import { IElementFillRect } from '../interface/Element'
 
+/**
+ * 解析滚动容器：优先当前编辑器根节点 / 子节点 / 祖先节点，
+ * 避免多实例时 document.querySelector 总是命中第一个编辑器。
+ */
+export function resolveScrollContainer(
+  selector: string | undefined,
+  editorContainer: Element
+): Element | Document {
+  if (!selector) return document
+  try {
+    if (editorContainer.matches(selector)) {
+      return editorContainer
+    }
+  } catch {
+    // 非法选择器时走后续查询
+  }
+  const child = editorContainer.querySelector(selector)
+  if (child) return child
+  const ancestor = editorContainer.closest(selector)
+  if (ancestor) return ancestor
+  // 兜底：在全局匹配中优先取包含当前编辑器的那个
+  const candidates = document.querySelectorAll(selector)
+  for (let i = 0; i < candidates.length; i++) {
+    const el = candidates[i]
+    if (el.contains(editorContainer)) return el
+  }
+  return candidates[0] || document
+}
+
 export function debounce<T extends unknown[]>(
   func: (...arg: T) => unknown,
   delay: number
