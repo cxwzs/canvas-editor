@@ -24,6 +24,7 @@ import {
 import { ElementType } from '../../dataset/enum/Element'
 import { ElementStyleKey } from '../../dataset/enum/ElementStyle'
 import { ListStyle, ListType } from '../../dataset/enum/List'
+import { QuickFormatAction } from '../../dataset/enum/QuickFormat'
 import { MoveDirection } from '../../dataset/enum/Observer'
 import { RowFlex } from '../../dataset/enum/Row'
 import { TableBorder, TdBorder, TdSlash } from '../../dataset/enum/table/Table'
@@ -109,6 +110,7 @@ import {
 } from '../../utils'
 import { locationCatalogByTitleId } from '../../utils/catalog'
 import { getParagraphNo } from '../../utils/paragraph'
+import { applyQuickFormat } from '../../utils/quickFormat'
 import {
   createDomFromElementList,
   formatElementContext,
@@ -1013,6 +1015,39 @@ export class CommandAdapt {
     const isSetCursor = startIndex === endIndex
     const curIndex = isSetCursor ? endIndex : startIndex
     this.draw.render({ curIndex, isSetCursor })
+  }
+
+  /**
+   * 快速格式：有选区则作用于选区段落，无选区则作用于全文正文（含表格单元格）
+   */
+  public quickFormat(action: QuickFormatAction) {
+    const isDisabled = this.draw.isReadonly() || this.draw.isDisabled()
+    if (isDisabled) return
+    const { startIndex, endIndex } = this.range.getRange()
+    if (!~startIndex && !~endIndex) return
+    const hasSelection = startIndex !== endIndex
+    let elementList: IElement[]
+    let rangeStart = 0
+    let rangeEnd = 0
+    if (hasSelection) {
+      elementList = this.draw.getElementList()
+      const paraInfo = this.range.getRangeParagraphInfo()
+      if (!paraInfo?.elementList.length) return
+      rangeStart = paraInfo.startIndex
+      rangeEnd = rangeStart + paraInfo.elementList.length
+    } else {
+      elementList = this.draw.getOriginalMainElementList()
+      rangeStart = 0
+      rangeEnd = elementList.length
+    }
+    const changed = applyQuickFormat(elementList, action, rangeStart, rangeEnd)
+    if (!changed) return
+    this.draw.render({
+      isSetCursor: !!~endIndex,
+      curIndex: ~endIndex ? endIndex : undefined,
+      changeStartIndex: hasSelection ? rangeStart : 0,
+      isCompute: true
+    })
   }
 
   public insertTable(row: number, col: number) {

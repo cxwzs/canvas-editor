@@ -24,6 +24,7 @@ import {
   resolveMenuUploadOption
 } from '../../utils/file'
 import { pdfFileToImageFiles } from '../../utils/pdf'
+import { isQuickFormatAction } from '../../utils/quickFormat'
 import { IRangeStyle } from '../../interface/Listener'
 import type {
   IFooterBarOption,
@@ -448,6 +449,10 @@ export class BuiltinMenu {
           }
         })
       })()
+      return
+    }
+    if (isQuickFormatAction(format)) {
+      editor.command.executeQuickFormat(format)
       return
     }
     console.log('quickFormat:', format)
