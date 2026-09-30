@@ -1551,13 +1551,116 @@ export function groupElementListByRowFlex(
   return elementListGroupList
 }
 
+/** 是否为段落换行（回车 / getValue 中的 \n / 内部 ZERO） */
+function isParagraphBreakValue(value?: string): boolean {
+  return value === '\n' || value === '\r\n' || value === ZERO
+}
+
+/** 浮动环绕类图片不参与段内行内混排，单独成块 */
+function isFloatingImage(element: IElement): boolean {
+  return (
+    element.type === ElementType.IMAGE &&
+    (element.imgDisplay === ImageDisplay.SURROUND ||
+      element.imgDisplay === ImageDisplay.FLOAT_TOP ||
+      element.imgDisplay === ImageDisplay.FLOAT_BOTTOM)
+  )
+}
+
+function createParagraphElement(): HTMLParagraphElement {
+  const p = document.createElement('p')
+  // 避免 WPS/Word 默认段间距过大，接近编辑器视觉
+  p.style.margin = '0'
+  return p
+}
+
 export function createDomFromElementList(
   elementList: IElement[],
   options?: IEditorOption
 ) {
   const editorOptions = mergeOption(options)
-  function buildDom(payload: IElement[]): HTMLDivElement {
+  /**
+   * @param wrapParagraphs 为 true 时按回车（\n）拆成 <p>；
+   *   段内文本与图片保持行内，兼顾图文并排；标题/控件内部不拆段以免非法嵌套。
+   */
+  function buildDom(
+    payload: IElement[],
+    wrapParagraphs = true
+  ): HTMLDivElement {
     const clipboardDom = document.createElement('div')
+    let currentParagraph: HTMLParagraphElement | null = null
+
+    const closeParagraph = () => {
+      currentParagraph = null
+    }
+
+    const ensureParagraph = (): HTMLElement => {
+      if (!wrapParagraphs) return clipboardDom
+      if (!currentParagraph) {
+        currentParagraph = createParagraphElement()
+        clipboardDom.append(currentParagraph)
+      }
+      return currentParagraph
+    }
+
+    const appendToParagraph = (node: Node) => {
+      ensureParagraph().append(node)
+    }
+
+    const appendStructural = (node: Node) => {
+      closeParagraph()
+      clipboardDom.append(node)
+    }
+
+    const createImageDom = (element: IElement): HTMLImageElement => {
+      const img = document.createElement('img')
+      if (element.value) {
+        img.src = element.value
+        img.width = element.width!
+        img.height = element.height!
+      }
+      if (element.imgBorder && element.imgBorderWidth) {
+        img.style.border = `${element.imgBorderWidth}px solid ${
+          element.imgBorderColor || '#000000'
+        }`
+      }
+      setPartIdAttribute(img, element.partId)
+      return img
+    }
+
+    const appendTextPieces = (
+      element: IElement,
+      text: string,
+      forceInline: boolean
+    ) => {
+      const normalized = text.replace(new RegExp(ZERO, 'g'), '\n')
+      if (!wrapParagraphs || forceInline) {
+        const flat = normalized.replace(/\n/g, '')
+        if (!flat) return
+        const dom = convertElementToDom(element, editorOptions)
+        dom.textContent = flat
+        appendToParagraph(dom)
+        return
+      }
+      const parts = normalized.split('\n')
+      for (let i = 0; i < parts.length; i++) {
+        if (i > 0) {
+          closeParagraph()
+        }
+        const part = parts[i]
+        const isLast = i === parts.length - 1
+        if (part) {
+          const dom = convertElementToDom(element, editorOptions)
+          dom.textContent = part
+          appendToParagraph(dom)
+        } else if (!isLast) {
+          // 段中空段（连续回车）：保留空 <p>
+          ensureParagraph()
+          closeParagraph()
+        }
+        // 末尾空串（如 "hello\n"）只结束当前段，不额外造空段
+      }
+    }
+
     for (let e = 0; e < payload.length; e++) {
       const element = payload[e]
       // 构造区域（paraId / data-title / data-disabled）
@@ -1585,7 +1688,7 @@ export function createDomFromElementList(
         }
         const childDom = createDomFromElementList(valueList, options)
         areaDom.innerHTML = childDom.innerHTML
-        clipboardDom.append(areaDom)
+        appendStructural(areaDom)
         continue
       }
       // 构造表格
@@ -1650,7 +1753,7 @@ export function createDomFromElementList(
           }
           tableDom.append(trDom)
         }
-        clipboardDom.append(tableDom)
+        appendStructural(tableDom)
       } else if (element.type === ElementType.HYPERLINK) {
         const a = document.createElement('a')
         a.textContent = element.valueList!.map(v => v.value).join('')
@@ -1658,7 +1761,7 @@ export function createDomFromElementList(
           // 使用 setAttribute 保留原始 #id，避免被解析成当前域名
           a.setAttribute('href', element.url)
         }
-        clipboardDom.append(a)
+        appendToParagraph(a)
       } else if (element.type === ElementType.TITLE) {
         const h = document.createElement(
           `h${titleOrderNumberMapping[element.level!]}`
@@ -1669,9 +1772,10 @@ export function createDomFromElementList(
         if (element.title?.disabled) {
           h.setAttribute('data-disabled', 'true')
         }
-        const childDom = buildDom(element.valueList!)
+        // 标题内不包 <p>，避免 h* > p 语义噪音
+        const childDom = buildDom(element.valueList!, false)
         h.innerHTML = childDom.innerHTML
-        clipboardDom.append(h)
+        appendStructural(h)
       } else if (element.type === ElementType.LIST) {
         const list = document.createElement(
           listTypeElementMapping[element.listType!]
@@ -1684,25 +1788,19 @@ export function createDomFromElementList(
         const listElementListMap = splitListElement(zipList)
         listElementListMap.forEach(listElementList => {
           const li = document.createElement('li')
-          const childDom = buildDom(listElementList)
+          const childDom = buildDom(listElementList, true)
           li.innerHTML = childDom.innerHTML
           list.append(li)
         })
-        clipboardDom.append(list)
+        appendStructural(list)
       } else if (element.type === ElementType.IMAGE) {
-        const img = document.createElement('img')
-        if (element.value) {
-          img.src = element.value
-          img.width = element.width!
-          img.height = element.height!
+        const img = createImageDom(element)
+        if (isFloatingImage(element)) {
+          appendStructural(img)
+        } else {
+          // 默认/行内图片与文字同属当前 <p>，保持图文并排
+          appendToParagraph(img)
         }
-        if (element.imgBorder && element.imgBorderWidth) {
-          img.style.border = `${element.imgBorderWidth}px solid ${
-            element.imgBorderColor || '#000000'
-          }`
-        }
-        setPartIdAttribute(img, element.partId)
-        clipboardDom.append(img)
       } else if (element.type === ElementType.BLOCK) {
         if (element.block?.type === BlockType.VIDEO) {
           const src = element.block.videoBlock?.src
@@ -1713,7 +1811,7 @@ export function createDomFromElementList(
             video.src = src
             video.width = element.width! || options?.width || window.innerWidth
             video.height = element.height!
-            clipboardDom.append(video)
+            appendStructural(video)
           }
         } else if (element.block?.type === BlockType.IFRAME) {
           const { src, srcdoc, sandbox, allow } =
@@ -1733,7 +1831,7 @@ export function createDomFromElementList(
               element.width || options?.width || window.innerWidth
             }`
             iframe.height = `${element.height!}`
-            clipboardDom.append(iframe)
+            appendStructural(iframe)
           }
         }
       } else if (element.type === ElementType.SEPARATOR) {
@@ -1741,34 +1839,35 @@ export function createDomFromElementList(
         if (element.dashArray?.length) {
           hr.setAttribute('data-dash-array', element.dashArray.join(','))
         }
-        clipboardDom.append(hr)
+        appendStructural(hr)
       } else if (element.type === ElementType.CHECKBOX) {
         const checkbox = document.createElement('input')
         checkbox.type = 'checkbox'
         if (element.checkbox?.value) {
           checkbox.setAttribute('checked', 'true')
         }
-        clipboardDom.append(checkbox)
+        appendToParagraph(checkbox)
       } else if (element.type === ElementType.RADIO) {
         const radio = document.createElement('input')
         radio.type = 'radio'
         if (element.radio?.value) {
           radio.setAttribute('checked', 'true')
         }
-        clipboardDom.append(radio)
+        appendToParagraph(radio)
       } else if (element.type === ElementType.TAB) {
         const tab = document.createElement('span')
         tab.innerHTML = `${NON_BREAKING_SPACE}${NON_BREAKING_SPACE}`
-        clipboardDom.append(tab)
+        appendToParagraph(tab)
       } else if (element.type === ElementType.CONTROL) {
         const controlElement = document.createElement('span')
-        const childDom = buildDom(element.control?.value || [])
+        // 控件值在 span 内，不能再嵌套 <p>
+        const childDom = buildDom(element.control?.value || [], false)
         controlElement.innerHTML = childDom.innerHTML
-        clipboardDom.append(controlElement)
+        appendToParagraph(controlElement)
       } else if (element.type === ElementType.PAGE_BREAK) {
         const pageBreakElement = document.createElement('div')
         pageBreakElement.style.breakAfter = 'page'
-        clipboardDom.append(pageBreakElement)
+        appendStructural(pageBreakElement)
       } else if (
         !element.type ||
         element.type === ElementType.LATEX ||
@@ -1780,14 +1879,20 @@ export function createDomFromElementList(
         } else {
           text = element.value
         }
-        if (!text) continue
-        const dom = convertElementToDom(element, editorOptions)
         // 前一个元素是标题，移除首行换行符
         if (payload[e - 1]?.type === ElementType.TITLE) {
-          text = text.replace(/^\n/, '')
+          text = text.replace(/^\n/, '').replace(new RegExp(`^${ZERO}`), '')
         }
-        dom.textContent = text.replace(new RegExp(`${ZERO}`, 'g'), '\n')
-        clipboardDom.append(dom)
+        if (!text) continue
+        // 纯换行：结束当前段；若已在段边界再回车则保留空 <p>
+        if (wrapParagraphs && isParagraphBreakValue(text)) {
+          if (!currentParagraph) {
+            ensureParagraph()
+          }
+          closeParagraph()
+          continue
+        }
+        appendTextPieces(element, text, false)
       }
     }
     return clipboardDom
@@ -1827,8 +1932,8 @@ export function createDomFromElementList(
     if (textIndent) {
       rowFlexDom.style.textIndent = `${textIndent}em`
     }
-    // 布局内容
-    rowFlexDom.innerHTML = buildDom(elementGroupRowFlex.data).innerHTML
+    // 布局内容：回车拆 <p>，段内图文行内并排
+    rowFlexDom.innerHTML = buildDom(elementGroupRowFlex.data, true).innerHTML
     // 未设置行布局且无首行缩进时无需容器
     if (!isDefaultRowFlex || textIndent) {
       clipboardDom.append(rowFlexDom)
@@ -2122,7 +2227,7 @@ function isAlignmentLayoutDiv(el: HTMLElement): boolean {
 
 /**
  * 相同对齐的布局 wrapper 之间不补段落换行（避免「品牌实力」等被拆成一字一行）。
- * 真正的段分隔依赖内容里的 <br>，或对齐发生变化。
+ * 真正的段分隔依赖内容里的 <p>（回车），或对齐发生变化。
  */
 function shouldSkipAlignmentLayoutBreak(
   htmlEl: HTMLElement,
@@ -2526,7 +2631,7 @@ export function getElementListByHTML(
                 childNodes[n + 1]
               )
               // 空块级保留为空段落
-              // 相同对齐的布局 div（createDom 产物）之间不补换行，段分隔靠内部 <br>
+              // 相同对齐的布局 div（createDom 产物）之间不补换行，段分隔靠内部 <p>
               // 其余块级在尚未换行、下一段也不以 <br> 开头时补换行
               if (
                 producedNothing ||

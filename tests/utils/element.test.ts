@@ -629,6 +629,45 @@ describe('createDomFromElementList', () => {
     expect(dom.tagName).toBe('DIV')
   })
 
+  it('回车拆成 p 标签，并保留图文并排在同一段', () => {
+    const list: IElement[] = [
+      { value: '前缀' },
+      {
+        type: ElementType.IMAGE,
+        value: 'data:image/png;base64,abc',
+        width: 40,
+        height: 20
+      },
+      { value: '后缀\n下一行' }
+    ]
+    const dom = createDomFromElementList(list)
+    const paragraphs = Array.from(dom.querySelectorAll('p'))
+    expect(paragraphs.length).toBe(2)
+    // 图文同属第一段
+    expect(paragraphs[0].querySelector('img')).toBeTruthy()
+    expect(paragraphs[0].textContent).toBe('前缀后缀')
+    expect(paragraphs[1].textContent).toBe('下一行')
+    expect(paragraphs[1].querySelector('img')).toBeNull()
+  })
+
+  it('连续回车产生空段落', () => {
+    const list: IElement[] = [{ value: 'A\n\nB' }]
+    const dom = createDomFromElementList(list)
+    const paragraphs = Array.from(dom.querySelectorAll('p'))
+    expect(paragraphs.length).toBe(3)
+    expect(paragraphs[0].textContent).toBe('A')
+    expect(paragraphs[1].textContent).toBe('')
+    expect(paragraphs[2].textContent).toBe('B')
+  })
+
+  it('p 段落导出可回显为换行', () => {
+    const list: IElement[] = [{ value: 'hello\nworld' }]
+    const html = createDomFromElementList(list).innerHTML
+    expect(html).toContain('<p')
+    const parsed = getElementListByHTML(html, { innerWidth: 500 })
+    expect(parsed.map(el => el.value).join('')).toBe('hello\nworld')
+  })
+
   it('标题导出时带出 id（titleId）', () => {
     const list: IElement[] = [
       {
