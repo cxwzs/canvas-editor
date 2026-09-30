@@ -232,4 +232,25 @@ describe('quickFormat utils', () => {
     expect(list[2].textIndent).toBe(2)
     expect(textOf(list)).toBe('\nimg\n文')
   })
+
+  it('跳过普通 H 标题，仅处理正文', () => {
+    const list = [
+      el(ZERO),
+      el('1', { titleId: 'h1', level: 1 as any }),
+      el('.', { titleId: 'h1', level: 1 as any }),
+      el('标', { titleId: 'h1', level: 1 as any }),
+      el('题', { titleId: 'h1', level: 1 as any }),
+      el(ZERO),
+      el('1'),
+      el('.'),
+      el('正'),
+      el('文')
+    ]
+    expect(removeNumberInRange(list)).toBe(true)
+    expect(indent2EmInRange(list)).toBe(true)
+    expect(textOf(list)).toBe('\n1.标题\n正文')
+    expect(list[1].textIndent).toBeUndefined()
+    expect(list[5].textIndent).toBe(2)
+    expect(list[6].value).toBe('正')
+  })
 })

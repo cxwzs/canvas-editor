@@ -10,22 +10,35 @@ import { isTextLikeElement } from './element'
 export const INDENT_SPACE_CHAR = '\u3000'
 
 /**
- * 快速格式类操作应跳过：只读 area、disabled 元素、禁用标题（title.disabled）、图片
+ * 是否为标题元素（H 标签 / data-title 等，含 titleId、level）
+ */
+export function isTitleElement(element: IElement | undefined): boolean {
+  if (!element) return false
+  if (element.type === ElementType.TITLE) return true
+  if (element.level != null) return true
+  if (element.titleId) return true
+  if (element.title) return true
+  return false
+}
+
+/**
+ * 快速格式类操作应跳过：标题、图片、只读 area、disabled 元素
+ * （仅正文受影响）
  */
 export function isFormatProtectedElement(
   element: IElement | undefined
 ): boolean {
   if (!element) return false
   if (element.type === ElementType.IMAGE) return true
+  if (isTitleElement(element)) return true
   if (element.disabled === true) return true
-  if (element.title?.disabled === true) return true
   if (element.area?.mode === AreaMode.READONLY) return true
   return false
 }
 
 /**
  * 段落是否受保护。
- * 以段内首个有效内容为准，避免「禁用标题→正文」交界 ZERO（自身带 title.disabled）
+ * 以段内首个有效内容为准，避免「标题→正文」交界 ZERO（自身带 titleId）
  * 把紧邻正文段误判为受保护。
  */
 function isParagraphProtected(
@@ -47,10 +60,10 @@ function isParagraphProtected(
     return isFormatProtectedElement(el)
   }
   // 空段：标题交界换行不可删/改
-  return !!paraStartEl?.title?.disabled
+  return isTitleElement(paraStartEl)
 }
 
-/** 段内元素是否可改；段首 ZERO 即使带 title.disabled（标题交界）也允许随正文段处理 */
+/** 段内元素是否可改；段首 ZERO 即使带标题交界属性也允许随正文段处理 */
 function canMutateParagraphElement(
   element: IElement,
   isParaStart: boolean
@@ -124,11 +137,7 @@ function copyContextAttrs(source: IElement): Partial<IElement> {
     attrs.listStyle = source.listStyle
     attrs.listLevel = source.listLevel
   }
-  // 标题交界 ZERO 带 title.disabled，插入的正文空格不应继承标题属性
-  if (source.titleId && !source.title?.disabled) {
-    attrs.titleId = source.titleId
-    attrs.level = source.level
-  }
+  // 不继承标题属性，避免正文缩进空格被标成标题
   return attrs
 }
 
