@@ -110,7 +110,10 @@ import {
 } from '../../utils'
 import { locationCatalogByTitleId } from '../../utils/catalog'
 import { getParagraphNo } from '../../utils/paragraph'
-import { applyQuickFormat, isFormatProtectedElement } from '../../utils/quickFormat'
+import {
+  applyQuickFormat,
+  isMutationProtectedElement
+} from '../../utils/quickFormat'
 import {
   createDomFromElementList,
   formatElementContext,
@@ -1648,7 +1651,7 @@ export class CommandAdapt {
       const run = runs[r]
       // 清除行首换行符的缩进/对齐，避免可用宽度变窄或两端对齐插空
       const prev = elementList[run.start - 1]
-      if (prev?.value === ZERO && !isFormatProtectedElement(prev)) {
+      if (prev?.value === ZERO && !isMutationProtectedElement(prev)) {
         prev.rowFlex = RowFlex.LEFT
         delete prev.textIndent
       }
@@ -1704,7 +1707,7 @@ export class CommandAdapt {
       const head = elementList[i]
       if (
         head?.type !== ElementType.IMAGE ||
-        isFormatProtectedElement(head)
+        isMutationProtectedElement(head)
       ) {
         i++
         continue
@@ -1715,7 +1718,7 @@ export class CommandAdapt {
       while (i < end) {
         const el = elementList[i]
         if (el.type === ElementType.IMAGE) {
-          if (isFormatProtectedElement(el)) break
+          if (isMutationProtectedElement(el)) break
           images.push(el)
           lastImageIndex = i
           i++
@@ -1731,7 +1734,7 @@ export class CommandAdapt {
         if (
           j < end &&
           elementList[j].type === ElementType.IMAGE &&
-          !isFormatProtectedElement(elementList[j])
+          !isMutationProtectedElement(elementList[j])
         ) {
           i = j
           continue

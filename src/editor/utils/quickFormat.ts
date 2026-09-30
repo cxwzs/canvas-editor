@@ -22,6 +22,20 @@ export function isTitleElement(element: IElement | undefined): boolean {
 }
 
 /**
+ * 元素自身不可改：标题、只读 area、disabled
+ * （不含「图片应跳过文本排版」——图片排版/表格自适应等需单独判断）
+ */
+export function isMutationProtectedElement(
+  element: IElement | undefined
+): boolean {
+  if (!element) return false
+  if (isTitleElement(element)) return true
+  if (element.disabled === true) return true
+  if (element.area?.mode === AreaMode.READONLY) return true
+  return false
+}
+
+/**
  * 快速格式类操作应跳过：标题、图片、只读 area、disabled 元素
  * （仅正文受影响）
  */
@@ -30,10 +44,7 @@ export function isFormatProtectedElement(
 ): boolean {
   if (!element) return false
   if (element.type === ElementType.IMAGE) return true
-  if (isTitleElement(element)) return true
-  if (element.disabled === true) return true
-  if (element.area?.mode === AreaMode.READONLY) return true
-  return false
+  return isMutationProtectedElement(element)
 }
 
 /**
