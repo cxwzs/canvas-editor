@@ -282,7 +282,12 @@ export class Area {
         ? area.placeholder
         : this.options.placeholder
       const isBodyEmpty = this.isAreaBodyEmpty(elementList)
-      const needPlaceholder = !!(placeholderOption?.data && isBodyEmpty)
+      // 预览模式不显示 placeholder
+      const needPlaceholder = !!(
+        !this.draw.isPreview() &&
+        placeholderOption?.data &&
+        isBodyEmpty
+      )
       if (
         !area?.backgroundColor &&
         !area?.borderColor &&

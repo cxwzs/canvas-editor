@@ -3473,8 +3473,12 @@ export class Draw {
     if (!isPrintMode && this.search.getSearchKeyword()) {
       this.search.render(ctx, pageNo)
     }
-    // 绘制空白占位符
-    if (this.elementList.length <= 1 && !this.elementList[0]?.listId) {
+    // 绘制空白占位符（预览模式不显示）
+    if (
+      !this.isPreview() &&
+      this.elementList.length <= 1 &&
+      !this.elementList[0]?.listId
+    ) {
       this.placeholder.render(ctx)
     }
     // 渲染行数
