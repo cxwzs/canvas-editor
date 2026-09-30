@@ -1,5 +1,6 @@
 import { ZERO } from '../dataset/constant/Common'
 import { TEXT_INDENT_STEP } from '../dataset/constant/Element'
+import { AreaMode } from '../dataset/enum/Area'
 import { ElementType } from '../dataset/enum/Element'
 import { QuickFormatAction } from '../dataset/enum/QuickFormat'
 import { IElement } from '../interface/Element'
@@ -7,6 +8,56 @@ import { isTextLikeElement } from './element'
 
 /** 首行缩进用的全角空格 */
 export const INDENT_SPACE_CHAR = '\u3000'
+
+/**
+ * 快速格式类操作应跳过：只读 area、disabled 元素、禁用标题（title.disabled）、图片
+ */
+export function isFormatProtectedElement(
+  element: IElement | undefined
+): boolean {
+  if (!element) return false
+  if (element.type === ElementType.IMAGE) return true
+  if (element.disabled === true) return true
+  if (element.title?.disabled === true) return true
+  if (element.area?.mode === AreaMode.READONLY) return true
+  return false
+}
+
+/**
+ * 段落是否受保护。
+ * 以段内首个有效内容为准，避免「禁用标题→正文」交界 ZERO（自身带 title.disabled）
+ * 把紧邻正文段误判为受保护。
+ */
+function isParagraphProtected(
+  elementList: IElement[],
+  paraStart: number
+): boolean {
+  const paraStartEl = elementList[paraStart]
+  if (paraStartEl?.disabled === true) return true
+  if (paraStartEl?.area?.mode === AreaMode.READONLY) return true
+
+  const contentEnd = paragraphContentEnd(
+    elementList,
+    paraStart,
+    elementList.length
+  )
+  for (let i = paraStart + 1; i < contentEnd; i++) {
+    const el = elementList[i]
+    if (isSpaceElement(el)) continue
+    return isFormatProtectedElement(el)
+  }
+  // 空段：标题交界换行不可删/改
+  return !!paraStartEl?.title?.disabled
+}
+
+/** 段内元素是否可改；段首 ZERO 即使带 title.disabled（标题交界）也允许随正文段处理 */
+function canMutateParagraphElement(
+  element: IElement,
+  isParaStart: boolean
+): boolean {
+  if (isParaStart) return true
+  return !isFormatProtectedElement(element)
+}
 
 const MANUAL_NUMBER_PATTERNS: RegExp[] = [
   // 多级编号：1.1 / 1.1.1 / 1.1.1. 等（需优先于单级匹配）
@@ -73,7 +124,8 @@ function copyContextAttrs(source: IElement): Partial<IElement> {
     attrs.listStyle = source.listStyle
     attrs.listLevel = source.listLevel
   }
-  if (source.titleId) {
+  // 标题交界 ZERO 带 title.disabled，插入的正文空格不应继承标题属性
+  if (source.titleId && !source.title?.disabled) {
     attrs.titleId = source.titleId
     attrs.level = source.level
   }
@@ -143,10 +195,15 @@ export function removeLeadingSpacesInRange(
   // 从后往前删，避免索引错位
   for (let p = paraStarts.length - 1; p >= 0; p--) {
     const paraStart = paraStarts[p]
+    if (isParagraphProtected(elementList, paraStart)) continue
     const contentEnd = paragraphContentEnd(elementList, paraStart, end)
     const removeStart = paraStart + 1
     let removeEnd = removeStart
-    while (removeEnd < contentEnd && isSpaceElement(elementList[removeEnd])) {
+    while (
+      removeEnd < contentEnd &&
+      isSpaceElement(elementList[removeEnd]) &&
+      !isFormatProtectedElement(elementList[removeEnd])
+    ) {
       removeEnd++
     }
     if (removeEnd > removeStart) {
@@ -166,7 +223,9 @@ export function removeSpacesInRange(
   let changed = false
   const to = Math.min(end, elementList.length)
   for (let i = to - 1; i >= start; i--) {
-    if (isSpaceElement(elementList[i])) {
+    const el = elementList[i]
+    if (isFormatProtectedElement(el)) continue
+    if (isSpaceElement(el)) {
       elementList.splice(i, 1)
       changed = true
     }
@@ -186,6 +245,7 @@ export function deleteBlankParagraphsInRange(
   // 从后往前处理；至少保留文档中一个 ZERO
   for (let p = paraStarts.length - 1; p >= 0; p--) {
     const paraStart = paraStarts[p]
+    if (isParagraphProtected(elementList, paraStart)) continue
     const contentEnd = paragraphContentEnd(
       elementList,
       paraStart,
@@ -226,12 +286,14 @@ export function indent2EmInRange(
   let changed = false
   for (let p = 0; p < paraStarts.length; p++) {
     const paraStart = paraStarts[p]
+    if (isParagraphProtected(elementList, paraStart)) continue
     const contentEnd = paragraphContentEnd(elementList, paraStart, end)
     // 空段不缩进
     if (isBlankParagraphContent(elementList, paraStart + 1, contentEnd)) {
       continue
     }
     for (let i = paraStart; i < contentEnd; i++) {
+      if (!canMutateParagraphElement(elementList[i], i === paraStart)) continue
       if (elementList[i].textIndent !== TEXT_INDENT_STEP) {
         elementList[i].textIndent = TEXT_INDENT_STEP
         changed = true
@@ -254,12 +316,14 @@ export function indentSpaceInRange(
   // 从后往前插入
   for (let p = paraStarts.length - 1; p >= 0; p--) {
     const paraStart = paraStarts[p]
+    if (isParagraphProtected(elementList, paraStart)) continue
     const contentEnd = paragraphContentEnd(elementList, paraStart, end)
     if (isBlankParagraphContent(elementList, paraStart + 1, contentEnd)) {
       continue
     }
     // 清除缩进属性
     for (let i = paraStart; i < contentEnd; i++) {
+      if (!canMutateParagraphElement(elementList[i], i === paraStart)) continue
       if (elementList[i].textIndent != null) {
         delete elementList[i].textIndent
         changed = true
@@ -304,12 +368,14 @@ export function removeNumberInRange(
   let changed = false
   for (let p = paraStarts.length - 1; p >= 0; p--) {
     const paraStart = paraStarts[p]
+    if (isParagraphProtected(elementList, paraStart)) continue
     const contentEnd = paragraphContentEnd(elementList, paraStart, end)
     const cursor = paraStart + 1
     const maxProbe = Math.min(contentEnd, cursor + 32)
     let text = ''
     for (let i = cursor; i < maxProbe; i++) {
       const el = elementList[i]
+      if (isFormatProtectedElement(el)) break
       if (!isTextLikeElement(el) || el.value === ZERO) break
       text += el.value
     }
@@ -317,7 +383,7 @@ export function removeNumberInRange(
     if (!remaining) continue
     while (remaining > 0) {
       const el = elementList[paraStart + 1]
-      if (!el) break
+      if (!el || isFormatProtectedElement(el)) break
       const elLen = el.value.length
       if (elLen <= remaining) {
         elementList.splice(paraStart + 1, 1)
@@ -379,10 +445,12 @@ function applyToTablesInRange(
   for (let i = start; i < to; i++) {
     const el = elementList[i]
     if (el?.type !== ElementType.TABLE || !el.trList) continue
+    if (isFormatProtectedElement(el)) continue
     for (let r = 0; r < el.trList.length; r++) {
       const tr = el.trList[r]
       for (let c = 0; c < tr.tdList.length; c++) {
         const td = tr.tdList[c]
+        if (td.disabled) continue
         if (!td.value?.length) continue
         if (applyQuickFormat(td.value, action, 0, td.value.length)) {
           changed = true

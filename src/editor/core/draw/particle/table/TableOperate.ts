@@ -12,6 +12,7 @@ import {
   formatElementContext,
   formatElementList
 } from '../../../../utils/element'
+import { isFormatProtectedElement } from '../../../../utils/quickFormat'
 import {
   scaleColgroupToWidth,
   shrinkColgroupToWidth
@@ -1038,6 +1039,7 @@ export class TableOperate {
     for (let i = rangeStart; i < rangeEnd; i++) {
       const element = elementList[i]
       if (element?.type === ElementType.TABLE) {
+        if (isFormatProtectedElement(element)) continue
         tables.push(element)
       }
     }
@@ -1055,6 +1057,7 @@ export class TableOperate {
       const originalElementList = this.draw.getOriginalElementList()
       const element = originalElementList[index!]
       if (element?.type !== ElementType.TABLE) return
+      if (isFormatProtectedElement(element)) return
       this._autoFitTableToPage(element)
       const { endIndex } = this.range.getRange()
       this.draw.render({ curIndex: endIndex })
@@ -1068,7 +1071,9 @@ export class TableOperate {
     if (hasSelection) {
       if (isCrossRowCol) {
         const tableElement = this.range.getRangeTableElement()
-        if (tableElement) tables.push(tableElement)
+        if (tableElement && !isFormatProtectedElement(tableElement)) {
+          tables.push(tableElement)
+        }
       }
       const elementList = this.draw.getElementList()
       const rangeStart =

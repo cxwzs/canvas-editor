@@ -149,4 +149,87 @@ describe('quickFormat utils', () => {
     const tdValue = list[1].trList![0].tdList[0].value
     expect(textOf(tdValue)).toBe('\nx')
   })
+
+  it('跳过只读 area 与 disabled 元素', () => {
+    const list = [
+      el(ZERO, { area: { mode: 'readonly' as any } }),
+      el(' ', { area: { mode: 'readonly' as any } }),
+      el('a', { area: { mode: 'readonly' as any } }),
+      el(ZERO),
+      el(' ', { disabled: true }),
+      el('b', { disabled: true }),
+      el(ZERO),
+      el(' '),
+      el('c')
+    ]
+    expect(removeLeadingSpacesInRange(list)).toBe(true)
+    expect(textOf(list)).toBe('\n a\n b\nc')
+    expect(list[1].value).toBe(' ')
+    expect(list[4].value).toBe(' ')
+  })
+
+  it('跳过 title.disabled 的标题内容（含段首 ZERO 未带 title 的情况）', () => {
+    const list = [
+      // 段首 ZERO 无 title，正文带 title.disabled（模拟 H 标签禁用标题）
+      el(ZERO),
+      el('1', { title: { disabled: true }, titleId: 't1' }),
+      el('.', { title: { disabled: true }, titleId: 't1' }),
+      el('标', { title: { disabled: true }, titleId: 't1' }),
+      el('题', { title: { disabled: true }, titleId: 't1' }),
+      el(ZERO),
+      el('1'),
+      el('.'),
+      el('正'),
+      el('文')
+    ]
+    expect(removeNumberInRange(list)).toBe(true)
+    expect(indent2EmInRange(list)).toBe(true)
+    // 禁用标题段未被清编号、未缩进
+    expect(textOf(list)).toBe('\n1.标题\n正文')
+    expect(list[0].textIndent).toBeUndefined()
+    expect(list[1].textIndent).toBeUndefined()
+    // 正文段被清编号并缩进
+    expect(list[5].textIndent).toBe(2)
+    expect(list[6].value).toBe('正')
+  })
+
+  it('禁用标题交界 ZERO 不误伤紧邻正文段', () => {
+    // data-title 展开后：标题内容 + 带 title.disabled 的交界 ZERO + 正文
+    const list = [
+      el(ZERO, { title: { disabled: true }, titleId: 'area1' }),
+      el('标', { title: { disabled: true }, titleId: 'area1' }),
+      el('题', { title: { disabled: true }, titleId: 'area1' }),
+      el(ZERO, { title: { disabled: true }, titleId: 'area1' }),
+      el(' '),
+      el('1'),
+      el('.'),
+      el('正'),
+      el('文')
+    ]
+    expect(removeLeadingSpacesInRange(list)).toBe(true)
+    expect(removeNumberInRange(list)).toBe(true)
+    expect(indent2EmInRange(list)).toBe(true)
+    expect(textOf(list)).toBe('\n标题\n正文')
+    // 交界 ZERO 作为正文段首，应能设置缩进
+    expect(list[3].textIndent).toBe(2)
+    expect(list[4].value).toBe('正')
+    expect(list[4].textIndent).toBe(2)
+  })
+
+  it('跳过图片段落', () => {
+    const list = [
+      el(ZERO),
+      { value: 'img', type: 'image' as any, width: 100, height: 100 },
+      el(ZERO),
+      el('1'),
+      el('.'),
+      el('文')
+    ]
+    expect(indent2EmInRange(list)).toBe(true)
+    expect(removeNumberInRange(list)).toBe(true)
+    expect(list[0].textIndent).toBeUndefined()
+    expect((list[1] as IElement).textIndent).toBeUndefined()
+    expect(list[2].textIndent).toBe(2)
+    expect(textOf(list)).toBe('\nimg\n文')
+  })
 })
