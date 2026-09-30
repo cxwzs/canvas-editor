@@ -60,10 +60,102 @@
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: center;
   background: #fff;
   box-shadow: 0 2px 4px 0 transparent;
   border-bottom: 1px solid rgba(0, 0, 0, .08);
+}
+
+/* 菜单栏横向滚动：内容最小宽度，不足时显示左右箭头 */
+.menu-scroll {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu.has-scroll .menu-scroll {
+  justify-content: flex-start;
+}
+
+.menu.has-scroll .menu-scroll__inner {
+  padding: 0 28px;
+  box-sizing: border-box;
+}
+
+.menu-scroll__inner {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  min-width: 1200px;
+  will-change: transform;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.menu-scroll__inner > .menu-item,
+.menu-scroll__inner > .menu-divider {
+  flex-shrink: 0;
+}
+
+.menu-arrow {
+  display: none;
+  position: absolute;
+  top: 0;
+  z-index: 10;
+  width: 28px;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  cursor: pointer;
+  user-select: none;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.08);
+}
+
+.menu.has-scroll .menu-arrow {
+  display: flex;
+}
+
+.menu-arrow:hover {
+  background: #f4f5f7;
+}
+
+.menu-arrow.disable {
+  cursor: default;
+  pointer-events: none;
+}
+
+.menu-arrow.disable i {
+  opacity: 0.35;
+}
+
+.menu-arrow--left {
+  left: 0;
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.menu-arrow--right {
+  right: 0;
+  border-left: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.menu-arrow i {
+  width: 6px;
+  height: 8px;
+  display: inline-block;
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center;
+}
+
+.menu-arrow--left i {
+  background-image: url('../../../assets/images/arrow-left.svg');
+}
+
+.menu-arrow--right i {
+  background-image: url('../../../assets/images/arrow-right.svg');
 }
 
 .menu-divider {

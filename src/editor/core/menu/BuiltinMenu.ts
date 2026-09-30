@@ -246,6 +246,50 @@ export class BuiltinMenu {
     return this.host.querySelectorAll(selector)
   }
 
+  private bindMenuScroll() {
+    const menu = this.host.querySelector<HTMLElement>('.menu')
+    if (!menu) return
+    const scroll = menu.querySelector<HTMLElement>('.menu-scroll')
+    const inner = menu.querySelector<HTMLElement>('.menu-scroll__inner')
+    const leftArrow = menu.querySelector<HTMLElement>('.menu-arrow--left')
+    const rightArrow = menu.querySelector<HTMLElement>('.menu-arrow--right')
+    if (!scroll || !inner || !leftArrow || !rightArrow) return
+
+    const SCROLL_STEP = 240
+    let offset = 0
+
+    const update = () => {
+      let maxOffset = Math.max(0, inner.scrollWidth - scroll.clientWidth)
+      menu.classList.toggle('has-scroll', maxOffset > 0)
+      // padding 变化后重新测量
+      maxOffset = Math.max(0, inner.scrollWidth - scroll.clientWidth)
+      const hasScroll = maxOffset > 0
+      menu.classList.toggle('has-scroll', hasScroll)
+      offset = Math.min(Math.max(0, offset), maxOffset)
+      inner.style.transform = hasScroll ? `translateX(${-offset}px)` : ''
+      leftArrow.classList.toggle('disable', offset <= 0)
+      rightArrow.classList.toggle('disable', offset >= maxOffset)
+    }
+
+    leftArrow.onclick = evt => {
+      evt.stopPropagation()
+      offset = Math.max(0, offset - SCROLL_STEP)
+      update()
+    }
+    rightArrow.onclick = evt => {
+      evt.stopPropagation()
+      const maxOffset = Math.max(0, inner.scrollWidth - scroll.clientWidth)
+      offset = Math.min(maxOffset, offset + SCROLL_STEP)
+      update()
+    }
+
+    const resizeObserver = new ResizeObserver(() => update())
+    resizeObserver.observe(scroll)
+    resizeObserver.observe(inner)
+    this.disposeList.push(() => resizeObserver.disconnect())
+    update()
+  }
+
   private bind() {
     const isApple = this.isApple
     const editor = this.editor
@@ -260,6 +304,9 @@ export class BuiltinMenu {
     this.disposeList.push(() => {
       window.removeEventListener('click', onWinClick, { capture: true })
     })
+
+    // 菜单栏宽度不足时左右箭头横向滚动
+    this.bindMenuScroll()
 
   // 2. | 撤销 | 重做 | 格式刷 | 清除格式 |
   const undoDom = q('.menu-item__undo')
