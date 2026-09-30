@@ -381,6 +381,7 @@ Developer integration, extension mechanisms, and runtime capabilities.
   <div class="it"><b>Drag cursor</b><span>Drag cursor width / color</span></div>
   <div class="it"><b>History limit</b><span>historyMaxRecordCount</span></div>
   <div class="it"><b>Page-outer selection disable</b><span>pageOuterSelectionDisable</span></div>
+  <div class="it"><b>Autofocus on init</b><span>autofocus</span></div>
   <div class="it"><b>Font-size bounds</b><span>minSize / maxSize</span></div>
   <div class="it"><b>Hot-update options</b><span><code>updateOptions</code> without remount</span></div>
   <div class="it"><b>Command interceptor</b><span><code>setInterceptor</code> intercepts every command call (analytics / audit)</span></div>

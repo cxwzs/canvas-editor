@@ -64,6 +64,7 @@ interface IEditorOption {
   shortcutDisableKeys?: string[] // Disable shortcut keys. default: []
   scrollContainerSelector?: string // scroll container selector. default: .ce-has-builtin-menu
   pageOuterSelectionDisable?: boolean // Disable selection when the mouse moves out of the page. default: false
+  autofocus?: boolean // Whether to autofocus after initialization. default: false
   wordBreak?: WordBreak // Word and punctuation breaks: No punctuation in the first line of the BREAK_WORD &The word is not split, and the line is folded after BREAK_ALL full according to the width of the character. default: BREAK_WORD
   watermark?: IWatermark // Watermark configuration
   control?: IControlOption // Control configuration

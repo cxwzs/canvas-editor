@@ -94,6 +94,8 @@ export interface IEditorOption {
   shortcutDisableKeys?: string[]
   scrollContainerSelector?: string
   pageOuterSelectionDisable?: boolean
+  /** 初始化完成后是否自动获取焦点。默认：false */
+  autofocus?: boolean
   wordBreak?: WordBreak
   table?: ITableOption
   header?: IHeader
@@ -160,6 +162,7 @@ export type IUpdateOption = Omit<
   | 'scrollContainerSelector'
   | 'menu'
   | 'footerBar'
+  | 'autofocus'
 >
 
 export interface ISetValueOption {

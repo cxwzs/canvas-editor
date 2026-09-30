@@ -356,10 +356,19 @@ export class Draw {
     if (this.mode === EditorMode.PRINT) {
       this.setPrintData()
     }
+    const autofocus =
+      options.autofocus && this.elementList.length > 0
+    const initCurIndex = autofocus
+      ? this.elementList.length - 1
+      : undefined
+    if (autofocus && initCurIndex !== undefined) {
+      this.range.setRange(initCurIndex, initCurIndex)
+    }
     this.render({
       isInit: true,
-      isSetCursor: false,
-      isFirstRender: true
+      isSetCursor: autofocus,
+      isFirstRender: true,
+      curIndex: initCurIndex
     })
     // 初始数据中可能含待加载图片
     this.imageParticle.preloadPendingImages()

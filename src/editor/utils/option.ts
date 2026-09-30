@@ -307,6 +307,7 @@ export function mergeOption(
     contextMenuDisableKeys: [],
     shortcutDisableKeys: [],
     pageOuterSelectionDisable: false,
+    autofocus: false,
     ...options,
     table: tableOptions,
     header: headerOptions,

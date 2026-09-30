@@ -64,6 +64,7 @@ interface IEditorOption {
   shortcutDisableKeys?: string[] // 禁用的快捷键。默认：[]
   scrollContainerSelector?: string // 滚动区域选择器。默认：.ce-has-builtin-menu
   pageOuterSelectionDisable?: boolean // 鼠标移出页面时选区禁用。默认：false
+  autofocus?: boolean // 初始化完成后是否自动获取焦点。默认：false
   wordBreak?: WordBreak // 单词与标点断行：BREAK_WORD首行不出现标点&单词不拆分、BREAK_ALL按字符宽度撑满后折行。默认：BREAK_WORD
   watermark?: IWatermark // 水印配置
   control?: IControlOption // 控件配置

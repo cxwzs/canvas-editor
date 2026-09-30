@@ -381,6 +381,7 @@ canvas-editor 提供完整的「类 Word」文档编辑能力,按使用场景分
   <div class="it"><b>拖拽光标</b><span>拖拽光标宽度 / 颜色</span></div>
   <div class="it"><b>历史记录上限</b><span>historyMaxRecordCount</span></div>
   <div class="it"><b>页外禁用选区</b><span>pageOuterSelectionDisable</span></div>
+  <div class="it"><b>初始化自动聚焦</b><span>autofocus</span></div>
   <div class="it"><b>字号上下限</b><span>minSize / maxSize</span></div>
   <div class="it"><b>热更新配置</b><span><code>updateOptions</code> 不重挂载更新</span></div>
   <div class="it"><b>命令拦截器</b><span><code>setInterceptor</code> 拦截全部命令调用(埋点 / 审计)</span></div>

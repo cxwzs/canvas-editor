@@ -704,6 +704,7 @@ export const commentList: IComment[] = [
 ]
 
 export const options: IEditorOption = {
+  autofocus: false,
   pageVirtualScroll: true, // 是否启用虚拟滚动
   margins: [75, 75, 75, 75],
   width: 793,
