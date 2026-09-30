@@ -428,26 +428,24 @@ export class BuiltinMenu {
           const borderWidth = Number(
             payload.find(p => p.name === 'borderWidth')?.value
           )
-          // 先展示 toast，等绘制完成后再排版，避免主线程阻塞导致提示不出现
+          // 先展示 toast，再让出主线程排版，避免提示被同步计算卡住
           const toast = showToast(
             editor.command.getContainer(),
             '正在排版图片，请稍候…',
             { duration: 0 }
           )
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              try {
-                editor.command.executeImageAutoLayout({
-                  border,
-                  borderColor,
-                  borderWidth: borderWidth > 0 ? borderWidth : 1,
-                  perRow
-                })
-              } finally {
-                toast.close()
-              }
-            })
-          })
+          window.setTimeout(() => {
+            try {
+              editor.command.executeImageAutoLayout({
+                border,
+                borderColor,
+                borderWidth: borderWidth > 0 ? borderWidth : 1,
+                perRow
+              })
+            } finally {
+              toast.close()
+            }
+          }, 0)
         }
       })
       return

@@ -1681,12 +1681,18 @@ export class CommandAdapt {
       }
       return runs[0].start
     })()
+    // 不跟光标页挂载虚拟窗口，避免当前滚动位置上的 canvas 被挪走造成错乱
     this.draw.render({
-      isSetCursor: !!~endIndex,
-      curIndex: ~endIndex ? endIndex : undefined,
+      isSetCursor: false,
       changeStartIndex,
       isCompute: true
     })
+    if (this.draw.getIsVirtualPageMode()) {
+      this.draw.syncVirtualPages(this.draw.getIntersectionPageNo(), {
+        force: true,
+        isDraw: true
+      })
+    }
   }
 
   private _isImageAutoLayoutIgnorable(element: IElement): boolean {

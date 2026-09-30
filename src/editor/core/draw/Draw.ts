@@ -3662,8 +3662,13 @@ export class Draw {
           this.setPageNo(cursorPageNo)
         }
       }
+      // 不跟光标时按当前可视页挂载窗口，避免整篇排版后画布跳到光标页、
+      // 滚动位置仍停在原处导致内容重叠/错位，滚动后才恢复
+      const windowCenter = isSetCursor
+        ? this.pageNo
+        : this.intersectionPageNo
       const centerPageNo = Math.min(
-        Math.max(this.pageNo, 0),
+        Math.max(windowCenter, 0),
         Math.max(this.pageRowList.length - 1, 0)
       )
       const isPageDirectionChanged =
