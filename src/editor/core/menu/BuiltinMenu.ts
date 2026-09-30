@@ -2133,6 +2133,56 @@ export class BuiltinMenu {
     editor.command.executeToggleTrace(traceToggleDom.checked)
   }
 
+  // 菜单禁用：只读 / 无选区 / 控件内（统一计算，避免互相覆盖）
+  const READONLY_ENABLE_MENUS = ['search', 'print']
+  const NO_RANGE_ENABLE_MENUS = ['search', 'print', 'undo', 'redo']
+  const CONTROL_DISABLE_MENUS = [
+    'table',
+    'hyperlink',
+    'separator',
+    'page-break',
+    'control'
+  ]
+  let isControlActive = false
+
+  const getMenuItemKey = (dom: HTMLElement): string | null => {
+    if (dom.dataset.menu) return dom.dataset.menu
+    for (const cls of Array.from(dom.classList)) {
+      if (!cls.startsWith('menu-item__')) continue
+      const key = cls.slice('menu-item__'.length)
+      // 跳过嵌套类名，如 menu-item__search__collapse
+      if (key.includes('__')) continue
+      return key
+    }
+    return null
+  }
+
+  const syncMenuDisable = () => {
+    const mode = editor.command.getOptions().mode
+    const isReadonly =
+      mode === EditorMode.READONLY ||
+      mode === EditorMode.TRACE ||
+      mode === EditorMode.PREVIEW
+    const { startIndex, endIndex } = editor.command.getRange()
+    const hasRange = !!~startIndex && !!~endIndex
+    qa('.menu-item>div').forEach(dom => {
+      const menu = getMenuItemKey(dom)
+      let disabled = false
+      if (isReadonly) {
+        disabled = !menu || !READONLY_ENABLE_MENUS.includes(menu)
+      } else if (!hasRange) {
+        disabled = !menu || !NO_RANGE_ENABLE_MENUS.includes(menu)
+      } else if (
+        isControlActive &&
+        menu &&
+        CONTROL_DISABLE_MENUS.includes(menu)
+      ) {
+        disabled = true
+      }
+      dom.classList.toggle('disable', disabled)
+    })
+  }
+
   const syncModeUI = (mode: EditorMode) => {
     modeTextElement.innerText = modeTextMap[mode] || modeTextMap[EditorMode.EDIT]
     modeOptionsElement.querySelectorAll<HTMLLIElement>('li').forEach(li => {
@@ -2140,18 +2190,7 @@ export class BuiltinMenu {
     })
     // 预览模式隐藏菜单栏与底部工具栏
     this.host.classList.toggle('ce-preview-mode', mode === EditorMode.PREVIEW)
-    // 设置菜单栏权限视觉反馈
-    const isReadonly =
-      mode === EditorMode.READONLY ||
-      mode === EditorMode.TRACE ||
-      mode === EditorMode.PREVIEW
-    const enableMenuList = ['search', 'print']
-    qa('.menu-item>div').forEach(dom => {
-      const menu = dom.dataset.menu
-      isReadonly && (!menu || !enableMenuList.includes(menu))
-        ? dom.classList.add('disable')
-        : dom.classList.remove('disable')
-    })
+    syncMenuDisable()
     // 留痕查看模式禁止切回记录态
     traceToggleDom.disabled = mode === EditorMode.TRACE
   }
@@ -2183,6 +2222,8 @@ export class BuiltinMenu {
 
   // 8. 内部事件监听
   const onRangeStyleChange = (payload: IRangeStyle) => {
+    // 选区样式变化时同步菜单可用态（含进入控件时 rangeChange 可能未抛出的场景）
+    syncMenuDisable()
     // 控件类型
     payload.type === ElementType.SUBSCRIPT
       ? subscriptDom.classList.add('active')
@@ -2369,22 +2410,12 @@ export class BuiltinMenu {
   }
 
   const onControlChange = (payload: { state: ControlState }) => {
-    const disableMenusInControlContext = [
-      'table',
-      'hyperlink',
-      'separator',
-      'page-break',
-      'control'
-    ]
-    // 菜单操作权限
-    disableMenusInControlContext.forEach(menu => {
-      const menuDom = q(
-        `.menu-item__${menu}`
-      )
-      payload.state === ControlState.ACTIVE
-        ? menuDom.classList.add('disable')
-        : menuDom.classList.remove('disable')
-    })
+    isControlActive = payload.state === ControlState.ACTIVE
+    syncMenuDisable()
+  }
+
+  const onRangeChange = () => {
+    syncMenuDisable()
   }
 
   const onPageModeChange = (payload: PageMode) => {
@@ -2462,6 +2493,7 @@ export class BuiltinMenu {
   ])
 
     editor.eventBus.on('rangeStyleChange', onRangeStyleChange)
+    editor.eventBus.on('rangeChange', onRangeChange)
     editor.eventBus.on(
       'visiblePageNoListChange',
       onVisiblePageNoListChange
@@ -2477,6 +2509,7 @@ export class BuiltinMenu {
     this.disposeList.push(() => {
       editor.eventBus.off('contentChange', onContentChange)
       editor.eventBus.off('rangeStyleChange', onRangeStyleChange)
+      editor.eventBus.off('rangeChange', onRangeChange)
       editor.eventBus.off(
         'visiblePageNoListChange',
         onVisiblePageNoListChange
