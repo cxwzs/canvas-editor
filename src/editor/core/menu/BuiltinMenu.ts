@@ -246,6 +246,66 @@ export class BuiltinMenu {
     return this.host.querySelectorAll(selector)
   }
 
+  private getMenuPopups(): HTMLElement[] {
+    return Array.from(
+      this.host.querySelectorAll<HTMLElement>(
+        '.menu .options, .menu .menu-item__table__collapse, .menu .menu-item__search__collapse'
+      )
+    )
+  }
+
+  private isMenuPopupOpen(popup: HTMLElement): boolean {
+    if (popup.classList.contains('options')) {
+      return popup.classList.contains('visible')
+    }
+    const display = popup.style.display || getComputedStyle(popup).display
+    return display !== 'none'
+  }
+
+  private resetMenuPopupPosition(popup: HTMLElement) {
+    popup.style.left = ''
+    popup.style.right = ''
+  }
+
+  /** 将菜单弹窗限制在编辑器宿主可视范围内，避免横向滚动后溢出 */
+  private adjustMenuPopupPosition(popup: HTMLElement) {
+    if (!this.isMenuPopupOpen(popup)) {
+      this.resetMenuPopupPosition(popup)
+      return
+    }
+    popup.style.right = 'unset'
+    popup.style.left = '0px'
+    const hostRect = this.host.getBoundingClientRect()
+    let left = 0
+    let popupRect = popup.getBoundingClientRect()
+    if (popupRect.right > hostRect.right) {
+      left += hostRect.right - popupRect.right - 4
+    }
+    popup.style.left = `${left}px`
+    popupRect = popup.getBoundingClientRect()
+    if (popupRect.left < hostRect.left) {
+      left += hostRect.left - popupRect.left + 4
+      popup.style.left = `${left}px`
+    }
+  }
+
+  private adjustOpenMenuPopups() {
+    this.getMenuPopups().forEach(popup => this.adjustMenuPopupPosition(popup))
+  }
+
+  private closeMenuPopups() {
+    this.getMenuPopups().forEach(popup => {
+      popup.classList.remove('visible')
+      if (
+        popup.classList.contains('menu-item__table__collapse') ||
+        popup.classList.contains('menu-item__search__collapse')
+      ) {
+        popup.style.display = 'none'
+      }
+      this.resetMenuPopupPosition(popup)
+    })
+  }
+
   private bindMenuScroll() {
     const menu = this.host.querySelector<HTMLElement>('.menu')
     if (!menu) return
@@ -273,17 +333,22 @@ export class BuiltinMenu {
 
     leftArrow.onclick = evt => {
       evt.stopPropagation()
+      this.closeMenuPopups()
       offset = Math.max(0, offset - SCROLL_STEP)
       update()
     }
     rightArrow.onclick = evt => {
       evt.stopPropagation()
+      this.closeMenuPopups()
       const maxOffset = Math.max(0, inner.scrollWidth - scroll.clientWidth)
       offset = Math.min(maxOffset, offset + SCROLL_STEP)
       update()
     }
 
-    const resizeObserver = new ResizeObserver(() => update())
+    const resizeObserver = new ResizeObserver(() => {
+      update()
+      this.adjustOpenMenuPopups()
+    })
     resizeObserver.observe(scroll)
     resizeObserver.observe(inner)
     this.disposeList.push(() => resizeObserver.disconnect())
@@ -301,8 +366,14 @@ export class BuiltinMenu {
       visibleDom.classList.remove('visible')
     }
     window.addEventListener('click', onWinClick, { capture: true })
+    // 菜单弹窗打开后，按宿主边界校正左右位置（需在菜单 click 之后执行）
+    const onWinClickAdjustPopup = () => {
+      requestAnimationFrame(() => this.adjustOpenMenuPopups())
+    }
+    window.addEventListener('click', onWinClickAdjustPopup)
     this.disposeList.push(() => {
       window.removeEventListener('click', onWinClick, { capture: true })
+      window.removeEventListener('click', onWinClickAdjustPopup)
     })
 
     // 菜单栏宽度不足时左右箭头横向滚动
@@ -771,7 +842,7 @@ export class BuiltinMenu {
     tableTitle.innerText = payload
   }
   // 恢复初始状态
-  function recoveryTable() {
+  const recoveryTable = () => {
     // 还原选择样式、标题、选择行列
     removeAllTableCellSelect()
     setTableTitle('插入')
@@ -779,10 +850,12 @@ export class BuiltinMenu {
     rowIndex = 0
     // 隐藏panel
     tablePanelContainer.style.display = 'none'
+    this.resetMenuPopupPosition(tablePanelContainer)
   }
-  tableDom.onclick = function () {
+  tableDom.onclick = () => {
     console.log('table')
     tablePanelContainer!.style.display = 'block'
+    this.adjustMenuPopupPosition(tablePanelContainer)
   }
   tablePanel.onmousemove = function (evt) {
     const celSize = 16
@@ -1582,19 +1655,10 @@ export class BuiltinMenu {
 
   const dateDom = q('.menu-item__date')
   const dateDomOptionDom = dateDom.querySelector<HTMLDivElement>('.options')!
-  dateDom.onclick = function () {
+  dateDom.onclick = () => {
     console.log('date')
     dateDomOptionDom.classList.toggle('visible')
-    // 定位调整
-    const bodyRect = document.body.getBoundingClientRect()
-    const dateDomOptionRect = dateDomOptionDom.getBoundingClientRect()
-    if (dateDomOptionRect.left + dateDomOptionRect.width > bodyRect.width) {
-      dateDomOptionDom.style.right = '0px'
-      dateDomOptionDom.style.left = 'unset'
-    } else {
-      dateDomOptionDom.style.right = 'unset'
-      dateDomOptionDom.style.left = '0px'
-    }
+    this.adjustMenuPopupPosition(dateDomOptionDom)
     // 当前日期
     const date = new Date()
     const year = date.getFullYear().toString()
@@ -1748,23 +1812,16 @@ export class BuiltinMenu {
       searchResultDom.innerText = ''
     }
   }
-  searchDom.onclick = function () {
+  searchDom.onclick = () => {
     console.log('search')
     searchCollapseDom.style.display = 'block'
-    const bodyRect = document.body.getBoundingClientRect()
-    const searchRect = searchDom.getBoundingClientRect()
-    const searchCollapseRect = searchCollapseDom.getBoundingClientRect()
-    if (searchRect.left + searchCollapseRect.width > bodyRect.width) {
-      searchCollapseDom.style.right = '0px'
-      searchCollapseDom.style.left = 'unset'
-    } else {
-      searchCollapseDom.style.right = 'unset'
-    }
+    this.adjustMenuPopupPosition(searchCollapseDom)
     searchInputDom.focus()
   }
   searchCollapseDom.querySelector<HTMLSpanElement>('span')!.onclick =
-    function () {
+    () => {
       searchCollapseDom.style.display = 'none'
+      this.resetMenuPopupPosition(searchCollapseDom)
       searchInputDom.value = ''
       replaceInputDom.value = ''
       editor.command.executeSearch(null)
