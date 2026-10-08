@@ -1195,10 +1195,24 @@ export function zipElementList(
  * 回车（\n / ZERO）结束当前段并开启新段；同一 p 内多样式文本、文本与图片进入同一个 valueList。
  */
 export function classifyParagraphLayout(elementList: IElement[]): IElement[] {
+  // 压缩后的超链接/日期/控件：value 为空，真实内容在 valueList / control.value
+  const isInlineStructureElement = (el: IElement): boolean => {
+    if (
+      el.type === ElementType.HYPERLINK ||
+      el.type === ElementType.DATE
+    ) {
+      return !!el.valueList?.length
+    }
+    if (el.type === ElementType.CONTROL) {
+      return true
+    }
+    return false
+  }
   const isPureBreakElement = (el: IElement): boolean => {
     if (el.type === ElementType.IMAGE || el.type === ElementType.LATEX) {
       return false
     }
+    if (isInlineStructureElement(el)) return false
     if (!isTextLikeElement(el)) return false
     const normalized = (el.value || '').replace(new RegExp(ZERO, 'g'), '\n')
     return !normalized || /^[\n\r]+$/.test(normalized)
@@ -1209,6 +1223,7 @@ export function classifyParagraphLayout(elementList: IElement[]): IElement[] {
     if (el.type === ElementType.IMAGE || el.type === ElementType.LATEX) {
       return false
     }
+    if (isInlineStructureElement(el)) return true
     if (!isTextLikeElement(el)) return false
     return !isPureBreakElement(el)
   }
@@ -1237,7 +1252,7 @@ export function classifyParagraphLayout(elementList: IElement[]): IElement[] {
       stream.push({ kind: 'break' })
       continue
     }
-    if (isInlineImage(el)) {
+    if (isInlineImage(el) || isInlineStructureElement(el)) {
       stream.push({ kind: 'el', el })
       continue
     }

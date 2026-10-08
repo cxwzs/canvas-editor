@@ -1814,6 +1814,69 @@ describe('classifyParagraphLayout / textImage / multiImage', () => {
     expect(again[0].type).toBe(ElementType.PARAGRAPH)
     expect(again[0].valueList!.length).toBeGreaterThanOrEqual(2)
   })
+
+  it('超链接在 classify 后仍保留 url / valueList', () => {
+    const flat: IElement[] = [
+      { value: '前' },
+      {
+        value: '链',
+        type: ElementType.HYPERLINK,
+        url: 'https://example.com',
+        hyperlinkId: 'h1'
+      },
+      {
+        value: '接',
+        type: ElementType.HYPERLINK,
+        url: 'https://example.com',
+        hyperlinkId: 'h1'
+      },
+      { value: '后' }
+    ]
+    const packed = zipElementList(flat, { isClassifyParagraphLayout: true })
+    const hyperlink = packed
+      .flatMap(el => el.valueList || [el])
+      .find(el => el.type === ElementType.HYPERLINK)
+    expect(hyperlink).toBeDefined()
+    expect(hyperlink!.url).toBe('https://example.com')
+    expect(hyperlink!.valueList?.map(el => el.value).join('')).toBe('链接')
+  })
+
+  it('交叉引用锚点超链接（#titleId）在 classify 后仍保留', () => {
+    const flat: IElement[] = [
+      {
+        value: '见图1',
+        type: ElementType.HYPERLINK,
+        url: '#title-abc',
+        hyperlinkId: 'href1'
+      }
+    ]
+    const packed = zipElementList(flat, { isClassifyParagraphLayout: true })
+    expect(packed).toHaveLength(1)
+    expect(packed[0].type).toBe(ElementType.HYPERLINK)
+    expect(packed[0].url).toBe('#title-abc')
+    expect(packed[0].valueList?.map(el => el.value).join('')).toBe('见图1')
+  })
+
+  it('日期元素在 classify 后仍保留 valueList', () => {
+    const flat: IElement[] = [
+      {
+        value: '2024',
+        type: ElementType.DATE,
+        dateId: 'd1',
+        dateFormat: 'yyyy'
+      },
+      {
+        value: '-01',
+        type: ElementType.DATE,
+        dateId: 'd1',
+        dateFormat: 'yyyy'
+      }
+    ]
+    const packed = zipElementList(flat, { isClassifyParagraphLayout: true })
+    expect(packed).toHaveLength(1)
+    expect(packed[0].type).toBe(ElementType.DATE)
+    expect(packed[0].valueList?.map(el => el.value).join('')).toBe('2024-01')
+  })
 })
 
 function deepClonePacked(list: IElement[]): IElement[] {
