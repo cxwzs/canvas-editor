@@ -10,6 +10,7 @@ import {
   getElementListText,
   getTextFromElementList,
   clearImageAutoLayoutBlockIfAdjacentToText,
+  classifyParagraphLayout,
   createDomFromElementList,
   getElementListByHTML,
   isSameElementExceptValue,
@@ -1070,14 +1071,18 @@ describe('getElementListByHTML', () => {
     expect(breaks.every(el => el.rowFlex === RowFlex.ALIGNMENT)).toBe(true)
 
     const dom = createDomFromElementList(parsed)
-    // 相同对齐应合并为一个布局容器，而不是每个标签一个 div
-    const layoutDivs = Array.from(dom.children).filter(
-      child =>
-        child.nodeName === 'DIV' &&
-        (child as HTMLElement).style.textAlign === 'justify'
-    )
-    expect(layoutDivs.length).toBe(1)
-    expect(dom.children.length).toBe(1)
+    const paragraphs = [...dom.querySelectorAll('p')]
+    expect(paragraphs.length).toBe(3)
+    expect(
+      paragraphs.every(p => p.style.textAlign === 'justify')
+    ).toBe(true)
+    expect(paragraphs[0].style.textIndent).toBe('')
+    expect(paragraphs[1].style.textIndent).toBe('2em')
+    expect(paragraphs[2].style.textIndent).toBe('2em')
+    // 对齐写在 p 上，不再包一层布局 div
+    expect(
+      [...dom.children].every(child => child.nodeName === 'P')
+    ).toBe(true)
   })
 
   it('相同对齐的连续布局 div 回显时合并为同一段落', () => {
@@ -1577,3 +1582,167 @@ describe('formatElementList - 容器 hint 继承', () => {
     }
   })
 })
+
+describe('classifyParagraphLayout / textImage / multiImage', () => {
+  const img = (src: string, extra: Partial<IElement> = {}): IElement => ({
+    type: ElementType.IMAGE,
+    value: src,
+    width: 100,
+    height: 80,
+    ...extra
+  })
+
+  it('同一 p 内文本+图包装为 textImage', () => {
+    const list = zipElementList(
+      [{ value: '111' }, img('https://example.com/a.png')],
+      { isClassifyParagraphLayout: true }
+    )
+    expect(list).toHaveLength(1)
+    expect(list[0].type).toBe(ElementType.TEXT_IMAGE)
+    expect(list[0].valueList).toHaveLength(2)
+    expect(list[0].valueList![0].value).toBe('111')
+    expect(list[0].valueList![1].type).toBe(ElementType.IMAGE)
+  })
+
+  it('同一 p 内文本+多张图全部进入同一个 textImage valueList', () => {
+    const list = classifyParagraphLayout([
+      { value: '标题文字' },
+      img('https://example.com/1.png'),
+      img('https://example.com/2.png'),
+      img('https://example.com/3.png')
+    ])
+    expect(list).toHaveLength(1)
+    expect(list[0].type).toBe(ElementType.TEXT_IMAGE)
+    expect(list[0].valueList).toHaveLength(4)
+    expect(list[0].valueList!.filter(el => el.type === ElementType.IMAGE)).toHaveLength(
+      3
+    )
+
+    const dom = createDomFromElementList([
+      { value: '标题文字' },
+      img('https://example.com/1.png'),
+      img('https://example.com/2.png'),
+      img('https://example.com/3.png')
+    ])
+    const ps = [...dom.querySelectorAll('p')]
+    expect(ps).toHaveLength(1)
+    expect(ps[0].textContent).toContain('标题文字')
+    expect(ps[0].querySelectorAll('img')).toHaveLength(3)
+  })
+
+  it('同一 p 内多张图包装为 multiImage', () => {
+    const list = classifyParagraphLayout([
+      img('https://example.com/1.png'),
+      img('https://example.com/2.png')
+    ])
+    expect(list).toHaveLength(1)
+    expect(list[0].type).toBe(ElementType.MULTI_IMAGE)
+    expect(list[0].valueList).toHaveLength(2)
+  })
+
+  it('文本与图之间有换行时分成两段，不包装为 textImage', () => {
+    const list = classifyParagraphLayout([
+      { value: '正文' },
+      { value: '\n' },
+      img('https://example.com/a.png')
+    ])
+    expect(list.map(el => el.type || 'text')).toEqual([
+      'text',
+      ElementType.IMAGE
+    ])
+    expect(list[0].value).toBe('正文')
+    expect(list.some(el => el.type === ElementType.TEXT_IMAGE)).toBe(false)
+  })
+
+  it('回车后跳出当前 p：文本内 \\n 后开新段，可与后续图组成新的 textImage', () => {
+    const list = classifyParagraphLayout([
+      { value: '第一段\n第二段' },
+      img('https://example.com/a.png'),
+      img('https://example.com/b.png')
+    ])
+    expect(list).toHaveLength(2)
+    expect(list[0].type || 'text').toBe('text')
+    expect(list[0].value).toBe('第一段')
+    expect(list[1].type).toBe(ElementType.TEXT_IMAGE)
+    expect(list[1].valueList![0].value).toBe('第二段')
+    expect(
+      list[1].valueList!.filter(el => el.type === ElementType.IMAGE)
+    ).toHaveLength(2)
+  })
+
+  it('BLOCK 多图包装为 multiImage；正文与 BLOCK 图分行不打成 textImage', () => {
+    const multi = classifyParagraphLayout([
+      img('https://example.com/1.png', { imgDisplay: ImageDisplay.BLOCK }),
+      img('https://example.com/2.png', { imgDisplay: ImageDisplay.BLOCK })
+    ])
+    expect(multi[0].type).toBe(ElementType.MULTI_IMAGE)
+
+    const split = classifyParagraphLayout([
+      { value: '正文' },
+      { value: '\n' },
+      img('https://example.com/a.png', { imgDisplay: ImageDisplay.BLOCK })
+    ])
+    expect(split.some(el => el.type === ElementType.TEXT_IMAGE)).toBe(false)
+    expect(split.some(el => el.type === ElementType.IMAGE)).toBe(true)
+  })
+
+  it('formatElementList 展开后可再 zip+classify 往返', () => {
+    const original: IElement[] = [
+      { value: '前缀' },
+      img('https://example.com/a.png')
+    ]
+    const packed = zipElementList(original, {
+      isClassifyParagraphLayout: true
+    })
+    expect(packed[0].type).toBe(ElementType.TEXT_IMAGE)
+
+    const flat = deepClonePacked(packed)
+    formatElementList(flat, {
+      editorOptions: mockOptions as any,
+      isHandleFirstElement: false,
+      isForceCompensation: false
+    })
+    expect(flat.some(el => el.type === ElementType.TEXT_IMAGE)).toBe(false)
+    expect(flat.some(el => el.type === ElementType.IMAGE)).toBe(true)
+    expect(getTextFromElementList(flat)).toContain('前缀')
+
+    const again = zipElementList(flat, { isClassifyParagraphLayout: true })
+    expect(again.some(el => el.type === ElementType.TEXT_IMAGE)).toBe(true)
+  })
+
+  it('createDomFromElementList 对 textImage / multiImage 各输出单个 p', () => {
+    const textImageDom = createDomFromElementList([
+      {
+        type: ElementType.TEXT_IMAGE,
+        value: '',
+        valueList: [
+          { value: 'hello' },
+          img('https://example.com/a.png'),
+          img('https://example.com/b.png')
+        ]
+      }
+    ])
+    const textImagePs = [...textImageDom.querySelectorAll('p')]
+    expect(textImagePs).toHaveLength(1)
+    expect(textImagePs[0].textContent).toContain('hello')
+    expect(textImagePs[0].querySelectorAll('img')).toHaveLength(2)
+
+    const multiDom = createDomFromElementList([
+      {
+        type: ElementType.MULTI_IMAGE,
+        value: '',
+        valueList: [
+          img('https://example.com/1.png'),
+          img('https://example.com/2.png')
+        ]
+      }
+    ])
+    const multiPs = [...multiDom.querySelectorAll('p')]
+    expect(multiPs).toHaveLength(1)
+    expect(multiPs[0].querySelectorAll('img')).toHaveLength(2)
+  })
+})
+
+function deepClonePacked(list: IElement[]): IElement[] {
+  return JSON.parse(JSON.stringify(list)) as IElement[]
+}

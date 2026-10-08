@@ -206,5 +206,7 @@ export const INLINE_NODE_NAME: string[] = ['HR', 'TABLE', 'UL', 'OL']
 
 export const VIRTUAL_ELEMENT_TYPE: ElementType[] = [
   ElementType.TITLE,
-  ElementType.LIST
+  ElementType.LIST,
+  ElementType.TEXT_IMAGE,
+  ElementType.MULTI_IMAGE
 ]

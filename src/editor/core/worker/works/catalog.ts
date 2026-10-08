@@ -29,7 +29,9 @@ enum ElementType {
   TITLE = 'title',
   AREA = 'area',
   LIST = 'list',
-  LABEL = 'label'
+  LABEL = 'label',
+  TEXT_IMAGE = 'textImage',
+  MULTI_IMAGE = 'multiImage'
 }
 
 enum TitleLevel {

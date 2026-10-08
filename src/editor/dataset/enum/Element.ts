@@ -17,5 +17,9 @@ export enum ElementType {
   BLOCK = 'block',
   TITLE = 'title',
   LIST = 'list',
-  LABEL = 'label'
+  LABEL = 'label',
+  /** 图文混排段落（同一 <p> 内文本 + 图片） */
+  TEXT_IMAGE = 'textImage',
+  /** 多图并排段落（同一 <p> 内多张图片） */
+  MULTI_IMAGE = 'multiImage'
 }

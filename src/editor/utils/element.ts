@@ -193,6 +193,23 @@ export function formatElementList(
         }
       }
       i--
+    } else if (
+      el.type === ElementType.TEXT_IMAGE ||
+      el.type === ElementType.MULTI_IMAGE
+    ) {
+      // 图文 / 多图虚拟段：展开为扁平元素以便编辑器内部排版
+      elementList.splice(i, 1)
+      const valueList = el.valueList || []
+      formatElementList(valueList, {
+        ...options,
+        isHandleFirstElement: false,
+        isForceCompensation: false
+      })
+      for (let v = 0; v < valueList.length; v++) {
+        elementList.splice(i, 0, valueList[v])
+        i++
+      }
+      i--
     } else if (el.type === ElementType.LIST) {
       // 移除父节点
       elementList.splice(i, 1)
@@ -794,6 +811,8 @@ interface IZipElementListOption {
   isClassifyArea?: boolean
   isClone?: boolean
   isListValue?: boolean
+  /** 将图文混排 / 多图并排段包装为 textImage、multiImage */
+  isClassifyParagraphLayout?: boolean
 }
 
 /** 清除表格单元格内继承自父级 area 的标记，避免压缩时被误判为嵌套 area */
@@ -830,7 +849,8 @@ export function zipElementList(
     extraPickAttrs,
     isClassifyArea = false,
     isClone = true,
-    isListValue = false
+    isListValue = false,
+    isClassifyParagraphLayout = false
   } = options
   const elementList = isClone ? deepClone(payload) : payload
   const zipElementListData: IElement[] = []
@@ -848,7 +868,7 @@ export function zipElementList(
       continue
     }
     // 优先处理虚拟元素，后表格、超链接、日期、控件特殊处理
-    // 已归类的 AREA / TITLE 直接保留结构，避免二次压缩被拆开
+    // 已归类的 AREA / TITLE / 图文多图 直接保留结构，避免二次压缩被拆开
     if (element.type === ElementType.AREA && element.valueList) {
       const pickElement = pickElementAttr(element, { extraPickAttrs })
       pickElement.valueList = zipElementList(element.valueList, options)
@@ -858,6 +878,20 @@ export function zipElementList(
     } else if (element.type === ElementType.TITLE && element.valueList) {
       const pickElement = pickElementAttr(element, { extraPickAttrs })
       pickElement.valueList = zipElementList(element.valueList, options)
+      zipElementListData.push(pickElement)
+      e++
+      continue
+    } else if (
+      (element.type === ElementType.TEXT_IMAGE ||
+        element.type === ElementType.MULTI_IMAGE) &&
+      element.valueList
+    ) {
+      const pickElement = pickElementAttr(element, { extraPickAttrs })
+      pickElement.valueList = zipElementList(element.valueList, {
+        ...options,
+        // 子节点已是段内扁平内容，不再二次包装
+        isClassifyParagraphLayout: false
+      })
       zipElementListData.push(pickElement)
       e++
       continue
@@ -1148,7 +1182,147 @@ export function zipElementList(
     }
     zipElementListData.push(pickElement)
   }
+  if (isClassifyParagraphLayout) {
+    return classifyParagraphLayout(zipElementListData)
+  }
   return zipElementListData
+}
+
+/**
+ * 按与 HTML <p> 一致的规则，将同一段内的图文 / 多图包装为虚拟段落元素。
+ * 回车（\n / ZERO）结束当前段并开启新段；同一 p 内文本与全部图片进入同一个 valueList。
+ */
+export function classifyParagraphLayout(elementList: IElement[]): IElement[] {
+  const isPureBreakElement = (el: IElement): boolean => {
+    if (el.type === ElementType.IMAGE || el.type === ElementType.LATEX) {
+      return false
+    }
+    if (!isTextLikeElement(el)) return false
+    const normalized = (el.value || '').replace(new RegExp(ZERO, 'g'), '\n')
+    return !normalized || /^[\n\r]+$/.test(normalized)
+  }
+  const isInlineImage = (el: IElement): boolean =>
+    el.type === ElementType.IMAGE && !isFloatingImage(el)
+  const isTextContent = (el: IElement): boolean => {
+    if (el.type === ElementType.IMAGE || el.type === ElementType.LATEX) {
+      return false
+    }
+    if (!isTextLikeElement(el)) return false
+    return !isPureBreakElement(el)
+  }
+  const isBlockImage = (el: IElement): boolean =>
+    isInlineImage(el) && el.imgDisplay === ImageDisplay.BLOCK
+
+  type StreamItem =
+    | { kind: 'break' }
+    | { kind: 'el'; el: IElement }
+    | { kind: 'keep'; el: IElement }
+
+  // 先把文本内的回车拆成段边界，保证「回车 = 新段落」
+  const stream: StreamItem[] = []
+  for (let e = 0; e < elementList.length; e++) {
+    const el = elementList[e]
+    if (
+      el.type === ElementType.TEXT_IMAGE ||
+      el.type === ElementType.MULTI_IMAGE ||
+      (!isTextContent(el) && !isInlineImage(el) && !isPureBreakElement(el))
+    ) {
+      stream.push({ kind: 'keep', el })
+      continue
+    }
+    if (isPureBreakElement(el)) {
+      stream.push({ kind: 'break' })
+      continue
+    }
+    if (isInlineImage(el)) {
+      stream.push({ kind: 'el', el })
+      continue
+    }
+    // 文本：按 \n / ZERO 拆段（回车跳出当前 p）
+    const normalized = (el.value || '').replace(new RegExp(ZERO, 'g'), '\n')
+    const parts = normalized.split('\n')
+    for (let p = 0; p < parts.length; p++) {
+      if (p > 0) {
+        stream.push({ kind: 'break' })
+      }
+      if (parts[p]) {
+        stream.push({
+          kind: 'el',
+          el: {
+            ...el,
+            value: parts[p]
+          }
+        })
+      }
+    }
+  }
+
+  const flushRun = (run: IElement[], into: IElement[]) => {
+    if (!run.length) return
+    const hasText = run.some(isTextContent)
+    const images = run.filter(isInlineImage)
+    const hasBlockImage = images.some(isBlockImage)
+    if (hasText && images.length >= 1 && !hasBlockImage) {
+      into.push({
+        type: ElementType.TEXT_IMAGE,
+        value: '',
+        valueList: run
+      })
+    } else if (!hasText && images.length >= 2) {
+      into.push({
+        type: ElementType.MULTI_IMAGE,
+        value: '',
+        valueList: run
+      })
+    } else {
+      into.push(...run)
+    }
+  }
+
+  const result: IElement[] = []
+  let run: IElement[] = []
+  let runHasText = false
+
+  const endRun = () => {
+    flushRun(run, result)
+    run = []
+    runHasText = false
+  }
+
+  for (let s = 0; s < stream.length; s++) {
+    const item = stream[s]
+    if (item.kind === 'keep') {
+      endRun()
+      result.push(item.el)
+      continue
+    }
+    if (item.kind === 'break') {
+      endRun()
+      continue
+    }
+    const cur = item.el
+    if (isInlineImage(cur)) {
+      // BLOCK 图不与正文同段
+      if (runHasText && isBlockImage(cur)) {
+        endRun()
+      }
+      run.push(cur)
+      continue
+    }
+    if (isTextContent(cur)) {
+      // 纯图段后出现正文：正文属新段
+      if (run.length && run.every(isInlineImage)) {
+        endRun()
+      }
+      run.push(cur)
+      runHasText = true
+      continue
+    }
+    endRun()
+    result.push(cur)
+  }
+  endRun()
+  return result
 }
 
 export function convertTextAlignToRowFlex(node: HTMLElement) {
@@ -1458,12 +1632,6 @@ export function convertElementToDom(
   }
   const dom = document.createElement(tagName)
   dom.style.fontFamily = element.font || options.defaultFont
-  if (element.rowFlex) {
-    dom.style.textAlign = convertRowFlexToTextAlign(element.rowFlex)
-  }
-  if (element.textIndent) {
-    dom.style.textIndent = `${element.textIndent}em`
-  }
   if (element.color) {
     dom.style.color = element.color
   }
@@ -1603,10 +1771,30 @@ function isFloatingImage(element: IElement): boolean {
   )
 }
 
-function createParagraphElement(): HTMLParagraphElement {
+function applyParagraphLayoutStyle(
+  p: HTMLParagraphElement,
+  element?: IElement
+) {
+  if (!element) return
+  const rowFlex = element.rowFlex
+  if (rowFlex && rowFlex !== RowFlex.LEFT) {
+    p.style.textAlign = convertRowFlexToTextAlign(rowFlex)
+    if (rowFlex === RowFlex.ALIGNMENT || rowFlex === RowFlex.JUSTIFY) {
+      p.style.textAlignLast = 'justify'
+    }
+  }
+  if (element.textIndent) {
+    p.style.textIndent = `${element.textIndent}em`
+  }
+}
+
+function createParagraphElement(
+  layoutElement?: IElement
+): HTMLParagraphElement {
   const p = document.createElement('p')
   // 避免 WPS/Word 默认段间距过大，接近编辑器视觉
   p.style.margin = '0'
+  applyParagraphLayoutStyle(p, layoutElement)
   return p
 }
 
@@ -1617,8 +1805,8 @@ export function createDomFromElementList(
   const editorOptions = mergeOption(options)
   /**
    * @param wrapParagraphs 为 true 时按回车（\n）拆成 <p>；
-   *   图片默认独立成段；仅紧邻文字时（拖入文本段）与文字共用 <p>；
-   *   一键排版（BLOCK）图与文字拆段；相邻排版图共用 <p>；浮动图单独成块。
+   *   同一 <p> 内文本与多张非 BLOCK 图共用一段；一键排版（BLOCK）与文字拆段、
+   *   多张 BLOCK 图共用 <p>；浮动图单独成块。
    */
   function buildDom(
     payload: IElement[],
@@ -1632,6 +1820,8 @@ export function createDomFromElementList(
     let paragraphHasTextContent = false
     // 当前 <p> 是否含一键排版（BLOCK）图片；其后正文需拆段
     let paragraphHasAutoLaidOutImage = false
+    // 当前正在处理的元素：新建 <p> 时取其对齐 / 缩进
+    let layoutSource: IElement | undefined
 
     const closeParagraph = () => {
       currentParagraph = null
@@ -1642,7 +1832,7 @@ export function createDomFromElementList(
     const ensureParagraph = (): HTMLElement => {
       if (!wrapParagraphs) return clipboardDom
       if (!currentParagraph) {
-        currentParagraph = createParagraphElement()
+        currentParagraph = createParagraphElement(layoutSource)
         clipboardDom.append(currentParagraph)
       }
       return currentParagraph
@@ -1723,6 +1913,7 @@ export function createDomFromElementList(
 
     for (let e = 0; e < payload.length; e++) {
       const element = payload[e]
+      layoutSource = element
       // 构造区域（paraId / data-title / data-disabled）
       if (element.type === ElementType.AREA) {
         const areaDom = document.createElement('div')
@@ -1862,16 +2053,30 @@ export function createDomFromElementList(
           list.append(li)
         })
         appendStructural(list)
+      } else if (
+        element.type === ElementType.TEXT_IMAGE ||
+        element.type === ElementType.MULTI_IMAGE
+      ) {
+        // getValue 虚拟段：整段导出为一个 <p>
+        closeParagraph()
+        const p = createParagraphElement(
+          element.rowFlex || element.textIndent
+            ? element
+            : element.valueList?.[0]
+        )
+        const childDom = buildDom(element.valueList || [], false)
+        p.innerHTML = childDom.innerHTML
+        clipboardDom.append(p)
+        hasEmittedContent = true
       } else if (element.type === ElementType.IMAGE) {
         const img = createImageDom(element)
         if (isFloatingImage(element)) {
           appendStructural(img)
         } else {
-          // 图片 <p> 规则：
-          // - 紧邻文字（拖入文本段）：与文字共用一个 <p>
-          // - 一键排版（BLOCK）后：与文字拆段，不再图文并排
-          // - 紧邻图片（一键排版后的相邻图）：多图共用一个 <p>
-          // - 其余：图片独立 <p>
+          // 图片 <p> 规则（与 classifyParagraphLayout / getValue 对齐）：
+          // - 同一段内文本 + 多张非 BLOCK 图共用一个 <p>
+          // - 一键排版（BLOCK）不与正文同段；多张 BLOCK 图共用一个 <p>
+          // - 其余独立成段
           const prev = payload[e - 1]
           const followsImage = prev?.type === ElementType.IMAGE
           const followsText =
@@ -1882,12 +2087,13 @@ export function createDomFromElementList(
           const isAutoLaidOut = element.imgDisplay === ImageDisplay.BLOCK
           if (followsText && isAutoLaidOut) {
             closeParagraph()
+          } else if (isAutoLaidOut && paragraphHasTextContent) {
+            // 正文段内已有内容后再跟 BLOCK 图：拆段
+            closeParagraph()
           } else if (!followsText && !followsImage) {
             closeParagraph()
-          } else if (followsImage && paragraphHasTextContent) {
-            // 文本段内已有图后又跟图：新开图片段，避免和正文粘在一起
-            closeParagraph()
           }
+          // 非 BLOCK：紧随正文或同段前图时继续追加，保证同 p 内多图进同一段
           appendToParagraph(img)
           if (isAutoLaidOut) {
             paragraphHasAutoLaidOutImage = true
@@ -1996,47 +2202,15 @@ export function createDomFromElementList(
   const classifiedList = zipElementList(elementList, {
     isClassifyArea: true
   })
-  // 按行布局分类创建dom
+  // 按行布局分类创建dom（对齐写在 <p> 上，不再包一层 div）
   const clipboardDom = document.createElement('div')
   const groupElementList = groupElementListByRowFlex(classifiedList)
   for (let g = 0; g < groupElementList.length; g++) {
     const elementGroupRowFlex = groupElementList[g]
-    // 行布局样式设置
-    const isDefaultRowFlex =
-      !elementGroupRowFlex.rowFlex ||
-      elementGroupRowFlex.rowFlex === RowFlex.LEFT
-    const firstElement = elementGroupRowFlex.data[0]
-    const textIndent = firstElement?.textIndent
-    // 块元素使用flex否则使用text-align
-    const rowFlexDom = document.createElement('div')
-    if (!isDefaultRowFlex) {
-      if (getIsBlockElement(firstElement)) {
-        rowFlexDom.style.display = 'flex'
-        rowFlexDom.style.justifyContent = convertRowFlexToJustifyContent(
-          firstElement.rowFlex!
-        )
-      } else {
-        rowFlexDom.style.textAlign = convertRowFlexToTextAlign(
-          elementGroupRowFlex.rowFlex!
-        )
-        if (elementGroupRowFlex.rowFlex === 'justify') {
-          rowFlexDom.style.textAlignLast = 'justify'
-        }
-      }
-    }
-    if (textIndent) {
-      rowFlexDom.style.textIndent = `${textIndent}em`
-    }
-    // 布局内容：回车拆 <p>，段内图文行内并排
-    rowFlexDom.innerHTML = buildDom(elementGroupRowFlex.data, true).innerHTML
-    // 未设置行布局且无首行缩进时无需容器
-    if (!isDefaultRowFlex || textIndent) {
-      clipboardDom.append(rowFlexDom)
-    } else {
-      rowFlexDom.childNodes.forEach(child => {
-        clipboardDom.append(child.cloneNode(true))
-      })
-    }
+    const groupDom = buildDom(elementGroupRowFlex.data, true)
+    groupDom.childNodes.forEach(child => {
+      clipboardDom.append(child.cloneNode(true))
+    })
   }
   return clipboardDom
 }
@@ -2809,6 +2983,13 @@ export function getTextFromElementList(
         text += `${buildText(
           zipElementList(element.valueList!, { isClone: false })
         )}`
+      } else if (
+        element.type === ElementType.TEXT_IMAGE ||
+        element.type === ElementType.MULTI_IMAGE
+      ) {
+        text += buildText(
+          zipElementList(element.valueList || [], { isClone: false })
+        )
       } else if (element.type === ElementType.LIST) {
         // 按照换行符拆分
         const zipList = zipElementList(element.valueList!, { isClone: false })

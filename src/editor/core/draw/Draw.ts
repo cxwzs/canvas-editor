@@ -1813,14 +1813,17 @@ export class Draw {
     const { extraPickAttrs } = options
     const data: IEditorData = {
       header: zipElementList(originData.header, {
-        extraPickAttrs
+        extraPickAttrs,
+        isClassifyParagraphLayout: true
       }),
       main: zipElementList(originData.main, {
         extraPickAttrs,
-        isClassifyArea: true
+        isClassifyArea: true,
+        isClassifyParagraphLayout: true
       }),
       footer: zipElementList(originData.footer, {
-        extraPickAttrs
+        extraPickAttrs,
+        isClassifyParagraphLayout: true
       }),
       graffiti: originData.graffiti
     }

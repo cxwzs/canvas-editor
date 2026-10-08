@@ -15,16 +15,19 @@ onmessage = evt => {
   const editorData: IEditorData = {
     header: zipElementList(data.header, {
       extraPickAttrs,
-      isClone: false
+      isClone: false,
+      isClassifyParagraphLayout: true
     }),
     main: zipElementList(data.main, {
       extraPickAttrs,
       isClassifyArea: true,
-      isClone: false
+      isClone: false,
+      isClassifyParagraphLayout: true
     }),
     footer: zipElementList(data.footer, {
       extraPickAttrs,
-      isClone: false
+      isClone: false,
+      isClassifyParagraphLayout: true
     })
   }
 
