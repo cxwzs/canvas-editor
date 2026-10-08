@@ -9,6 +9,7 @@ import {
   isTextElement,
   getElementListText,
   getTextFromElementList,
+  clearImageAutoLayoutBlockIfAdjacentToText,
   createDomFromElementList,
   getElementListByHTML,
   isSameElementExceptValue,
@@ -28,6 +29,7 @@ import { ElementType } from '@/editor/dataset/enum/Element'
 import { AreaMode } from '@/editor/dataset/enum/Area'
 import { TraceType } from '@/editor/dataset/enum/Trace'
 import { RowFlex } from '@/editor/dataset/enum/Row'
+import { ImageDisplay } from '@/editor/dataset/enum/Common'
 import { ControlType, ControlComponent } from '@/editor/dataset/enum/Control'
 import { ListType, ListStyle } from '@/editor/dataset/enum/List'
 import { TitleLevel } from '@/editor/dataset/enum/Title'
@@ -643,11 +645,150 @@ describe('createDomFromElementList', () => {
     const dom = createDomFromElementList(list)
     const paragraphs = Array.from(dom.querySelectorAll('p'))
     expect(paragraphs.length).toBe(2)
-    // 图文同属第一段
+    // 拖入文本段：图文同属第一段
     expect(paragraphs[0].querySelector('img')).toBeTruthy()
     expect(paragraphs[0].textContent).toBe('前缀后缀')
     expect(paragraphs[1].textContent).toBe('下一行')
     expect(paragraphs[1].querySelector('img')).toBeNull()
+  })
+
+  it('HTML 图文同行回显仍为单个 p（拖入文本段）', () => {
+    const html =
+      '<p style="margin: 0px;"><span style="font-family: 微软雅黑; color: rgb(0, 0, 0); font-size: 16px;">12344444</span><img src="https://example.com/a.png" width="111" height="99"></p>'
+    const parsed = getElementListByHTML(html, { innerWidth: 500 })
+    const out = createDomFromElementList(parsed)
+    const paragraphs = [...out.querySelectorAll('p')]
+    expect(paragraphs.length).toBe(1)
+    expect(paragraphs[0].textContent).toContain('12344444')
+    expect(paragraphs[0].querySelector('img')).toBeTruthy()
+  })
+
+  it('独立图片与正文分开成 p；一键排版相邻图共用 p', () => {
+    const standalone: IElement[] = [
+      { value: '正文' },
+      { value: '\n' },
+      {
+        type: ElementType.IMAGE,
+        value: 'https://example.com/a.png',
+        width: 100,
+        height: 80
+      }
+    ]
+    const standaloneDom = createDomFromElementList(standalone)
+    expect(standaloneDom.querySelectorAll('p').length).toBe(2)
+    expect(
+      standaloneDom.querySelectorAll('p')[1].querySelector('img')
+    ).toBeTruthy()
+
+    const laidOut: IElement[] = [
+      { value: '正文' },
+      { value: '\n' },
+      {
+        type: ElementType.IMAGE,
+        value: 'https://example.com/1.png',
+        width: 50,
+        height: 40,
+        imgDisplay: ImageDisplay.BLOCK,
+        rowFlex: RowFlex.LEFT
+      },
+      {
+        type: ElementType.IMAGE,
+        value: 'https://example.com/2.png',
+        width: 50,
+        height: 40,
+        imgDisplay: ImageDisplay.BLOCK,
+        rowFlex: RowFlex.LEFT
+      }
+    ]
+    const laidDom = createDomFromElementList(laidOut)
+    const ps = [...laidDom.querySelectorAll('p')]
+    expect(ps.length).toBe(2)
+    expect(ps[0].textContent).toBe('正文')
+    expect(ps[1].querySelectorAll('img').length).toBe(2)
+  })
+
+  it('一键排版 BLOCK 图与紧邻文字分成两个 p', () => {
+    const before: IElement[] = [
+      { value: '1111111' },
+      {
+        type: ElementType.IMAGE,
+        value: 'https://example.com/a.png',
+        width: 111,
+        height: 82,
+        imgDisplay: ImageDisplay.BLOCK,
+        rowFlex: RowFlex.LEFT
+      }
+    ]
+    const beforeDom = createDomFromElementList(before)
+    const beforePs = [...beforeDom.querySelectorAll('p')]
+    expect(beforePs.length).toBe(2)
+    expect(beforePs[0].textContent).toBe('1111111')
+    expect(beforePs[0].querySelector('img')).toBeNull()
+    expect(beforePs[1].querySelector('img')).toBeTruthy()
+
+    const after: IElement[] = [
+      {
+        type: ElementType.IMAGE,
+        value: 'https://example.com/a.png',
+        width: 111,
+        height: 82,
+        imgDisplay: ImageDisplay.BLOCK,
+        rowFlex: RowFlex.LEFT
+      },
+      { value: '后缀' }
+    ]
+    const afterDom = createDomFromElementList(after)
+    const afterPs = [...afterDom.querySelectorAll('p')]
+    expect(afterPs.length).toBe(2)
+    expect(afterPs[0].querySelector('img')).toBeTruthy()
+    expect(afterPs[1].textContent).toBe('后缀')
+  })
+
+  it('已带 rowFlex:left 的图片与无 rowFlex 文字仍同段', () => {
+    const list: IElement[] = [
+      { value: '12344444' },
+      {
+        type: ElementType.IMAGE,
+        value: 'https://example.com/a.png',
+        width: 111,
+        height: 99,
+        rowFlex: RowFlex.LEFT
+      }
+    ]
+    const dom = createDomFromElementList(list)
+    expect(dom.querySelectorAll('p').length).toBe(1)
+  })
+
+  it('紧邻正文时清除一键排版 BLOCK，与换行分隔时保留', () => {
+    const adjacent: IElement[] = [
+      { value: '正文' },
+      {
+        type: ElementType.IMAGE,
+        value: 'https://example.com/a.png',
+        width: 100,
+        height: 80,
+        imgDisplay: ImageDisplay.BLOCK
+      }
+    ]
+    clearImageAutoLayoutBlockIfAdjacentToText(adjacent)
+    expect(adjacent[1].imgDisplay).toBeUndefined()
+    expect(createDomFromElementList(adjacent).querySelectorAll('p').length).toBe(
+      1
+    )
+
+    const separated: IElement[] = [
+      { value: '正文' },
+      { value: '\n' },
+      {
+        type: ElementType.IMAGE,
+        value: 'https://example.com/a.png',
+        width: 100,
+        height: 80,
+        imgDisplay: ImageDisplay.BLOCK
+      }
+    ]
+    clearImageAutoLayoutBlockIfAdjacentToText(separated)
+    expect(separated[2].imgDisplay).toBe(ImageDisplay.BLOCK)
   })
 
   it('连续回车产生空段落', () => {
@@ -658,6 +799,48 @@ describe('createDomFromElementList', () => {
     expect(paragraphs[0].textContent).toBe('A')
     expect(paragraphs[1].textContent).toBe('')
     expect(paragraphs[2].textContent).toBe('B')
+  })
+
+  it('行首补偿 \\n 不导出为空段落', () => {
+    // getValue 压缩后常见形态：行首 ZERO 与正文合并成 "\nhello"
+    const merged: IElement[] = [{ value: '\nhello' }]
+    const mergedDom = createDomFromElementList(merged)
+    expect([...mergedDom.querySelectorAll('p')].map(p => p.textContent)).toEqual(
+      ['hello']
+    )
+
+    // 独立的行首换行元素
+    const leading: IElement[] = [{ value: '\n' }, { value: 'hello' }]
+    const leadingDom = createDomFromElementList(leading)
+    expect(
+      [...leadingDom.querySelectorAll('p')].map(p => p.textContent)
+    ).toEqual(['hello'])
+  })
+
+  it('area 去掉 data-title 后正文行首 \\n 不导出空 p', () => {
+    const list: IElement[] = [
+      {
+        type: ElementType.AREA,
+        value: '',
+        areaId: 'p1',
+        area: {},
+        valueList: [
+          {
+            type: ElementType.TITLE,
+            value: '',
+            level: TitleLevel.FIRST,
+            titleId: 'p1',
+            title: { disabled: true, deletable: false },
+            valueList: [{ value: '标题' }, { value: '\n' }]
+          },
+          { value: '\n' },
+          { value: 'hello' }
+        ]
+      }
+    ]
+    const dom = createDomFromElementList(list)
+    const texts = [...dom.querySelectorAll('[paraId] p')].map(p => p.textContent)
+    expect(texts).toEqual(['hello'])
   })
 
   it('p 段落导出可回显为换行', () => {

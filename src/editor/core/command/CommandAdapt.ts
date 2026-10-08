@@ -115,6 +115,7 @@ import {
   isMutationProtectedElement
 } from '../../utils/quickFormat'
 import {
+  clearImageAutoLayoutBlockIfAdjacentToText,
   createDomFromElementList,
   formatElementContext,
   formatElementList,
@@ -233,6 +234,8 @@ export class CommandAdapt {
     } else {
       this.draw.deleteElementList(elementList, startIndex, 1)
     }
+    // 删除图文间换行后去掉一键排版 BLOCK，恢复图文并排
+    clearImageAutoLayoutBlockIfAdjacentToText(elementList)
     const curIndex = isCollapsed ? startIndex - 1 : startIndex
     this.range.setRange(curIndex, curIndex)
     this.draw.render({ curIndex })
@@ -1473,13 +1476,26 @@ export class CommandAdapt {
     const { startIndex, endIndex } = this.range.getRange()
     if (!~startIndex && !~endIndex) return null
     const imageId = payload.id || getUUID()
-    this.insertElementList([
-      {
-        ...payload,
-        id: imageId,
-        type: ElementType.IMAGE
-      }
-    ])
+    const elementList = this.draw.getElementList()
+    const anchor = elementList[startIndex]
+    // 已在行首（换行符上）则不再前置换行，避免多余空段
+    const atLineStart =
+      !!anchor &&
+      anchor.value === ZERO &&
+      (!anchor.type || anchor.type === ElementType.TEXT)
+    // 插入图片默认独占段落：与正文分开；只有随后拖进文本段才会与文字同 <p>
+    // 连续插入多图时图间仅一个换行，便于「一键排版」识别为相邻图片
+    const insertList: IElement[] = []
+    if (!atLineStart) {
+      insertList.push({ value: ZERO })
+    }
+    insertList.push({
+      ...payload,
+      id: imageId,
+      type: ElementType.IMAGE
+    })
+    insertList.push({ value: ZERO })
+    this.insertElementList(insertList)
     return imageId
   }
 
@@ -1663,6 +1679,22 @@ export class CommandAdapt {
         borderColor,
         borderWidth
       )
+      // 与前后正文拆成独立行，避免图文仍并排在同一行
+      const atLineStart =
+        !prev ||
+        (prev.value === ZERO &&
+          (!prev.type || prev.type === ElementType.TEXT))
+      if (!atLineStart) {
+        newList.unshift({ value: ZERO })
+      }
+      const next = elementList[run.end]
+      const atLineEnd =
+        !next ||
+        (next.value === ZERO &&
+          (!next.type || next.type === ElementType.TEXT))
+      if (!atLineEnd) {
+        newList.push({ value: ZERO })
+      }
       this.draw.spliceElementList(
         elementList,
         run.start,

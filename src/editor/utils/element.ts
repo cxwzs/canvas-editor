@@ -1313,6 +1313,39 @@ export function isTextLikeElement(element: IElement): boolean {
   return !element.type || TEXTLIKE_ELEMENT_TYPE.includes(element.type)
 }
 
+/**
+ * 图片与正文紧邻（无换行分隔）时，去掉一键排版的 BLOCK 标记，恢复图文并排。
+ * 手动拖入文本行、或删除图文间换行后调用。
+ */
+export function clearImageAutoLayoutBlockIfAdjacentToText(
+  elementList: IElement[]
+): void {
+  const isInlineTextNeighbor = (element?: IElement): boolean => {
+    if (!element) return false
+    if (
+      element.type === ElementType.IMAGE ||
+      element.type === ElementType.LATEX
+    ) {
+      return false
+    }
+    if (!isTextLikeElement(element)) return false
+    // 与 isParagraphBreakValue 一致：ZERO / \n 均视为换行分隔
+    const value = element.value
+    return value !== ZERO && value !== '\n' && value !== '\r\n'
+  }
+  for (let i = 0; i < elementList.length; i++) {
+    const el = elementList[i]
+    if (el.type !== ElementType.IMAGE) continue
+    if (el.imgDisplay !== ImageDisplay.BLOCK) continue
+    if (
+      isInlineTextNeighbor(elementList[i - 1]) ||
+      isInlineTextNeighbor(elementList[i + 1])
+    ) {
+      delete el.imgDisplay
+    }
+  }
+}
+
 export function isTextElement(element: IElement): boolean {
   return !element.type || element.type === ElementType.TEXT
 }
@@ -1508,9 +1541,13 @@ export interface IElementListGroupRowFlex {
 export function groupElementListByRowFlex(
   elementList: IElement[]
 ): IElementListGroupRowFlex[] {
+  // 默认左对齐与未设置视为同一组，避免图文因一边写了 left 一边未写而拆段
+  const normalizeRowFlex = (rowFlex?: RowFlex | null): RowFlex | null =>
+    !rowFlex || rowFlex === RowFlex.LEFT ? null : rowFlex
+
   const elementListGroupList: IElementListGroupRowFlex[] = []
   if (!elementList.length) return elementListGroupList
-  let currentRowFlex: RowFlex | null = elementList[0]?.rowFlex || null
+  let currentRowFlex: RowFlex | null = normalizeRowFlex(elementList[0]?.rowFlex)
   elementListGroupList.push({
     rowFlex: currentRowFlex,
     data: [elementList[0]]
@@ -1525,7 +1562,7 @@ export function groupElementListByRowFlex(
         element.value === ZERO)
     const rowFlex = isBreakOnly
       ? currentRowFlex
-      : element.rowFlex || null
+      : normalizeRowFlex(element.rowFlex)
     // 行布局相同&非块元素时追加数据，否则新增分组
     if (
       currentRowFlex === rowFlex &&
@@ -1580,7 +1617,8 @@ export function createDomFromElementList(
   const editorOptions = mergeOption(options)
   /**
    * @param wrapParagraphs 为 true 时按回车（\n）拆成 <p>；
-   *   段内文本与图片保持行内，兼顾图文并排；标题/控件内部不拆段以免非法嵌套。
+   *   图片默认独立成段；仅紧邻文字时（拖入文本段）与文字共用 <p>；
+   *   一键排版（BLOCK）图与文字拆段；相邻排版图共用 <p>；浮动图单独成块。
    */
   function buildDom(
     payload: IElement[],
@@ -1588,9 +1626,17 @@ export function createDomFromElementList(
   ): HTMLDivElement {
     const clipboardDom = document.createElement('div')
     let currentParagraph: HTMLParagraphElement | null = null
+    // 是否已输出过可见内容；用于区分「行首补偿 \n」与「段中连续回车」
+    let hasEmittedContent = false
+    // 当前 <p> 是否已有文字（用于图片段切分）
+    let paragraphHasTextContent = false
+    // 当前 <p> 是否含一键排版（BLOCK）图片；其后正文需拆段
+    let paragraphHasAutoLaidOutImage = false
 
     const closeParagraph = () => {
       currentParagraph = null
+      paragraphHasTextContent = false
+      paragraphHasAutoLaidOutImage = false
     }
 
     const ensureParagraph = (): HTMLElement => {
@@ -1603,12 +1649,21 @@ export function createDomFromElementList(
     }
 
     const appendToParagraph = (node: Node) => {
+      // 一键排版图片段后跟文字等非图片内容：拆到新段落
+      if (node.nodeName !== 'IMG' && paragraphHasAutoLaidOutImage) {
+        closeParagraph()
+      }
       ensureParagraph().append(node)
+      hasEmittedContent = true
+      if (node.nodeName !== 'IMG') {
+        paragraphHasTextContent = true
+      }
     }
 
     const appendStructural = (node: Node) => {
       closeParagraph()
       clipboardDom.append(node)
+      hasEmittedContent = true
     }
 
     const createImageDom = (element: IElement): HTMLImageElement => {
@@ -1654,8 +1709,13 @@ export function createDomFromElementList(
           appendToParagraph(dom)
         } else if (!isLast) {
           // 段中空段（连续回车）：保留空 <p>
+          // 开头空串（如 getValue 合并出的 "\nhello"）是行首补偿，不造空段
+          if (i === 0 && !hasEmittedContent && !currentParagraph) {
+            continue
+          }
           ensureParagraph()
           closeParagraph()
+          hasEmittedContent = true
         }
         // 末尾空串（如 "hello\n"）只结束当前段，不额外造空段
       }
@@ -1685,6 +1745,15 @@ export function createDomFromElementList(
             areaDom.setAttribute('data-title', titleText)
           }
           valueList = valueList.slice(1)
+          // 去掉正文行首一个补偿换行（format 的 ZERO / getValue 的 \n），
+          // 避免转 HTML 时多出一个空 <p>；只剥一层，保留用户故意的空段
+          if (
+            valueList.length &&
+            isParagraphBreakValue(valueList[0].value) &&
+            (!valueList[0].type || valueList[0].type === ElementType.TEXT)
+          ) {
+            valueList = valueList.slice(1)
+          }
         }
         const childDom = createDomFromElementList(valueList, options)
         areaDom.innerHTML = childDom.innerHTML
@@ -1798,8 +1867,31 @@ export function createDomFromElementList(
         if (isFloatingImage(element)) {
           appendStructural(img)
         } else {
-          // 默认/行内图片与文字同属当前 <p>，保持图文并排
+          // 图片 <p> 规则：
+          // - 紧邻文字（拖入文本段）：与文字共用一个 <p>
+          // - 一键排版（BLOCK）后：与文字拆段，不再图文并排
+          // - 紧邻图片（一键排版后的相邻图）：多图共用一个 <p>
+          // - 其余：图片独立 <p>
+          const prev = payload[e - 1]
+          const followsImage = prev?.type === ElementType.IMAGE
+          const followsText =
+            !!prev &&
+            !followsImage &&
+            !isParagraphBreakValue(prev.value) &&
+            isTextLikeElement(prev)
+          const isAutoLaidOut = element.imgDisplay === ImageDisplay.BLOCK
+          if (followsText && isAutoLaidOut) {
+            closeParagraph()
+          } else if (!followsText && !followsImage) {
+            closeParagraph()
+          } else if (followsImage && paragraphHasTextContent) {
+            // 文本段内已有图后又跟图：新开图片段，避免和正文粘在一起
+            closeParagraph()
+          }
           appendToParagraph(img)
+          if (isAutoLaidOut) {
+            paragraphHasAutoLaidOutImage = true
+          }
         }
       } else if (element.type === ElementType.BLOCK) {
         if (element.block?.type === BlockType.VIDEO) {
@@ -1884,12 +1976,15 @@ export function createDomFromElementList(
           text = text.replace(/^\n/, '').replace(new RegExp(`^${ZERO}`), '')
         }
         if (!text) continue
-        // 纯换行：结束当前段；若已在段边界再回车则保留空 <p>
+        // 纯换行：结束当前段；已有内容后再回车则保留空 <p>
+        // 尚未输出内容时的行首补偿 \n 直接忽略，避免多出空段落
         if (wrapParagraphs && isParagraphBreakValue(text)) {
-          if (!currentParagraph) {
+          if (currentParagraph) {
+            closeParagraph()
+          } else if (hasEmittedContent) {
             ensureParagraph()
+            closeParagraph()
           }
-          closeParagraph()
           continue
         }
         appendTextPieces(element, text, false)
@@ -2485,9 +2580,11 @@ export function getElementListByHTML(
             options.innerWidth
           )
           if (imageElement) {
-            imageElement.rowFlex = convertTextAlignToRowFlex(
-              node.parentElement!
-            )
+            // 与文本一致：默认左对齐不写 rowFlex，避免与同行文字分组分裂成两个 <p>
+            const rowFlex = convertTextAlignToRowFlex(node.parentElement!)
+            if (rowFlex !== RowFlex.LEFT) {
+              imageElement.rowFlex = rowFlex
+            }
             const partId = getPartIdFromHTMLElement(imgNode)
             if (partId) {
               imageElement.partId = partId

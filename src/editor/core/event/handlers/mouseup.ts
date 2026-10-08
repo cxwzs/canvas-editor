@@ -9,6 +9,7 @@ import { IElement } from '../../../interface/Element'
 import { IPositionContext } from '../../../interface/Position'
 import { deepClone, getUUID, omitObject } from '../../../utils'
 import {
+  clearImageAutoLayoutBlockIfAdjacentToText,
   formatElementContext,
   formatElementList,
   visitElementTree
@@ -358,6 +359,8 @@ export function mouseup(evt: MouseEvent, host: CanvasEvent) {
         imgElement = dragElement
       }
     }
+    // 拖到正文行后去掉一键排版 BLOCK，恢复图文并排
+    clearImageAutoLayoutBlockIfAdjacentToText(draw.getElementList())
     // 重新渲染
     draw.render({
       isSetCursor: false

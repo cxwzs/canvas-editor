@@ -1,4 +1,5 @@
 import { ZERO } from '../../../../dataset/constant/Common'
+import { clearImageAutoLayoutBlockIfAdjacentToText } from '../../../../utils/element'
 import { CanvasEvent } from '../../CanvasEvent'
 import {
   getSkipFocusDisabledIndex,
@@ -197,6 +198,8 @@ export function del(evt: KeyboardEvent, host: CanvasEvent) {
       curIndex = isCollapsed ? index : startIndex
     }
   }
+  // 删除图文间换行后去掉一键排版 BLOCK，恢复图文并排
+  clearImageAutoLayoutBlockIfAdjacentToText(elementList)
   // 区域正文被清空时保留可编辑空行；仅在仍停留于该 area 时校正光标
   const areaBodyIndex = draw.getArea().ensureEditableBodies(elementList)
   if (
