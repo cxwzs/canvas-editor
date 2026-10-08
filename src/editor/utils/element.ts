@@ -194,10 +194,11 @@ export function formatElementList(
       }
       i--
     } else if (
+      el.type === ElementType.PARAGRAPH ||
       el.type === ElementType.TEXT_IMAGE ||
       el.type === ElementType.MULTI_IMAGE
     ) {
-      // 图文 / 多图虚拟段：展开为扁平元素以便编辑器内部排版
+      // 文本 / 图文 / 多图虚拟段：展开为扁平元素以便编辑器内部排版
       elementList.splice(i, 1)
       const valueList = el.valueList || []
       formatElementList(valueList, {
@@ -882,7 +883,8 @@ export function zipElementList(
       e++
       continue
     } else if (
-      (element.type === ElementType.TEXT_IMAGE ||
+      (element.type === ElementType.PARAGRAPH ||
+        element.type === ElementType.TEXT_IMAGE ||
         element.type === ElementType.MULTI_IMAGE) &&
       element.valueList
     ) {
@@ -1189,8 +1191,8 @@ export function zipElementList(
 }
 
 /**
- * 按与 HTML <p> 一致的规则，将同一段内的图文 / 多图包装为虚拟段落元素。
- * 回车（\n / ZERO）结束当前段并开启新段；同一 p 内文本与全部图片进入同一个 valueList。
+ * 按与 HTML <p> 一致的规则，将同一段内的文本 / 图文 / 多图包装为虚拟段落元素。
+ * 回车（\n / ZERO）结束当前段并开启新段；同一 p 内多样式文本、文本与图片进入同一个 valueList。
  */
 export function classifyParagraphLayout(elementList: IElement[]): IElement[] {
   const isPureBreakElement = (el: IElement): boolean => {
@@ -1223,6 +1225,7 @@ export function classifyParagraphLayout(elementList: IElement[]): IElement[] {
   for (let e = 0; e < elementList.length; e++) {
     const el = elementList[e]
     if (
+      el.type === ElementType.PARAGRAPH ||
       el.type === ElementType.TEXT_IMAGE ||
       el.type === ElementType.MULTI_IMAGE ||
       (!isTextContent(el) && !isInlineImage(el) && !isPureBreakElement(el))
@@ -1271,6 +1274,13 @@ export function classifyParagraphLayout(elementList: IElement[]): IElement[] {
     } else if (!hasText && images.length >= 2) {
       into.push({
         type: ElementType.MULTI_IMAGE,
+        value: '',
+        valueList: run
+      })
+    } else if (hasText && images.length === 0 && run.length > 1) {
+      // 同一段内多样式文本（局部颜色/字号等）归入同一个 paragraph.valueList
+      into.push({
+        type: ElementType.PARAGRAPH,
         value: '',
         valueList: run
       })
@@ -2054,6 +2064,7 @@ export function createDomFromElementList(
         })
         appendStructural(list)
       } else if (
+        element.type === ElementType.PARAGRAPH ||
         element.type === ElementType.TEXT_IMAGE ||
         element.type === ElementType.MULTI_IMAGE
       ) {
@@ -2984,6 +2995,7 @@ export function getTextFromElementList(
           zipElementList(element.valueList!, { isClone: false })
         )}`
       } else if (
+        element.type === ElementType.PARAGRAPH ||
         element.type === ElementType.TEXT_IMAGE ||
         element.type === ElementType.MULTI_IMAGE
       ) {

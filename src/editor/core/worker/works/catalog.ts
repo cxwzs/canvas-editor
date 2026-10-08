@@ -30,6 +30,7 @@ enum ElementType {
   AREA = 'area',
   LIST = 'list',
   LABEL = 'label',
+  PARAGRAPH = 'paragraph',
   TEXT_IMAGE = 'textImage',
   MULTI_IMAGE = 'multiImage'
 }

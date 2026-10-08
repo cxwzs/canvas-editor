@@ -1592,6 +1592,41 @@ describe('classifyParagraphLayout / textImage / multiImage', () => {
     ...extra
   })
 
+  it('同一 p 内多样式文本包装为 paragraph.valueList', () => {
+    const list = zipElementList(
+      [
+        { value: '你好', color: '#f00' },
+        { value: '世界', size: 20 },
+        { value: '！' }
+      ],
+      { isClassifyParagraphLayout: true }
+    )
+    expect(list).toHaveLength(1)
+    expect(list[0].type).toBe(ElementType.PARAGRAPH)
+    expect(list[0].valueList).toHaveLength(3)
+    expect(list[0].valueList![0]).toMatchObject({
+      value: '你好',
+      color: '#f00'
+    })
+    expect(list[0].valueList![1]).toMatchObject({ value: '世界', size: 20 })
+    expect(list[0].valueList![2].value).toBe('！')
+
+    const dom = createDomFromElementList(list)
+    const ps = [...dom.querySelectorAll('p')]
+    expect(ps).toHaveLength(1)
+    expect(ps[0].textContent).toBe('你好世界！')
+  })
+
+  it('单一样式文本不包装为 paragraph', () => {
+    const list = zipElementList([{ value: '整段同色' }], {
+      isClassifyParagraphLayout: true
+    })
+    expect(list).toHaveLength(1)
+    expect(list[0].type).toBeUndefined()
+    expect(list[0].value).toBe('整段同色')
+    expect(list[0].valueList).toBeUndefined()
+  })
+
   it('同一 p 内文本+图包装为 textImage', () => {
     const list = zipElementList(
       [{ value: '111' }, img('https://example.com/a.png')],
@@ -1710,7 +1745,21 @@ describe('classifyParagraphLayout / textImage / multiImage', () => {
     expect(again.some(el => el.type === ElementType.TEXT_IMAGE)).toBe(true)
   })
 
-  it('createDomFromElementList 对 textImage / multiImage 各输出单个 p', () => {
+  it('createDomFromElementList 对 paragraph / textImage / multiImage 各输出单个 p', () => {
+    const paragraphDom = createDomFromElementList([
+      {
+        type: ElementType.PARAGRAPH,
+        value: '',
+        valueList: [
+          { value: '红', color: '#f00' },
+          { value: '蓝', color: '#00f' }
+        ]
+      }
+    ])
+    const paragraphPs = [...paragraphDom.querySelectorAll('p')]
+    expect(paragraphPs).toHaveLength(1)
+    expect(paragraphPs[0].textContent).toBe('红蓝')
+
     const textImageDom = createDomFromElementList([
       {
         type: ElementType.TEXT_IMAGE,
@@ -1740,6 +1789,30 @@ describe('classifyParagraphLayout / textImage / multiImage', () => {
     const multiPs = [...multiDom.querySelectorAll('p')]
     expect(multiPs).toHaveLength(1)
     expect(multiPs[0].querySelectorAll('img')).toHaveLength(2)
+  })
+
+  it('formatElementList 展开 paragraph 后可再 zip+classify 往返', () => {
+    const original: IElement[] = [
+      { value: 'A', color: '#f00' },
+      { value: 'B', size: 18 }
+    ]
+    const packed = zipElementList(original, {
+      isClassifyParagraphLayout: true
+    })
+    expect(packed[0].type).toBe(ElementType.PARAGRAPH)
+
+    const flat = deepClonePacked(packed)
+    formatElementList(flat, {
+      editorOptions: mockOptions as any,
+      isHandleFirstElement: false,
+      isForceCompensation: false
+    })
+    expect(flat.some(el => el.type === ElementType.PARAGRAPH)).toBe(false)
+    expect(getTextFromElementList(flat)).toContain('AB')
+
+    const again = zipElementList(flat, { isClassifyParagraphLayout: true })
+    expect(again[0].type).toBe(ElementType.PARAGRAPH)
+    expect(again[0].valueList!.length).toBeGreaterThanOrEqual(2)
   })
 })
 
